@@ -19,10 +19,10 @@ CLIENT = AzureOpenAI(
 
 def azure_openai_request(
     messages: list,
-    model: str = "gpt-4o",
+    model: str = "gpt-4o-mini",
+    # gpt-4o-mini is able to handle more than 4000 token output
     max_tokens: int = 150,
     temperature: float = 0.1,
-    response_format: str = "json",
 ) -> str:
 
     # Send the prompt to AzureOpenAI
@@ -31,7 +31,6 @@ def azure_openai_request(
         messages=messages,
         max_tokens=max_tokens,
         temperature=temperature,
-        response_format=response_format,
     )
 
     # Return the response
