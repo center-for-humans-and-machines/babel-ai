@@ -1,0 +1,64 @@
+[tool.poetry]
+name = "babel-ai"
+version = "0.1.0"
+description = ""
+authors = ["LangLoffelLako <luis@mienhardt.de>"]
+readme = "README.md"
+packages = [{include = "babel_ai", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.13"
+openai = "^1.59.7"
+ipykernel = "^6.29.5"
+python-dotenv = "^1.0.1"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.10.0"
+pylint = "^3.3.1"
+pytest = "^8.3.3"
+pre-commit = "^4.0.1"
+pytest-mock = "^3.14.0"
+wandb = "^0.18.7"
+
+
+[tool.black]
+line-length = 79
+target-version = ['py310']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 79
+
+[tool.flake8]
+max-line-length = 79
+extend-ignore = "E203, W503"
+max-complexity = 10
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v -ra -s"
+pythonpath = [
+  "src"
+]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
