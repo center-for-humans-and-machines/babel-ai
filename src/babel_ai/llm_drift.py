@@ -9,7 +9,7 @@ import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
@@ -23,7 +23,7 @@ except ImportError:
 
 from src.babel_ai.analyzer import SimilarityAnalyzer
 from src.babel_ai.llm_interface import LLMInterface
-from src.babel_ai.prompt_fetcher import PromptFetcher, ShareGPTPromptFetcher
+from src.babel_ai.prompt_fetcher import BasePromptFetcher, PromptFetcher
 
 logger = logging.getLogger(__name__)
 
@@ -56,9 +56,7 @@ class DriftExperiment:
         llm_provider: Optional[LLMInterface] = None,
         config: Optional[ExperimentConfig] = None,
         analyzer: Optional[SimilarityAnalyzer] = None,
-        prompt_fetcher: Optional[
-            Union[PromptFetcher, ShareGPTPromptFetcher]
-        ] = None,
+        prompt_fetcher: Optional[BasePromptFetcher] = None,
         use_notebook_tqdm: bool = False,
     ):
         self.llm = llm_provider or LLMInterface()
