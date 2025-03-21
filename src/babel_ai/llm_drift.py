@@ -7,9 +7,8 @@ self-loop without external input.
 
 import json
 import logging
-from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import pandas as pd
 
@@ -23,29 +22,10 @@ except ImportError:
 
 from src.babel_ai.analyzer import SimilarityAnalyzer
 from src.babel_ai.llm_interface import LLMInterface
+from src.babel_ai.models import ExperimentConfig, Metric
 from src.babel_ai.prompt_fetcher import BasePromptFetcher, PromptFetcher
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class ExperimentConfig:
-    """Configuration for the drift experiment."""
-
-    temperature: float = 0.7
-    max_tokens: int = 100
-    frequency_penalty: float = 0.0
-    presence_penalty: float = 0.0
-    top_p: float = 1.0
-    max_iterations: int = 100
-    max_total_characters: int = 1000000
-    analyze_window: int = 20
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert config to dictionary."""
-        return {
-            k: v for k, v in self.__dict__.items() if not k.startswith("_")
-        }
 
 
 class DriftExperiment:
@@ -65,7 +45,7 @@ class DriftExperiment:
             analyze_window=self.config.analyze_window
         )
         self.prompt_fetcher = prompt_fetcher or PromptFetcher()
-        self.results = []
+        self.results: List[Metric] = []
 
         # Set up progress tracking
         self.range_func = range
@@ -124,14 +104,14 @@ class DriftExperiment:
     def run(
         self,
         initial_messages: List[Dict[str, str]],
-    ) -> List[Dict[str, Any]]:
+    ) -> List[Metric]:
         """Run the drift experiment with the given initial messages.
 
         Args:
             initial_messages: List of message dictionaries to start with
 
         Returns:
-            List of dictionaries containing experiment metrics
+            List of Metric objects containing experiment results
 
         Raises:
             ValueError: If messages are not properly formatted
@@ -149,14 +129,14 @@ class DriftExperiment:
             role = initial_messages[i]["role"]
             content = initial_messages[i]["content"]
             metrics.append(
-                {
-                    "iteration": i,
-                    "timestamp": datetime.now(),
-                    "role": role,
-                    "response": content,
-                    "analysis": self.analyzer.analyze(content),
-                    "config": self.config.to_dict(),
-                }
+                Metric(
+                    iteration=i,
+                    timestamp=datetime.now(),
+                    role=role,
+                    response=content,
+                    analysis=self.analyzer.analyze(content),
+                    config=self.config,
+                )
             )
 
         # Initialize prompt
@@ -184,22 +164,15 @@ class DriftExperiment:
 
             # Store results
             metrics.append(
-                {
-                    "iteration": len(msgs_text),
-                    "timestamp": datetime.now(),
-                    "role": "assistant",
-                    "response": response,
-                    "analysis": analysis,
-                    "config": self.config.to_dict(),
-                }
+                Metric(
+                    iteration=len(msgs_text),
+                    timestamp=datetime.now(),
+                    role="assistant",
+                    response=response,
+                    analysis=analysis,
+                    config=self.config,
+                )
             )
-
-            # Check stop conditions
-            # if analysis['is_repetitive']:
-            #    break
-
-            # if analysis['is_semantically_repetitive']:
-            #    break
 
             # Check total length of outputs
             if (
@@ -212,51 +185,37 @@ class DriftExperiment:
             prompt = response
 
         # Save results to CSV
-        self._save_results_to_csv(metrics, metrics[0]["timestamp"])
+        self._save_results_to_csv(metrics, metrics[0].timestamp)
 
         return metrics
 
     def _save_results_to_csv(
-        self, metrics: List[Dict[str, Any]], timestamp: datetime
+        self, metrics: List[Metric], timestamp: datetime
     ) -> None:
         """Save experiment results to a CSV file and metadata to JSON.
 
         Args:
-            metrics: List of metric dictionaries from the experiment
+            metrics: List of Metric objects from the experiment
             timestamp: Timestamp to use in filename
         """
-        # Flatten metrics by expanding analysis dict into separate columns
-        flattened_metrics = []
-        for metric in metrics:
-            flat_metric = {
-                "iteration": metric["iteration"],
-                "timestamp": metric["timestamp"],
-                "role": metric["role"],
-                "response": metric["response"],
-            }
-            # Add analysis metrics as separate columns
-            flat_metric.update(metric["analysis"])
-            # Add configuration as columns with 'config_' prefix
-            flat_metric.update({k: v for k, v in metric["config"].items()})
-            flattened_metrics.append(flat_metric)
+        # Convert metrics to DataFrame
+        df = pd.DataFrame([metric.to_dict() for metric in metrics])
 
-        # Convert to DataFrame and save
-        df = pd.DataFrame(flattened_metrics)
+        # Save CSV
         base_filename = (
             f"drift_experiment_{timestamp.strftime('%Y%m%d_%H%M%S')}"
         )
         csv_filename = f"{base_filename}.csv"
         meta_filename = f"{base_filename}_meta.json"
 
-        # Save CSV
         df.to_csv(csv_filename, index=False)
 
         # Save metadata
         metadata = {
             "timestamp": timestamp.isoformat(),
-            "config": self.config.to_dict(),
+            "config": self.config.model_dump(),
             "num_iterations": len(metrics),
-            "total_tokens": sum(len(m["response"]) for m in metrics),
+            "total_tokens": sum(len(m.response) for m in metrics),
             "csv_filename": csv_filename,
         }
 

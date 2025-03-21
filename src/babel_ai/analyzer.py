@@ -1,7 +1,7 @@
 """Analyzer classes for LLM drift experiments."""
 
 import logging
-from typing import Any, Dict, List
+from typing import List
 
 import numpy as np
 import torch
@@ -9,6 +9,14 @@ import torch.nn.functional as F
 from scipy.stats import entropy
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import cos_sim
+
+from .models import (
+    AnalysisResult,
+    LexicalMetrics,
+    SemanticMetrics,
+    SurpriseMetrics,
+    WordStats,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,81 +37,106 @@ class SimilarityAnalyzer:
         self.semantic_model = SentenceTransformer(semantic_model)
         self.analyze_window = analyze_window
 
-    def analyze(self, outputs: List[str]) -> Dict[str, Any]:
+    def analyze(self, outputs: List[str]) -> AnalysisResult:
         """Orchestrate different analysis methods on the outputs.
 
         Args:
             outputs: List of all outputs including the current one
 
         Returns:
-            Dictionary containing combined analysis metrics
+            AnalysisResult containing combined analysis metrics
         """
         current_text = outputs[-1]
         previous_texts = outputs[:-1] if len(outputs) > 1 else []
 
-        analysis = {}
+        # Get word statistics
+        word_stats = self._analyze_word_stats(current_text)
 
-        # Combine results from all analysis methods
-        analysis.update(self._analyze_word_stats(current_text))
+        # Initialize optional metrics
+        lexical_metrics = None
+        semantic_metrics = None
+        surprise_metrics = None
+
         if previous_texts:
-            analysis.update(
-                self._analyze_similarity(current_text, previous_texts)
-            )
-            analysis.update(
-                self._analyze_semantic_similarity(current_text, previous_texts)
-            )
-            analysis.update(
-                self._analyze_semantic_surprise(current_text, previous_texts)
+            # Get lexical metrics
+            lexical_metrics = self._analyze_similarity(
+                current_text, previous_texts
             )
 
-        return analysis
+            # Get semantic metrics
+            semantic_metrics = self._analyze_semantic_similarity(
+                current_text, previous_texts
+            )
 
-    def _analyze_word_stats(self, text: str) -> Dict[str, Any]:
-        """Analyze basic word statistics of the text."""
+            # Get surprise metrics
+            surprise_metrics = self._analyze_semantic_surprise(
+                current_text, previous_texts
+            )
+
+        return AnalysisResult(
+            word_stats=word_stats,
+            lexical=lexical_metrics,
+            semantic=semantic_metrics,
+            surprise=surprise_metrics,
+        )
+
+    def _analyze_word_stats(self, text: str) -> WordStats:
+        """Analyze basic word statistics of the text.
+
+        Args:
+            text: Input text to analyze
+
+        Returns:
+            WordStats containing word-level statistics
+        """
         words = text.lower().split()
         unique_words = set(words)
 
-        return {
-            "word_count": len(words),
-            "unique_word_count": len(unique_words),
-            "coherence_score": (
-                len(unique_words) / len(words) if words else 0.0
-            ),
-        }
+        return WordStats(
+            word_count=len(words),
+            unique_word_count=len(unique_words),
+            coherence_score=len(unique_words) / len(words) if words else 0.0,
+        )
 
     def _analyze_similarity(
         self,
         current_text: str,
         previous_texts: List[str],
         similarity_threshold: float = 0.8,
-    ) -> Dict[str, Any]:
-        """Analyze lexical similarity with previous outputs."""
+    ) -> LexicalMetrics:
+        """Analyze lexical similarity with previous outputs.
+
+        Args:
+            current_text: Current text to analyze
+            previous_texts: List of previous texts to compare against
+            similarity_threshold: Threshold for considering text repetitive
+
+        Returns:
+            LexicalMetrics containing similarity analysis results
+        """
         current_words = set(current_text.lower().split())
         prev_text = previous_texts[-1]
         prev_words = set(prev_text.lower().split())
 
-        analysis = {"is_repetitive": False}
+        similarity = None
+        is_repetitive = False
 
         if prev_words and current_words:
             intersection = current_words.intersection(prev_words)
             union = current_words.union(prev_words)
             similarity = len(intersection) / len(union)
+            is_repetitive = similarity > similarity_threshold
 
-            analysis.update(
-                {
-                    "lexical_similarity": similarity,
-                    "is_repetitive": similarity > similarity_threshold,
-                }
-            )
-
-        return analysis
+        return LexicalMetrics(
+            similarity=similarity, is_repetitive=is_repetitive
+        )
 
     def _analyze_semantic_similarity(
         self,
         current_text: str,
         previous_texts: List[str],
         semantic_threshold: float = 0.9,
-    ) -> Dict[str, Any]:
+    ) -> SemanticMetrics:
         """Analyze semantic similarity using Sentence-BERT.
 
         Args:
@@ -112,7 +145,7 @@ class SimilarityAnalyzer:
             semantic_threshold: Threshold for semantic similarity
 
         Returns:
-            Dictionary containing semantic similarity metrics
+            SemanticMetrics containing semantic similarity analysis
         """
         # Encode current and previous text
         current_embedding = self.semantic_model.encode(
@@ -125,10 +158,18 @@ class SimilarityAnalyzer:
         # Calculate cosine similarity
         similarity = cos_sim(current_embedding, prev_embedding).item()
 
-        return {
-            "semantic_similarity": similarity,
-            "is_semantically_repetitive": similarity > semantic_threshold,
-        }
+        if similarity <= 0:
+            logger.warning(
+                f"Semantic similarity is <= 0. "
+                f"Similarity: {similarity} "
+                f"Current text: {current_text} "
+                f"Previous text: {previous_texts[-1]} "
+            )
+
+        return SemanticMetrics(
+            similarity=similarity,
+            is_repetitive=similarity > semantic_threshold,
+        )
 
     def _get_semantic_distribution(self, text: str) -> np.ndarray:
         """Get probability distribution from sentence embedding.
@@ -157,18 +198,16 @@ class SimilarityAnalyzer:
         current_text: str,
         previous_texts: List[str],
         surprise_threshold: float = 2.0,
-    ) -> Dict[str, Any]:
+    ) -> SurpriseMetrics:
         """Analyze semantic surprise using KL divergence of embeddings.
 
         Args:
             current_text: The current output text
             previous_texts: List of previous outputs
             surprise_threshold: Threshold for considering output surprising
-            window_size: Number of previous texts to consider for surprise
-                        If None, uses all available history
 
         Returns:
-            Dictionary containing surprise metrics
+            SurpriseMetrics containing surprise analysis results
         """
         # Get probability distribution for current text
         current_dist = self._get_semantic_distribution(current_text)
@@ -185,7 +224,6 @@ class SimilarityAnalyzer:
             texts_to_compare = previous_texts[start_idx:]
 
         # Calculate surprise against previous texts in window
-
         for prev_text in texts_to_compare:
             prev_dist = self._get_semantic_distribution(prev_text)
             # Calculate KL divergence (semantic surprise)
@@ -202,8 +240,8 @@ class SimilarityAnalyzer:
             avg_surprise = 0.0
             max_surprise = 0.0
 
-        return {
-            "semantic_surprise": avg_surprise,
-            "max_semantic_surprise": max_surprise,
-            "is_surprising": avg_surprise > surprise_threshold,
-        }
+        return SurpriseMetrics(
+            semantic_surprise=avg_surprise,
+            max_semantic_surprise=max_surprise,
+            is_surprising=avg_surprise > surprise_threshold,
+        )
