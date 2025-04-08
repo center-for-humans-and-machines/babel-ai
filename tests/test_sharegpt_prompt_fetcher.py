@@ -5,7 +5,7 @@ import os
 import tempfile
 from unittest import TestCase, main
 
-from src.babel_ai.prompt_fetcher import ShareGPTPromptFetcher
+from babel_ai.prompt_fetcher import ShareGPTPromptFetcher
 
 
 class TestShareGPTPromptFetcher(TestCase):

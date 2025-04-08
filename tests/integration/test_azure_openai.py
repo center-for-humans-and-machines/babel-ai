@@ -6,7 +6,7 @@ functionality and API compatibility.
 
 import os
 
-from src.api.azure_openai import azure_openai_request
+from api.azure_openai import azure_openai_request
 
 
 def test_real_api_call_with_different_models_and_default_parameters():

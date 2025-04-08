@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.api.azure_openai import azure_openai_request
+from api.azure_openai import azure_openai_request
 
 
 @pytest.fixture
@@ -33,7 +33,7 @@ def sample_messages():
 def test_successful_api_call(mock_openai_response, sample_messages):
     """Test successful API call to Azure OpenAI."""
     with patch(
-        "src.api.azure_openai.CLIENT.chat.completions.create",
+        "api.azure_openai.CLIENT.chat.completions.create",
         return_value=mock_openai_response,
     ) as mock_create:
         response = azure_openai_request(
@@ -58,7 +58,7 @@ def test_successful_api_call(mock_openai_response, sample_messages):
 def test_api_error_handling(sample_messages):
     """Test error handling when API call fails."""
     with patch(
-        "src.api.azure_openai.CLIENT.chat.completions.create",
+        "api.azure_openai.CLIENT.chat.completions.create",
         side_effect=Exception("API Error"),
     ):
         with pytest.raises(Exception) as exc_info:
@@ -69,7 +69,7 @@ def test_api_error_handling(sample_messages):
 def test_default_parameters(sample_messages):
     """Test that default parameters are used correctly."""
     with patch(
-        "src.api.azure_openai.CLIENT.chat.completions.create",
+        "api.azure_openai.CLIENT.chat.completions.create",
         return_value=MagicMock(
             choices=[MagicMock(message=MagicMock(content="Test response"))]
         ),

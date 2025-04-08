@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 from unittest import TestCase, main
 
-from src.babel_ai.prompt_fetcher import InfiniteConversationPromptFetcher
+from babel_ai.prompt_fetcher import InfiniteConversationPromptFetcher
 
 
 class TestInfiniteConversationPromptFetcher(TestCase):
