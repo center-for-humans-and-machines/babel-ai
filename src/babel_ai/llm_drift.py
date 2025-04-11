@@ -8,6 +8,7 @@ self-loop without external input.
 import json
 import logging
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import pandas as pd
@@ -34,9 +35,9 @@ class DriftExperiment:
     def __init__(
         self,
         llm_provider: Optional[LLMInterface] = None,
-        config: Optional[ExperimentConfig] = None,
         analyzer: Optional[SimilarityAnalyzer] = None,
         prompt_fetcher: Optional[BasePromptFetcher] = None,
+        config: Optional[ExperimentConfig] = None,
         use_notebook_tqdm: bool = False,
     ):
         self.llm = llm_provider or LLMInterface()
@@ -190,16 +191,25 @@ class DriftExperiment:
         return metrics
 
     def _save_results_to_csv(
-        self, metrics: List[Metric], timestamp: datetime
+        self,
+        metrics: List[Metric],
+        timestamp: datetime,
+        output_dir: Optional[Path] = None,
     ) -> None:
         """Save experiment results to a CSV file and metadata to JSON.
 
         Args:
             metrics: List of Metric objects from the experiment
             timestamp: Timestamp to use in filename
+            output_dir: Directory to save output files. If None, uses current
+                       working directory.
         """
         # Convert metrics to DataFrame
         df = pd.DataFrame([metric.to_dict() for metric in metrics])
+
+        # Use current working directory if no output directory specified
+        output_dir = output_dir or Path.cwd()
+        output_dir.mkdir(parents=True, exist_ok=True)
 
         # Save CSV
         base_filename = (
@@ -207,8 +217,10 @@ class DriftExperiment:
         )
         csv_filename = f"{base_filename}.csv"
         meta_filename = f"{base_filename}_meta.json"
+        csv_path = output_dir / csv_filename
+        meta_path = output_dir / meta_filename
 
-        df.to_csv(csv_filename, index=False)
+        df.to_csv(csv_path, index=False)
 
         # Save metadata
         metadata = {
@@ -219,8 +231,8 @@ class DriftExperiment:
             "csv_filename": csv_filename,
         }
 
-        with open(meta_filename, "w") as f:
+        with open(meta_path, "w") as f:
             json.dump(metadata, f, indent=2)
 
-        logger.info(f"Saved experiment results to {csv_filename}")
-        logger.info(f"Saved experiment metadata to {meta_filename}")
+        logger.info(f"Saved experiment results to {csv_path}")
+        logger.info(f"Saved experiment metadata to {meta_path}")
