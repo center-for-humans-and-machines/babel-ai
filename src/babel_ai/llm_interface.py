@@ -24,6 +24,7 @@ class LLMInterface:
         frequency_penalty: float = 0.0,
         presence_penalty: float = 0.0,
         top_p: float = 1.0,
+        swap_roles: bool = True,
     ) -> str:
         """Generate text from the given prompt.
 
@@ -39,15 +40,17 @@ class LLMInterface:
         Returns:
             Generated text response
         """
-        # Swap roles of previous messages
-        logger.debug(
-            "Swapping roles of previous messages."
-            f" Role of last message: {self.messages[-1]['role']}"
-        )
-        for message in self.messages:
-            message["role"] = (
-                "assistant" if message["role"] == "user" else "user"
+
+        if swap_roles and self.messages:
+            # Swap roles of previous messages
+            logger.debug(
+                "Swapping roles of previous messages."
+                f" Role of last message: {self.messages[-1]['role']}"
             )
+            for message in self.messages:
+                message["role"] = (
+                    "assistant" if message["role"] == "user" else "user"
+                )
 
         # Add new prompt
         logger.debug(f"Adding new prompt: {prompt}")
