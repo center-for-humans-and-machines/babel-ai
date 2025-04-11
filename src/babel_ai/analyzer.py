@@ -34,51 +34,9 @@ class SimilarityAnalyzer:
         Args:
             semantic_model: Name of the sentence-transformer model to use
         """
-        self.semantic_model = SentenceTransformer(semantic_model)
+        self._model_name = semantic_model
+        self.semantic_model = SentenceTransformer(self._model_name)
         self.analyze_window = analyze_window
-
-    def analyze(self, outputs: List[str]) -> AnalysisResult:
-        """Orchestrate different analysis methods on the outputs.
-
-        Args:
-            outputs: List of all outputs including the current one
-
-        Returns:
-            AnalysisResult containing combined analysis metrics
-        """
-        current_text = outputs[-1]
-        previous_texts = outputs[:-1] if len(outputs) > 1 else []
-
-        # Get word statistics
-        word_stats = self._analyze_word_stats(current_text)
-
-        # Initialize optional metrics
-        lexical_metrics = None
-        semantic_metrics = None
-        surprise_metrics = None
-
-        if previous_texts:
-            # Get lexical metrics
-            lexical_metrics = self._analyze_similarity(
-                current_text, previous_texts
-            )
-
-            # Get semantic metrics
-            semantic_metrics = self._analyze_semantic_similarity(
-                current_text, previous_texts
-            )
-
-            # Get surprise metrics
-            surprise_metrics = self._analyze_semantic_surprise(
-                current_text, previous_texts
-            )
-
-        return AnalysisResult(
-            word_stats=word_stats,
-            lexical=lexical_metrics,
-            semantic=semantic_metrics,
-            surprise=surprise_metrics,
-        )
 
     def _analyze_word_stats(self, text: str) -> WordStats:
         """Analyze basic word statistics of the text.
@@ -147,16 +105,19 @@ class SimilarityAnalyzer:
         Returns:
             SemanticMetrics containing semantic similarity analysis
         """
+        previous_text = previous_texts[-1]
+
         # Encode current and previous text
         current_embedding = self.semantic_model.encode(
             current_text, convert_to_tensor=True
         )
         prev_embedding = self.semantic_model.encode(
-            previous_texts[-1], convert_to_tensor=True
+            previous_text, convert_to_tensor=True
         )
 
-        # Calculate cosine similarity
+        # Calculate cosine similarity and clamp to valid range
         similarity = cos_sim(current_embedding, prev_embedding).item()
+        similarity = max(-1.0, min(1.0, similarity))  # Clamp to [-1, 1]
 
         if similarity <= 0:
             logger.warning(
@@ -244,4 +205,47 @@ class SimilarityAnalyzer:
             semantic_surprise=avg_surprise,
             max_semantic_surprise=max_surprise,
             is_surprising=avg_surprise > surprise_threshold,
+        )
+
+    def analyze(self, outputs: List[str]) -> AnalysisResult:
+        """Orchestrate different analysis methods on the outputs.
+
+        Args:
+            outputs: List of all outputs including the current one
+
+        Returns:
+            AnalysisResult containing combined analysis metrics
+        """
+        current_text = outputs[-1]
+        previous_texts = outputs[:-1] if len(outputs) > 1 else []
+
+        # Get word statistics
+        word_stats = self._analyze_word_stats(current_text)
+
+        # Initialize optional metrics
+        lexical_metrics = None
+        semantic_metrics = None
+        surprise_metrics = None
+
+        if previous_texts:
+            # Get lexical metrics
+            lexical_metrics = self._analyze_similarity(
+                current_text, previous_texts
+            )
+
+            # Get semantic metrics
+            semantic_metrics = self._analyze_semantic_similarity(
+                current_text, previous_texts
+            )
+
+            # Get surprise metrics
+            surprise_metrics = self._analyze_semantic_surprise(
+                current_text, previous_texts
+            )
+
+        return AnalysisResult(
+            word_stats=word_stats,
+            lexical=lexical_metrics,
+            semantic=semantic_metrics,
+            surprise=surprise_metrics,
         )
