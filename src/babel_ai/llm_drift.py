@@ -150,6 +150,8 @@ class DriftExperiment:
             # Generate next response
             response = self.llm.generate(
                 prompt=prompt,
+                provider=self.config.provider,
+                model=self.config.model,
                 temperature=self.config.temperature,
                 max_tokens=self.config.max_tokens,
                 frequency_penalty=self.config.frequency_penalty,

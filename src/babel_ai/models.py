@@ -71,7 +71,9 @@ class AnalysisResult(BaseModel):
 
 class ExperimentConfig(BaseModel):
     """Configuration for the drift experiment."""
-
+    
+    provider: str = Field(description="Name of the provider to use"),
+    model: str = Field(description="Name of the model to use"),
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
     max_tokens: int = Field(default=100, ge=1)
     frequency_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
@@ -206,6 +208,8 @@ class Metric(BaseModel):
         # Extract config if available
         config = None
         config_fields = {
+            "provider",
+            "model",
             "temperature",
             "max_tokens",
             "frequency_penalty",

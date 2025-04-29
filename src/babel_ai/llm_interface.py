@@ -4,6 +4,9 @@ import logging
 from typing import Dict, List
 
 from src.api.azure_openai import azure_openai_request
+from src.api.openai import openai_request
+from src.api.openai import openai_request
+from src.api.ollama import ollama_request
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +21,8 @@ class LLMInterface:
     def generate(
         self,
         prompt: str,
-        model: str = "gpt-4o-2024-08-06",
+        provider: str = "openai",
+        model: str = "gpt-4-1106-preview",
         temperature: float = 0.7,
         max_tokens: int = 100,
         frequency_penalty: float = 0.0,
@@ -30,6 +34,7 @@ class LLMInterface:
 
         Args:
             prompt: The input prompt
+            provider: Azure, Openai, Ollama, etc.
             model: The model to use
             temperature: Sampling temperature
             max_tokens: Maximum tokens to generate
@@ -55,8 +60,16 @@ class LLMInterface:
         # Add new prompt
         logger.debug(f"Adding new prompt: {prompt}")
         self.messages.append({"role": "user", "content": prompt})
+        
+        match provider:
+            case "openai":
+                f = openai_request
+            case "ollama":
+                f = ollama_request
+            case "azure":
+                f = azure_openai_request
 
-        return azure_openai_request(
+        return f(
             messages=self.messages,
             model=model,
             temperature=temperature,
