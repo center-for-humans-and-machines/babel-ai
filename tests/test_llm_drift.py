@@ -62,6 +62,8 @@ def mock_prompt_fetcher():
 def experiment_config():
     """Create a test experiment configuration."""
     return ExperimentConfig(
+        provider="openai",
+        model="gpt-4o",
         max_iterations=5,
         max_total_characters=1000,
         temperature=0.7,
@@ -121,7 +123,7 @@ def test_validate_messages_invalid(drift_experiment):
 
 @patch("src.babel_ai.llm_drift.datetime")
 def test_run_experiment(
-    mock_datetime, drift_experiment, mock_llm, mock_analyzer
+    mock_datetime, drift_experiment, mock_llm, mock_analyzer, tmp_path
 ):
     """Test running the drift experiment."""
     # Setup
@@ -132,8 +134,9 @@ def test_run_experiment(
     ]
     mock_llm.generate.return_value = "Test response"
 
-    # Run experiment
-    results = drift_experiment.run(initial_messages)
+    # Run experiment within tmp_path
+    with patch("pathlib.Path.cwd", return_value=tmp_path):
+        results = drift_experiment.run(initial_messages)
 
     # Verify results
     assert len(results) > 0
