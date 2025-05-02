@@ -10,15 +10,25 @@ from src.babel_ai.llm_interface import LLMInterface
 @pytest.fixture
 def llm_interface():
     """Create an LLMInterface instance for testing."""
-    return LLMInterface()
+    with patch("src.babel_ai.llm_interface.openai_request") as mock_request:
+        with patch(
+            "src.babel_ai.llm_interface.ollama_request"
+        ) as mock_ollama_request:
+            with patch(
+                "src.babel_ai.llm_interface.azure_openai_request"
+            ) as mock_azure_request:
+                mock_request.return_value = "Test response"
+                mock_ollama_request.return_value = "Test response"
+                mock_azure_request.return_value = "Test response"
+                interface = LLMInterface()
+                interface._mock_request = mock_request
+                interface._mock_ollama_request = mock_ollama_request
+                interface._mock_azure_request = mock_azure_request
+                yield interface
 
 
-@patch("src.babel_ai.llm_interface.azure_openai_request")
-def test_generate_with_default_params(mock_azure_request, llm_interface):
+def test_generate_with_default_params(llm_interface):
     """Test generate method with default parameters."""
-    # Setup mock response
-    mock_azure_request.return_value = "Test response"
-
     # Call generate
     prompt = "Test prompt"
     response = llm_interface.generate(prompt)
@@ -27,10 +37,11 @@ def test_generate_with_default_params(mock_azure_request, llm_interface):
     assert response == "Test response"
 
     # Verify azure_openai_request was called with correct parameters
-    mock_azure_request.assert_called_once()
-    call_args = mock_azure_request.call_args[1]
+    mock_request = llm_interface._mock_request
+    mock_request.assert_called_once()
+    call_args = mock_request.call_args[1]
     assert call_args["messages"] == [{"role": "user", "content": prompt}]
-    assert call_args["model"] == "gpt-4o-2024-08-06"
+    assert call_args["model"] == "gpt-4-1106-preview"
     assert call_args["temperature"] == 0.7
     assert call_args["max_tokens"] == 100
     assert call_args["frequency_penalty"] == 0.0
@@ -38,11 +49,28 @@ def test_generate_with_default_params(mock_azure_request, llm_interface):
     assert call_args["top_p"] == 1.0
 
 
-@patch("src.babel_ai.llm_interface.azure_openai_request")
-def test_generate_with_custom_params(mock_azure_request, llm_interface):
+def test_ollama_backend(llm_interface):
+    """Test that LLMInterface works with Ollama backend."""
+    response = llm_interface.generate("test", provider="ollama")
+    llm_interface._mock_ollama_request.assert_called_once()
+
+    # Verify response
+    assert response == "Test response"
+
+
+def test_azure_backend(llm_interface):
+    """Test that LLMInterface works with Azure backend."""
+    response = llm_interface.generate("test", provider="azure")
+    llm_interface._mock_azure_request.assert_called_once()
+
+    # Verify response
+    assert response == "Test response"
+
+
+def test_generate_with_custom_params(llm_interface):
     """Test generate method with custom parameters."""
     # Setup mock response
-    mock_azure_request.return_value = "Custom response"
+    llm_interface._mock_request.return_value = "Custom response"
 
     # Call generate with custom parameters
     prompt = "Custom prompt"
@@ -60,8 +88,9 @@ def test_generate_with_custom_params(mock_azure_request, llm_interface):
     assert response == "Custom response"
 
     # Verify azure_openai_request was called with correct parameters
-    mock_azure_request.assert_called_once()
-    call_args = mock_azure_request.call_args[1]
+    mock_request = llm_interface._mock_request
+    mock_request.assert_called_once()
+    call_args = mock_request.call_args[1]
     assert call_args["messages"] == [{"role": "user", "content": prompt}]
     assert call_args["model"] == "custom-model"
     assert call_args["temperature"] == 0.5
@@ -71,12 +100,8 @@ def test_generate_with_custom_params(mock_azure_request, llm_interface):
     assert call_args["top_p"] == 0.9
 
 
-@patch("src.babel_ai.llm_interface.azure_openai_request")
-def test_message_history_management(mock_azure_request, llm_interface):
+def test_message_history_management(llm_interface):
     """Test that message history is properly managed."""
-    # Setup mock response
-    mock_azure_request.return_value = "Response"
-
     # Make multiple calls
     llm_interface.generate("First prompt")
     llm_interface.generate("Second prompt")
@@ -93,12 +118,8 @@ def test_message_history_management(mock_azure_request, llm_interface):
     }
 
 
-@patch("src.babel_ai.llm_interface.azure_openai_request")
-def test_message_history_without_role_swap(mock_azure_request, llm_interface):
+def test_message_history_without_role_swap(llm_interface):
     """Test message history when swap_roles is False."""
-    # Setup mock response
-    mock_azure_request.return_value = "Response"
-
     # Make multiple calls with swap_roles=False
     llm_interface.generate("First prompt", swap_roles=False)
     llm_interface.generate("Second prompt", swap_roles=False)
