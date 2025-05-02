@@ -3,7 +3,6 @@
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-import pandas as pd
 from pydantic import BaseModel, Field
 
 
@@ -71,9 +70,9 @@ class AnalysisResult(BaseModel):
 
 class ExperimentConfig(BaseModel):
     """Configuration for the drift experiment."""
-    
-    provider: str = Field(description="Name of the provider to use"),
-    model: str = Field(description="Name of the model to use"),
+
+    provider: str = (Field(description="Name of the provider to use"),)
+    model: str = (Field(description="Name of the model to use"),)
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
     max_tokens: int = Field(default=100, ge=1)
     frequency_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
@@ -150,85 +149,3 @@ class Metric(BaseModel):
             result.update(self.config.dict())
 
         return result
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Metric":
-        """Create a Metric instance from a dictionary (e.g., from CSV).
-
-        Args:
-            data: Dictionary containing metric data
-
-        Returns:
-            Metric instance
-        """
-        # Extract word stats
-        word_stats = WordStats(
-            word_count=data["word_count"],
-            unique_word_count=data["unique_word_count"],
-            coherence_score=data["coherence_score"],
-        )
-
-        # Extract lexical metrics if available
-        lexical_metrics = None
-        if "lexical_similarity" in data and pd.notna(
-            data["lexical_similarity"]
-        ):
-            lexical_metrics = LexicalMetrics(
-                similarity=data["lexical_similarity"],
-                is_repetitive=data["is_repetitive"],
-            )
-
-        # Extract semantic metrics if available
-        semantic_metrics = None
-        if "semantic_similarity" in data and pd.notna(
-            data["semantic_similarity"]
-        ):
-            semantic_metrics = SemanticMetrics(
-                similarity=data["semantic_similarity"],
-                is_repetitive=data["is_semantically_repetitive"],
-            )
-
-        # Extract surprise metrics if available
-        surprise_metrics = None
-        if "semantic_surprise" in data and pd.notna(data["semantic_surprise"]):
-            surprise_metrics = SurpriseMetrics(
-                semantic_surprise=data["semantic_surprise"],
-                max_semantic_surprise=data["max_semantic_surprise"],
-                is_surprising=data["is_surprising"],
-            )
-
-        # Create analysis result
-        analysis = AnalysisResult(
-            word_stats=word_stats,
-            lexical=lexical_metrics,
-            semantic=semantic_metrics,
-            surprise=surprise_metrics,
-        )
-
-        # Extract config if available
-        config = None
-        config_fields = {
-            "provider",
-            "model",
-            "temperature",
-            "max_tokens",
-            "frequency_penalty",
-            "presence_penalty",
-            "top_p",
-            "max_iterations",
-            "max_total_characters",
-            "analyze_window",
-        }
-        if all(field in data for field in config_fields):
-            config = ExperimentConfig(
-                **{k: v for k, v in data.items() if k in config_fields}
-            )
-
-        return cls(
-            iteration=data["iteration"],
-            timestamp=data["timestamp"],
-            role=data["role"],
-            response=data["response"],
-            analysis=analysis,
-            config=config,
-        )
