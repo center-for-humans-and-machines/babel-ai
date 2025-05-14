@@ -1,7 +1,7 @@
 """Analyzer classes for LLM drift experiments."""
 
 import logging
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import torch
@@ -9,12 +9,14 @@ import torch.nn.functional as F
 from scipy.stats import entropy
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import cos_sim
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from .models import (
     AnalysisResult,
     LexicalMetrics,
     SemanticMetrics,
     SurpriseMetrics,
+    TokenLikelihoodMetrics,
     WordStats,
 )
 
@@ -28,15 +30,23 @@ class SimilarityAnalyzer:
         self,
         semantic_model: str = "all-MiniLM-L6-v2",
         analyze_window: int = 20,
+        token_model: str = "gpt2",
     ):
         """Initialize the SimilarityAnalyzer.
 
         Args:
             semantic_model: Name of the sentence-transformer model to use
+            analyze_window: Number of previous texts to analyze
+            token_model: Name of the model to use for token likelihood
         """
         self._model_name = semantic_model
         self.semantic_model = SentenceTransformer(self._model_name)
         self.analyze_window = analyze_window
+
+        # Initialize token model and tokenizer
+        self.token_model = AutoModelForCausalLM.from_pretrained(token_model)
+        self.tokenizer = AutoTokenizer.from_pretrained(token_model)
+        self.token_model.eval()  # Set to evaluation mode
 
     def _analyze_word_stats(self, text: str) -> WordStats:
         """Analyze basic word statistics of the text.
@@ -207,6 +217,65 @@ class SimilarityAnalyzer:
             is_surprising=avg_surprise > surprise_threshold,
         )
 
+    def _analyze_token_likelihood(
+        self,
+        text: str,
+        previous_text: Optional[str] = None,
+    ) -> TokenLikelihoodMetrics:
+        """Analyze the likelihood of tokens in the text.
+
+        Args:
+            text: The text to analyze
+            previous_text: Optional previous text to use as context
+
+        Returns:
+            TokenLikelihoodMetrics containing token likelihood analysis
+        """
+        # Function to get token probabilities for a given text
+        def get_token_probs(input_text: str) -> float:
+
+            # Ensure input text is not empty
+            if not input_text:
+                logger.warning("Input text is empty. Returning 0.0.")
+                return 0.0
+
+            # Tokenize the text
+            inputs = self.tokenizer(input_text, return_tensors="pt")
+
+            # Get model predictions
+            with torch.no_grad():
+                outputs = self.token_model(**inputs)
+                logits = outputs.logits[
+                    0, :, :
+                ]  # Shape: [seq_len, vocab_size]
+                probs = F.softmax(logits, dim=-1)
+
+                # Get probabilities for actual next tokens
+                # inputs["input_ids"][0][1:] gives us the target tokens
+                token_probs = probs[
+                    torch.arange(len(inputs["input_ids"][0])),
+                    inputs["input_ids"][0],
+                ]
+
+                # Calculate average probability
+                return token_probs.mean().item()
+
+        # Get probabilities for current text
+        avg_prob = get_token_probs(text)
+
+        # Initialize context-based metrics
+        context_avg_prob = None
+
+        # If previous text is provided, analyze with context
+        if previous_text:
+            context_text = f"{previous_text} {text}"
+            context_avg_prob = get_token_probs(context_text)
+
+        return TokenLikelihoodMetrics(
+            avg_token_likelihood=avg_prob,
+            context_avg_likelihood=context_avg_prob,
+        )
+
     def analyze(self, outputs: List[str]) -> AnalysisResult:
         """Orchestrate different analysis methods on the outputs.
 
@@ -226,6 +295,7 @@ class SimilarityAnalyzer:
         lexical_metrics = None
         semantic_metrics = None
         surprise_metrics = None
+        token_likelihood_metrics = None
 
         if previous_texts:
             # Get lexical metrics
@@ -243,9 +313,20 @@ class SimilarityAnalyzer:
                 current_text, previous_texts
             )
 
+            # Get token likelihood metrics with context
+            token_likelihood_metrics = self._analyze_token_likelihood(
+                current_text, previous_text=previous_texts[-1]
+            )
+        else:
+            # Get token likelihood metrics without context
+            token_likelihood_metrics = self._analyze_token_likelihood(
+                current_text
+            )
+
         return AnalysisResult(
             word_stats=word_stats,
             lexical=lexical_metrics,
             semantic=semantic_metrics,
             surprise=surprise_metrics,
+            token_likelihood=token_likelihood_metrics,
         )

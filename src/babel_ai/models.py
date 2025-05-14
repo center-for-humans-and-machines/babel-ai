@@ -59,6 +59,22 @@ class SurpriseMetrics(BaseModel):
     )
 
 
+class TokenLikelihoodMetrics(BaseModel):
+    """Metrics for token likelihood analysis."""
+
+    avg_token_likelihood: float = Field(
+        description="Average likelihood of all tokens in the text",
+        ge=0.0,
+        le=1.0,
+    )
+    context_avg_likelihood: Optional[float] = Field(
+        description="Average likelihood when considering previous context",
+        ge=0.0,
+        le=1.0,
+        default=None,
+    )
+
+
 class AnalysisResult(BaseModel):
     """Combined analysis results for text outputs."""
 
@@ -66,6 +82,7 @@ class AnalysisResult(BaseModel):
     lexical: Optional[LexicalMetrics] = None
     semantic: Optional[SemanticMetrics] = None
     surprise: Optional[SurpriseMetrics] = None
+    token_likelihood: Optional[TokenLikelihoodMetrics] = None
 
 
 class ExperimentConfig(BaseModel):
@@ -141,6 +158,15 @@ class Metric(BaseModel):
                     "semantic_surprise": self.analysis.surprise.semantic_surprise,  # noqa: E501
                     "max_semantic_surprise": self.analysis.surprise.max_semantic_surprise,  # noqa: E501
                     "is_surprising": self.analysis.surprise.is_surprising,
+                }
+            )
+
+        # Add token likelihood metrics if available
+        if self.analysis.token_likelihood:
+            result.update(
+                {
+                    "avg_token_likelihood": self.analysis.token_likelihood.avg_token_likelihood,  # noqa: E501
+                    "context_avg_likelihood": self.analysis.token_likelihood.context_avg_likelihood,  # noqa: E501
                 }
             )
 
