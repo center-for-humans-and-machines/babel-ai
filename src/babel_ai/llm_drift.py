@@ -21,10 +21,10 @@ try:
 except ImportError:
     TQDM_AVAILABLE = False
 
-from src.babel_ai.analyzer import SimilarityAnalyzer
-from src.babel_ai.llm_interface import LLMInterface
-from src.babel_ai.models import ExperimentConfig, Metric
-from src.babel_ai.prompt_fetcher import BasePromptFetcher, PromptFetcher
+from babel_ai.analyzer import SimilarityAnalyzer
+from babel_ai.llm_interface import LLMInterface
+from babel_ai.models import ExperimentConfig, Metric
+from babel_ai.prompt_fetcher import BasePromptFetcher, PromptFetcher
 
 logger = logging.getLogger(__name__)
 
