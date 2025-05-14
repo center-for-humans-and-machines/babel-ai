@@ -1,7 +1,7 @@
 """Analyzer classes for LLM drift experiments."""
 
 import logging
-from typing import List, Optional
+from typing import List
 
 import numpy as np
 import torch
@@ -16,7 +16,7 @@ from .models import (
     LexicalMetrics,
     SemanticMetrics,
     SurpriseMetrics,
-    TokenLikelihoodMetrics,
+    TokenPerplexityMetrics,
     WordStats,
 )
 
@@ -217,63 +217,58 @@ class SimilarityAnalyzer:
             is_surprising=avg_surprise > surprise_threshold,
         )
 
-    def _analyze_token_likelihood(
+    def _analyze_token_perplexity(
         self,
         text: str,
-        previous_text: Optional[str] = None,
-    ) -> TokenLikelihoodMetrics:
-        """Analyze the likelihood of tokens in the text.
+    ) -> TokenPerplexityMetrics:
+        """Analyze the perplexity of tokens in the text.
 
         Args:
             text: The text to analyze
-            previous_text: Optional previous text to use as context
 
         Returns:
-            TokenLikelihoodMetrics containing token likelihood analysis
+            TokenPerplexityMetrics containing perplexity analysis
         """
-        # Function to get token probabilities for a given text
-        def get_token_probs(input_text: str) -> float:
-
+        # Function to get token perplexity for a given text
+        def get_token_perplexity(input_text: str) -> float:
             # Ensure input text is not empty
             if not input_text:
-                logger.warning("Input text is empty. Returning 0.0.")
-                return 0.0
+                logger.warning(
+                    "Input text is empty. Returning max perplexity."
+                )
+                return float("inf")
 
             # Tokenize the text
             inputs = self.tokenizer(input_text, return_tensors="pt")
+            input_ids = inputs["input_ids"]
 
             # Get model predictions
             with torch.no_grad():
                 outputs = self.token_model(**inputs)
                 logits = outputs.logits[
-                    0, :, :
-                ]  # Shape: [seq_len, vocab_size]
-                probs = F.softmax(logits, dim=-1)
+                    0, :-1, :
+                ]  # Shape: [seq_len-1, vocab_size]
 
-                # Get probabilities for actual next tokens
-                # inputs["input_ids"][0][1:] gives us the target tokens
-                token_probs = probs[
-                    torch.arange(len(inputs["input_ids"][0])),
-                    inputs["input_ids"][0],
+                # Get target tokens (shifted by 1)
+                target_ids = input_ids[0, 1:]
+
+                # Calculate log probabilities
+                log_probs = F.log_softmax(logits, dim=-1)
+                token_log_probs = log_probs[
+                    torch.arange(len(target_ids)), target_ids
                 ]
 
-                # Calculate average probability
-                return token_probs.mean().item()
+                # Calculate perplexity: exp(-mean(log_probs))
+                avg_log_prob = token_log_probs.mean().item()
+                perplexity = np.exp(-avg_log_prob)
 
-        # Get probabilities for current text
-        avg_prob = get_token_probs(text)
+                return perplexity
 
-        # Initialize context-based metrics
-        context_avg_prob = None
+        # Get perplexity for current text
+        avg_perplexity = get_token_perplexity(text)
 
-        # If previous text is provided, analyze with context
-        if previous_text:
-            context_text = f"{previous_text} {text}"
-            context_avg_prob = get_token_probs(context_text)
-
-        return TokenLikelihoodMetrics(
-            avg_token_likelihood=avg_prob,
-            context_avg_likelihood=context_avg_prob,
+        return TokenPerplexityMetrics(
+            avg_token_perplexity=avg_perplexity,
         )
 
     def analyze(self, outputs: List[str]) -> AnalysisResult:
@@ -295,7 +290,7 @@ class SimilarityAnalyzer:
         lexical_metrics = None
         semantic_metrics = None
         surprise_metrics = None
-        token_likelihood_metrics = None
+        token_perplexity_metrics = None
 
         if previous_texts:
             # Get lexical metrics
@@ -313,20 +308,13 @@ class SimilarityAnalyzer:
                 current_text, previous_texts
             )
 
-            # Get token likelihood metrics with context
-            token_likelihood_metrics = self._analyze_token_likelihood(
-                current_text, previous_text=previous_texts[-1]
-            )
-        else:
-            # Get token likelihood metrics without context
-            token_likelihood_metrics = self._analyze_token_likelihood(
-                current_text
-            )
+        # Get token perplexity metrics
+        token_perplexity_metrics = self._analyze_token_perplexity(current_text)
 
         return AnalysisResult(
             word_stats=word_stats,
             lexical=lexical_metrics,
             semantic=semantic_metrics,
             surprise=surprise_metrics,
-            token_likelihood=token_likelihood_metrics,
+            token_perplexity=token_perplexity_metrics,
         )

@@ -11,7 +11,7 @@ from babel_ai.models import (
     LexicalMetrics,
     SemanticMetrics,
     SurpriseMetrics,
-    TokenLikelihoodMetrics,
+    TokenPerplexityMetrics,
     WordStats,
 )
 
@@ -137,11 +137,9 @@ def test_analyze_full(analyzer):
     assert isinstance(result.lexical, LexicalMetrics)
     assert isinstance(result.semantic, SemanticMetrics)
     assert isinstance(result.surprise, SurpriseMetrics)
-    assert isinstance(result.token_likelihood, TokenLikelihoodMetrics)
-    assert isinstance(result.token_likelihood.avg_token_likelihood, float)
-    assert 0 <= result.token_likelihood.avg_token_likelihood <= 1
-    assert isinstance(result.token_likelihood.context_avg_likelihood, float)
-    assert 0 <= result.token_likelihood.context_avg_likelihood <= 1
+    assert isinstance(result.token_perplexity, TokenPerplexityMetrics)
+    assert isinstance(result.token_perplexity.avg_token_perplexity, float)
+    assert result.token_perplexity.avg_token_perplexity >= 1.0
 
 
 def test_analyze_empty_text(analyzer):
@@ -164,40 +162,27 @@ def test_analyze_single_output(analyzer):
     assert result.semantic is None
     assert result.surprise is None
     assert isinstance(result.word_stats, WordStats)
-    assert isinstance(result.token_likelihood, TokenLikelihoodMetrics)
-    assert isinstance(result.token_likelihood.avg_token_likelihood, float)
-    assert 0 <= result.token_likelihood.avg_token_likelihood <= 1
+    assert isinstance(result.token_perplexity, TokenPerplexityMetrics)
+    assert isinstance(result.token_perplexity.avg_token_perplexity, float)
+    assert result.token_perplexity.avg_token_perplexity >= 1.0
 
 
-def test_token_likelihood_basic(analyzer):
-    """Test basic token likelihood analysis."""
+def test_token_perplexity_basic(analyzer):
+    """Test basic token perplexity analysis."""
     text = "The quick brown fox"
-    result = analyzer._analyze_token_likelihood(text)
+    result = analyzer._analyze_token_perplexity(text)
 
-    assert isinstance(result, TokenLikelihoodMetrics)
-    assert isinstance(result.avg_token_likelihood, float)
-    assert 0 <= result.avg_token_likelihood <= 1
-
-
-def test_token_likelihood_with_context(analyzer):
-    """Test token likelihood analysis with context."""
-    text = "jumps over"
-    context = "The quick brown fox"
-    result = analyzer._analyze_token_likelihood(text, context)
-
-    assert isinstance(result, TokenLikelihoodMetrics)
-    assert isinstance(result.avg_token_likelihood, float)
-    assert 0 <= result.avg_token_likelihood <= 1
-    assert isinstance(result.context_avg_likelihood, float)
-    assert 0 <= result.context_avg_likelihood <= 1
+    assert isinstance(result, TokenPerplexityMetrics)
+    assert isinstance(result.avg_token_perplexity, float)
+    assert result.avg_token_perplexity >= 1.0
 
 
-def test_token_likelihood_empty_text(analyzer, caplog):
-    """Test token likelihood analysis with empty text."""
+def test_token_perplexity_empty_text(analyzer, caplog):
+    """Test token perplexity analysis with empty text."""
     text = ""
     with caplog.at_level(logging.WARNING):
-        result = analyzer._analyze_token_likelihood(text)
-        assert "Input text is empty. Returning 0.0." in caplog.text
+        result = analyzer._analyze_token_perplexity(text)
+        assert "Input text is empty. Returning max perplexity." in caplog.text
 
-    assert isinstance(result, TokenLikelihoodMetrics)
-    assert result.avg_token_likelihood == 0.0
+    assert isinstance(result, TokenPerplexityMetrics)
+    assert result.avg_token_perplexity == float("inf")

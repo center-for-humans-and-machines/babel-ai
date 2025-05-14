@@ -59,19 +59,12 @@ class SurpriseMetrics(BaseModel):
     )
 
 
-class TokenLikelihoodMetrics(BaseModel):
-    """Metrics for token likelihood analysis."""
+class TokenPerplexityMetrics(BaseModel):
+    """Metrics for token perplexity analysis."""
 
-    avg_token_likelihood: float = Field(
-        description="Average likelihood of all tokens in the text",
-        ge=0.0,
-        le=1.0,
-    )
-    context_avg_likelihood: Optional[float] = Field(
-        description="Average likelihood when considering previous context",
-        ge=0.0,
-        le=1.0,
-        default=None,
+    avg_token_perplexity: float = Field(
+        description="Average perplexity of all tokens in the text",
+        ge=1.0,  # Perplexity is always >= 1
     )
 
 
@@ -82,7 +75,7 @@ class AnalysisResult(BaseModel):
     lexical: Optional[LexicalMetrics] = None
     semantic: Optional[SemanticMetrics] = None
     surprise: Optional[SurpriseMetrics] = None
-    token_likelihood: Optional[TokenLikelihoodMetrics] = None
+    token_perplexity: Optional[TokenPerplexityMetrics] = None
 
 
 class ExperimentConfig(BaseModel):
@@ -161,12 +154,11 @@ class Metric(BaseModel):
                 }
             )
 
-        # Add token likelihood metrics if available
-        if self.analysis.token_likelihood:
+        # Add token perplexity metrics if available
+        if self.analysis.token_perplexity:
             result.update(
                 {
-                    "avg_token_likelihood": self.analysis.token_likelihood.avg_token_likelihood,  # noqa: E501
-                    "context_avg_likelihood": self.analysis.token_likelihood.context_avg_likelihood,  # noqa: E501
+                    "avg_token_perplexity": self.analysis.token_perplexity.avg_token_perplexity,  # noqa: E501
                 }
             )
 
