@@ -16,7 +16,7 @@ from src.babel_ai.models import (
     LexicalMetrics,
     Metric,
     SemanticMetrics,
-    SurpriseMetrics,
+    TokenPerplexityMetrics,
     WordStats,
 )
 from src.babel_ai.prompt_fetcher import PromptFetcher
@@ -41,10 +41,8 @@ def mock_analyzer():
         ),
         lexical=LexicalMetrics(similarity=0.7, is_repetitive=False),
         semantic=SemanticMetrics(similarity=0.6, is_repetitive=False),
-        surprise=SurpriseMetrics(
-            semantic_surprise=0.3,
-            max_semantic_surprise=0.5,
-            is_surprising=False,
+        token_perplexity=TokenPerplexityMetrics(
+            avg_token_perplexity=10.0,
         ),
     )
     return analyzer

@@ -6,7 +6,6 @@ from typing import List
 import numpy as np
 import torch
 import torch.nn.functional as F
-from scipy.stats import entropy
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import cos_sim
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -15,7 +14,6 @@ from .models import (
     AnalysisResult,
     LexicalMetrics,
     SemanticMetrics,
-    SurpriseMetrics,
     TokenPerplexityMetrics,
     WordStats,
 )
@@ -142,81 +140,6 @@ class SimilarityAnalyzer:
             is_repetitive=similarity > semantic_threshold,
         )
 
-    def _get_semantic_distribution(self, text: str) -> np.ndarray:
-        """Get probability distribution from sentence embedding.
-
-        Args:
-            text: Input text to encode
-
-        Returns:
-            Normalized probability distribution from embedding
-        """
-        # Get embedding and convert to numpy
-        embedding = (
-            self.semantic_model.encode(text, convert_to_tensor=True)
-            .cpu()
-            .numpy()
-        )
-
-        # Normalize to create a probability distribution
-        # Using softmax to ensure positive values that sum to 1
-        prob_dist = F.softmax(torch.tensor(embedding), dim=0).numpy()
-
-        return prob_dist
-
-    def _analyze_semantic_surprise(
-        self,
-        current_text: str,
-        previous_texts: List[str],
-        surprise_threshold: float = 2.0,
-    ) -> SurpriseMetrics:
-        """Analyze semantic surprise using KL divergence of embeddings.
-
-        Args:
-            current_text: The current output text
-            previous_texts: List of previous outputs
-            surprise_threshold: Threshold for considering output surprising
-
-        Returns:
-            SurpriseMetrics containing surprise analysis results
-        """
-        # Get probability distribution for current text
-        current_dist = self._get_semantic_distribution(current_text)
-
-        # Initialize surprise metrics
-        surprise_values = []
-
-        # Use all history if window_size is None
-        if self.analyze_window is None:
-            texts_to_compare = previous_texts
-        else:
-            # Calculate surprise against previous texts in window
-            start_idx = max(0, len(previous_texts) - self.analyze_window)
-            texts_to_compare = previous_texts[start_idx:]
-
-        # Calculate surprise against previous texts in window
-        for prev_text in texts_to_compare:
-            prev_dist = self._get_semantic_distribution(prev_text)
-            # Calculate KL divergence (semantic surprise)
-            # Add small epsilon to avoid division by zero
-            epsilon = 1e-10
-            surprise = entropy(current_dist + epsilon, prev_dist + epsilon)
-            surprise_values.append(surprise)
-
-        # Calculate average surprise if we have values
-        if surprise_values:
-            avg_surprise = np.mean(surprise_values)
-            max_surprise = np.max(surprise_values)
-        else:
-            avg_surprise = 0.0
-            max_surprise = 0.0
-
-        return SurpriseMetrics(
-            semantic_surprise=avg_surprise,
-            max_semantic_surprise=max_surprise,
-            is_surprising=avg_surprise > surprise_threshold,
-        )
-
     def _analyze_token_perplexity(
         self,
         text: str,
@@ -289,7 +212,6 @@ class SimilarityAnalyzer:
         # Initialize optional metrics
         lexical_metrics = None
         semantic_metrics = None
-        surprise_metrics = None
         token_perplexity_metrics = None
 
         if previous_texts:
@@ -303,11 +225,6 @@ class SimilarityAnalyzer:
                 current_text, previous_texts
             )
 
-            # Get surprise metrics
-            surprise_metrics = self._analyze_semantic_surprise(
-                current_text, previous_texts
-            )
-
         # Get token perplexity metrics
         token_perplexity_metrics = self._analyze_token_perplexity(current_text)
 
@@ -315,6 +232,5 @@ class SimilarityAnalyzer:
             word_stats=word_stats,
             lexical=lexical_metrics,
             semantic=semantic_metrics,
-            surprise=surprise_metrics,
             token_perplexity=token_perplexity_metrics,
         )

@@ -129,13 +129,18 @@ class DriftExperiment:
         ):
             role = initial_messages[i]["role"]
             content = initial_messages[i]["content"]
+
+            # Analyze content
+            analysis = self.analyzer.analyze(content)
+
+            # Store results
             metrics.append(
                 Metric(
                     iteration=i,
                     timestamp=datetime.now(),
                     role=role,
                     response=content,
-                    analysis=self.analyzer.analyze(content),
+                    analysis=analysis,
                     config=self.config,
                 )
             )

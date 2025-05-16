@@ -2,7 +2,6 @@
 
 import logging
 
-import numpy as np
 import pytest
 
 from babel_ai.analyzer import SimilarityAnalyzer
@@ -10,7 +9,6 @@ from babel_ai.models import (
     AnalysisResult,
     LexicalMetrics,
     SemanticMetrics,
-    SurpriseMetrics,
     TokenPerplexityMetrics,
     WordStats,
 )
@@ -99,33 +97,6 @@ def test_analyze_semantic_similarity(analyzer):
     assert result.is_repetitive is True
 
 
-def test_get_semantic_distribution(analyzer):
-    """Test semantic distribution generation."""
-    text = "The quick brown fox"
-    dist = analyzer._get_semantic_distribution(text)
-
-    assert isinstance(dist, np.ndarray)
-    assert np.all(dist >= 0)
-    assert np.isclose(np.sum(dist), 1.0)
-
-
-def test_analyze_semantic_surprise(analyzer):
-    """Test semantic surprise analysis."""
-    current_text = "The quick brown fox"
-    previous_texts = ["A fast brown fox", "A lazy dog"]
-
-    result = analyzer._analyze_semantic_surprise(current_text, previous_texts)
-
-    assert isinstance(result, SurpriseMetrics)
-    assert isinstance(result.semantic_surprise, float)
-    assert isinstance(result.max_semantic_surprise, float)
-    assert isinstance(result.is_surprising, bool)
-
-    assert result.semantic_surprise >= 0
-    assert result.max_semantic_surprise >= 0
-    assert result.is_surprising is False
-
-
 def test_analyze_full(analyzer):
     """Test the full analysis pipeline."""
     outputs = ["The quick brown fox", "A fast brown fox", "A lazy dog"]
@@ -136,7 +107,6 @@ def test_analyze_full(analyzer):
     assert isinstance(result.word_stats, WordStats)
     assert isinstance(result.lexical, LexicalMetrics)
     assert isinstance(result.semantic, SemanticMetrics)
-    assert isinstance(result.surprise, SurpriseMetrics)
     assert isinstance(result.token_perplexity, TokenPerplexityMetrics)
     assert isinstance(result.token_perplexity.avg_token_perplexity, float)
     assert result.token_perplexity.avg_token_perplexity >= 1.0
@@ -160,7 +130,6 @@ def test_analyze_single_output(analyzer):
     assert isinstance(result, AnalysisResult)
     assert result.lexical is None
     assert result.semantic is None
-    assert result.surprise is None
     assert isinstance(result.word_stats, WordStats)
     assert isinstance(result.token_perplexity, TokenPerplexityMetrics)
     assert isinstance(result.token_perplexity.avg_token_perplexity, float)
