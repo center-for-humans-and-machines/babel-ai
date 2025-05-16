@@ -59,6 +59,14 @@ class SurpriseMetrics(BaseModel):
     )
 
 
+class BayesianSurpriseMetrics(BaseModel):
+    """Metrics for Bayesian surprise analysis."""
+
+    semantic_surprise: float = Field(
+        description="Average KL divergence from previous texts",
+    )
+
+
 class TokenPerplexityMetrics(BaseModel):
     """Metrics for token perplexity analysis."""
 
@@ -75,6 +83,7 @@ class AnalysisResult(BaseModel):
     lexical: Optional[LexicalMetrics] = None
     semantic: Optional[SemanticMetrics] = None
     surprise: Optional[SurpriseMetrics] = None
+    bayesian_surprise: Optional[BayesianSurpriseMetrics] = None
     token_perplexity: Optional[TokenPerplexityMetrics] = None
 
 
@@ -151,6 +160,15 @@ class Metric(BaseModel):
                     "semantic_surprise": self.analysis.surprise.semantic_surprise,  # noqa: E501
                     "max_semantic_surprise": self.analysis.surprise.max_semantic_surprise,  # noqa: E501
                     "is_surprising": self.analysis.surprise.is_surprising,
+                }
+            )
+
+        # Add bayesian surprise metrics if available
+        if self.analysis.bayesian_surprise:
+            result.update(
+                {
+                    "bayesian_surprise_semantic_surprise": self.analysis.bayesian_surprise.semantic_surprise,  # noqa: E501
+                    "bayesian_surprise_max_semantic_surprise": self.analysis.bayesian_surprise.max_semantic_surprise,  # noqa: E501
                 }
             )
 

@@ -9,10 +9,15 @@ import torch.nn.functional as F
 from scipy.stats import entropy
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import cos_sim
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import (
+    AutoModelForCausalLM,
+    AutoModelForMaskedLM,
+    AutoTokenizer,
+)
 
 from .models import (
     AnalysisResult,
+    BayesianSurpriseMetrics,
     LexicalMetrics,
     SemanticMetrics,
     SurpriseMetrics,
@@ -30,23 +35,39 @@ class SimilarityAnalyzer:
         self,
         semantic_model: str = "all-MiniLM-L6-v2",
         analyze_window: int = 20,
-        token_model: str = "gpt2",
+        bayesian_surprise_model: str = "answerdotai/ModernBERT-base",
+        perplexity_model: str = "gpt2",
     ):
         """Initialize the SimilarityAnalyzer.
 
         Args:
             semantic_model: Name of the sentence-transformer model to use
             analyze_window: Number of previous texts to analyze
-            token_model: Name of the model to use for token likelihood
+            bayesian_surprise_model: Name of the model to use for Bayesian
+                surprise
+            perplexity_model: Name of the model to use for perplexity
         """
         self._model_name = semantic_model
         self.semantic_model = SentenceTransformer(self._model_name)
         self.analyze_window = analyze_window
 
-        # Initialize token model and tokenizer
-        self.token_model = AutoModelForCausalLM.from_pretrained(token_model)
-        self.tokenizer = AutoTokenizer.from_pretrained(token_model)
-        self.token_model.eval()  # Set to evaluation mode
+        # Initialize BERT model for Bayesian surprise
+        self.bayesian_model = AutoModelForMaskedLM.from_pretrained(
+            bayesian_surprise_model
+        )
+        self.bayesian_tokenizer = AutoTokenizer.from_pretrained(
+            bayesian_surprise_model
+        )
+        self.bayesian_model.eval()  # Set to evaluation mode
+
+        # Initialize GPT-2 model for perplexity
+        self.perplexity_model = AutoModelForCausalLM.from_pretrained(
+            perplexity_model
+        )
+        self.perplexity_tokenizer = AutoTokenizer.from_pretrained(
+            perplexity_model
+        )
+        self.perplexity_model.eval()  # Set to evaluation mode
 
     def _analyze_word_stats(self, text: str) -> WordStats:
         """Analyze basic word statistics of the text.
@@ -217,11 +238,121 @@ class SimilarityAnalyzer:
             is_surprising=avg_surprise > surprise_threshold,
         )
 
+    def _analyze_bayesian_surprise(
+        self,
+        current_text: str,
+        previous_texts: List[str],
+    ) -> BayesianSurpriseMetrics:
+        """Analyze Bayesian surprise using masked language modeling.
+
+        Concatenates all previous texts as context,
+        then computes KL divergence between the model's predictions
+        with and without masking the current text.
+
+        Args:
+            current_text: The current output text
+            previous_texts: List of previous outputs
+
+        Returns:
+            BayesianSurpriseMetrics:
+                containing Bayesian surprise analysis results
+        """
+        with torch.no_grad():
+            # Use all history if window_size is None
+            if self.analyze_window is None:
+                texts_to_compare = previous_texts
+            else:
+                start_masking_idx = max(
+                    0, len(previous_texts) - self.analyze_window
+                )
+                texts_to_compare = previous_texts[start_masking_idx:]
+
+            # Concatenate all previous texts as context
+            context = " ".join(texts_to_compare)
+
+            # Concatenate context with current text
+            concat_text = f"{context} {current_text}"
+
+            # Get logits for unmasked version
+            unmasked_inputs = self.bayesian_tokenizer(
+                concat_text, return_tensors="pt"
+            )
+            unmasked_outputs = self.bayesian_model(**unmasked_inputs)
+            unmasked_logits = unmasked_outputs.logits
+
+            # Get the token size of context
+            context_tokens = self.bayesian_tokenizer(
+                context, return_tensors="pt"
+            )
+            masked_size = len(unmasked_inputs["input_ids"][0]) - len(
+                context_tokens["input_ids"][0]
+            )
+
+            # If context ends with space or current text starts with space,
+            # add extra mask token
+            if context.endswith(" ") or current_text.startswith(" "):
+                masked_size += 1
+
+            masked_current = " ".join(
+                [self.bayesian_tokenizer.mask_token] * masked_size
+            )
+            masked_text = f"{context} {masked_current}"
+
+            # Get logits for masked version
+            masked_inputs = self.bayesian_tokenizer(
+                masked_text, return_tensors="pt"
+            )
+            masked_outputs = self.bayesian_model(**masked_inputs)
+            masked_logits = masked_outputs.logits
+
+            assert (
+                masked_inputs["input_ids"].size()
+                == unmasked_inputs["input_ids"].size()
+            ), (
+                f"Masked inputs and unmasked inputs have different sizes: "
+                f"{masked_inputs['input_ids'].size()} != "
+                f"{unmasked_inputs['input_ids'].size()}"
+            )
+
+            # Get the token indices corresponding to the current text
+            start_masking_idx = (
+                len(
+                    self.bayesian_tokenizer(context, return_tensors="pt")[
+                        "input_ids"
+                    ][0]
+                )
+                - 1
+            )
+            analyze_length = 5
+            # Log softmax the logits
+            masked_logits = F.log_softmax(masked_logits, dim=-1)
+            unmasked_logits = F.log_softmax(unmasked_logits, dim=-1)
+
+            kl_divs = []
+
+            for i in range(
+                start_masking_idx, start_masking_idx + analyze_length
+            ):
+
+                probs_masked = masked_logits[0, i]
+                probs_unmasked = unmasked_logits[0, i]
+
+                def kl_div(p, q):
+                    assert len(p) == len(q)
+                    # Vectorized implementation with explicit division
+                    return torch.sum(p * torch.log(p / q))
+
+                kl_divs.append(kl_div(probs_masked, probs_unmasked))
+
+            return BayesianSurpriseMetrics(
+                semantic_surprise=sum(kl_divs),
+            )
+
     def _analyze_token_perplexity(
         self,
         text: str,
     ) -> TokenPerplexityMetrics:
-        """Analyze the perplexity of tokens in the text.
+        """Analyze the perplexity of tokens in the text using GPT-2.
 
         Args:
             text: The text to analyze
@@ -229,46 +360,36 @@ class SimilarityAnalyzer:
         Returns:
             TokenPerplexityMetrics containing perplexity analysis
         """
-        # Function to get token perplexity for a given text
-        def get_token_perplexity(input_text: str) -> float:
-            # Ensure input text is not empty
-            if not input_text:
-                logger.warning(
-                    "Input text is empty. Returning max perplexity."
-                )
-                return float("inf")
+        if not text:
+            logger.warning("Input text is empty. Returning max perplexity.")
+            return TokenPerplexityMetrics(avg_token_perplexity=float("inf"))
 
-            # Tokenize the text
-            inputs = self.tokenizer(input_text, return_tensors="pt")
-            input_ids = inputs["input_ids"]
+        # Tokenize the text using GPT-2 tokenizer
+        inputs = self.perplexity_tokenizer(text, return_tensors="pt")
+        input_ids = inputs["input_ids"]
 
-            # Get model predictions
-            with torch.no_grad():
-                outputs = self.token_model(**inputs)
-                logits = outputs.logits[
-                    0, :-1, :
-                ]  # Shape: [seq_len-1, vocab_size]
+        # Get model predictions
+        with torch.no_grad():
+            outputs = self.perplexity_model(**inputs)
+            logits = outputs.logits[
+                0, :-1, :
+            ]  # Shape: [seq_len-1, vocab_size]
 
-                # Get target tokens (shifted by 1)
-                target_ids = input_ids[0, 1:]
+            # Get target tokens (shifted by 1)
+            target_ids = input_ids[0, 1:]
 
-                # Calculate log probabilities
-                log_probs = F.log_softmax(logits, dim=-1)
-                token_log_probs = log_probs[
-                    torch.arange(len(target_ids)), target_ids
-                ]
+            # Calculate log probabilities
+            log_probs = F.log_softmax(logits, dim=-1)
+            token_log_probs = log_probs[
+                torch.arange(len(target_ids)), target_ids
+            ]
 
-                # Calculate perplexity: exp(-mean(log_probs))
-                avg_log_prob = token_log_probs.mean().item()
-                perplexity = np.exp(-avg_log_prob)
-
-                return perplexity
-
-        # Get perplexity for current text
-        avg_perplexity = get_token_perplexity(text)
+            # Calculate perplexity: exp(-mean(log_probs))
+            avg_log_prob = token_log_probs.mean().item()
+            perplexity = np.exp(-avg_log_prob)
 
         return TokenPerplexityMetrics(
-            avg_token_perplexity=avg_perplexity,
+            avg_token_perplexity=perplexity,
         )
 
     def analyze(self, outputs: List[str]) -> AnalysisResult:
@@ -290,6 +411,7 @@ class SimilarityAnalyzer:
         lexical_metrics = None
         semantic_metrics = None
         surprise_metrics = None
+        bayesian_surprise_metrics = None
         token_perplexity_metrics = None
 
         if previous_texts:
@@ -308,6 +430,11 @@ class SimilarityAnalyzer:
                 current_text, previous_texts
             )
 
+            # Get Bayesian surprise metrics
+            bayesian_surprise_metrics = self._analyze_bayesian_surprise(
+                current_text, previous_texts
+            )
+
         # Get token perplexity metrics
         token_perplexity_metrics = self._analyze_token_perplexity(current_text)
 
@@ -316,5 +443,6 @@ class SimilarityAnalyzer:
             lexical=lexical_metrics,
             semantic=semantic_metrics,
             surprise=surprise_metrics,
+            bayesian_surprise=bayesian_surprise_metrics,
             token_perplexity=token_perplexity_metrics,
         )
