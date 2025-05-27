@@ -45,17 +45,12 @@ class SemanticMetrics(BaseModel):
     )
 
 
-class SurpriseMetrics(BaseModel):
-    """Metrics for semantic surprise analysis."""
+class TokenPerplexityMetrics(BaseModel):
+    """Metrics for token perplexity analysis."""
 
-    semantic_surprise: float = Field(
-        description="Average KL divergence from previous texts", ge=0.0
-    )
-    max_semantic_surprise: float = Field(
-        description="Maximum KL divergence from previous texts", ge=0.0
-    )
-    is_surprising: bool = Field(
-        description="Whether the text is considered surprising"
+    avg_token_perplexity: float = Field(
+        description="Average perplexity of all tokens in the text",
+        ge=1.0,  # Perplexity is always >= 1
     )
 
 
@@ -65,7 +60,7 @@ class AnalysisResult(BaseModel):
     word_stats: WordStats
     lexical: Optional[LexicalMetrics] = None
     semantic: Optional[SemanticMetrics] = None
-    surprise: Optional[SurpriseMetrics] = None
+    token_perplexity: Optional[TokenPerplexityMetrics] = None
 
 
 class ExperimentConfig(BaseModel):
@@ -134,13 +129,11 @@ class Metric(BaseModel):
                 }
             )
 
-        # Add surprise metrics if available
-        if self.analysis.surprise:
+        # Add token perplexity metrics if available
+        if self.analysis.token_perplexity:
             result.update(
                 {
-                    "semantic_surprise": self.analysis.surprise.semantic_surprise,  # noqa: E501
-                    "max_semantic_surprise": self.analysis.surprise.max_semantic_surprise,  # noqa: E501
-                    "is_surprising": self.analysis.surprise.is_surprising,
+                    "avg_token_perplexity": self.analysis.token_perplexity.avg_token_perplexity,  # noqa: E501
                 }
             )
 

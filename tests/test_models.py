@@ -11,7 +11,7 @@ from babel_ai.models import (
     LexicalMetrics,
     Metric,
     SemanticMetrics,
-    SurpriseMetrics,
+    TokenPerplexityMetrics,
     WordStats,
 )
 
@@ -113,36 +113,21 @@ class TestSemanticMetrics:
             )
 
 
-class TestSurpriseMetrics:
-    """Test the SurpriseMetrics model."""
+class TestTokenPerplexityMetrics:
+    """Test the TokenPerplexityMetrics model."""
 
-    def test_valid_surprise_metrics(self):
-        """Test creating a valid SurpriseMetrics instance."""
-        metrics = SurpriseMetrics(
-            semantic_surprise=0.5,
-            max_semantic_surprise=0.8,
-            is_surprising=True,
+    def test_valid_token_perplexity_metrics(self):
+        """Test creating a valid TokenPerplexityMetrics instance."""
+        metrics = TokenPerplexityMetrics(
+            avg_token_perplexity=10.0,
         )
-        assert metrics.semantic_surprise == 0.5
-        assert metrics.max_semantic_surprise == 0.8
-        assert metrics.is_surprising is True
+        assert metrics.avg_token_perplexity == 10.0
 
-    def test_invalid_semantic_surprise(self):
-        """Test that semantic_surprise must be >= 0."""
+    def test_invalid_perplexity(self):
+        """Test that perplexity must be >= 1."""
         with pytest.raises(ValidationError):
-            SurpriseMetrics(
-                semantic_surprise=-0.1,  # Invalid: < 0.0
-                max_semantic_surprise=0.8,
-                is_surprising=True,
-            )
-
-    def test_invalid_max_semantic_surprise(self):
-        """Test that max_semantic_surprise must be >= 0."""
-        with pytest.raises(ValidationError):
-            SurpriseMetrics(
-                semantic_surprise=0.5,
-                max_semantic_surprise=-0.1,  # Invalid: < 0.0
-                is_surprising=True,
+            TokenPerplexityMetrics(
+                avg_token_perplexity=0.5,  # Invalid: < 1.0
             )
 
 
@@ -160,7 +145,7 @@ class TestAnalysisResult:
         assert analysis.word_stats == word_stats
         assert analysis.lexical is None
         assert analysis.semantic is None
-        assert analysis.surprise is None
+        assert analysis.token_perplexity is None
 
     def test_analysis_result_with_all_metrics(self):
         """Test creating an AnalysisResult with all metrics."""
@@ -171,21 +156,19 @@ class TestAnalysisResult:
         )
         lexical = LexicalMetrics(similarity=0.75, is_repetitive=True)
         semantic = SemanticMetrics(similarity=0.65, is_repetitive=False)
-        surprise = SurpriseMetrics(
-            semantic_surprise=0.5,
-            max_semantic_surprise=0.8,
-            is_surprising=True,
+        token_perplexity = TokenPerplexityMetrics(
+            avg_token_perplexity=10.0,
         )
         analysis = AnalysisResult(
             word_stats=word_stats,
             lexical=lexical,
             semantic=semantic,
-            surprise=surprise,
+            token_perplexity=token_perplexity,
         )
         assert analysis.word_stats == word_stats
         assert analysis.lexical == lexical
         assert analysis.semantic == semantic
-        assert analysis.surprise == surprise
+        assert analysis.token_perplexity == token_perplexity
 
 
 class TestExperimentConfig:
@@ -341,16 +324,14 @@ class TestMetric:
         )
         lexical = LexicalMetrics(similarity=0.75, is_repetitive=True)
         semantic = SemanticMetrics(similarity=0.65, is_repetitive=False)
-        surprise = SurpriseMetrics(
-            semantic_surprise=0.5,
-            max_semantic_surprise=0.8,
-            is_surprising=True,
+        token_perplexity = TokenPerplexityMetrics(
+            avg_token_perplexity=10.0,
         )
         analysis = AnalysisResult(
             word_stats=word_stats,
             lexical=lexical,
             semantic=semantic,
-            surprise=surprise,
+            token_perplexity=token_perplexity,
         )
         timestamp = datetime.now()
         config = ExperimentConfig(temperature=0.9)
@@ -377,7 +358,5 @@ class TestMetric:
         assert result["is_repetitive"] is True
         assert result["semantic_similarity"] == 0.65
         assert result["is_semantically_repetitive"] is False
-        assert result["semantic_surprise"] == 0.5
-        assert result["max_semantic_surprise"] == 0.8
-        assert result["is_surprising"] is True
+        assert result["avg_token_perplexity"] == 10.0
         assert result["temperature"] == 0.9
