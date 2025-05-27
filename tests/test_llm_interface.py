@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.babel_ai.llm_interface import LLMInterface
+from babel_ai.llm_interface import LLMInterface
 
 
 @pytest.fixture
