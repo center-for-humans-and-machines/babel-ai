@@ -64,7 +64,20 @@ class AnalysisResult(BaseModel):
 
 
 class ExperimentConfig(BaseModel):
-    """Configuration for the drift experiment."""
+    """Configuration for the drift experiment.
+
+    Attributes:
+        provider:               Name of the provider to use (e.g. 'openai', 'azure', 'ollama', 'raven')  # noqa: E501
+        model:                  Name of the model to use (e.g. 'gpt-4', 'llama2', 'llama3.3:70b')  # noqa: E501
+        temperature:            Sampling temperature for generation (0.0 to 2.0)
+        max_tokens:             Maximum number of tokens to generate per response (1 to 10000)
+        frequency_penalty:      Penalty for token frequency (-2.0 to 2.0)
+        presence_penalty:       Penalty for token presence (-2.0 to 2.0)
+        top_p:                  Top-p sampling parameter (0.0 to 1.0)
+        max_iterations:         Maximum number of back-and-forth iterations
+        max_total_characters:   Maximum total characters across all responses
+        analyze_window:         Number of previous responses to analyze for drift
+    """
 
     provider: str = (Field(description="Name of the provider to use"),)
     model: str = (Field(description="Name of the model to use"),)
