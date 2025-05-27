@@ -46,6 +46,11 @@ class SimilarityAnalyzer:
         self.tokenizer = AutoTokenizer.from_pretrained(token_model)
         self.token_model.eval()  # Set to evaluation mode
 
+        # Model configuration
+        self.max_context_length = (
+            self.token_model.config.max_position_embeddings
+        )
+
     def _analyze_word_stats(self, text: str) -> WordStats:
         """Analyze basic word statistics of the text.
 
@@ -152,47 +157,65 @@ class SimilarityAnalyzer:
         Returns:
             TokenPerplexityMetrics containing perplexity analysis
         """
-        # Function to get token perplexity for a given text
-        def get_token_perplexity(input_text: str) -> float:
-            # Ensure input text is not empty
-            if not input_text:
-                logger.warning(
-                    "Input text is empty. Returning max perplexity."
-                )
-                return float("inf")
+        # Ensure input text is not empty
+        if not text:
+            logger.warning("Input text is empty. Returning max perplexity.")
+            return TokenPerplexityMetrics(avg_token_perplexity=float("inf"))
 
-            # Tokenize the text
-            inputs = self.tokenizer(input_text, return_tensors="pt")
-            input_ids = inputs["input_ids"]
+        # Tokenize the text
+        inputs = self.tokenizer(text, return_tensors="pt")
+        input_ids = inputs["input_ids"]
 
-            # Get model predictions
-            with torch.no_grad():
-                outputs = self.token_model(**inputs)
-                logits = outputs.logits[
-                    0, :-1, :
-                ]  # Shape: [seq_len-1, vocab_size]
+        # Check if we have enough tokens for perplexity calculation
+        if input_ids.shape[1] < 2:
+            logger.warning(
+                "Input text has only one token. Perplexity calculation "
+                "requires at least two tokens. Returning max perplexity."
+            )
+            return TokenPerplexityMetrics(avg_token_perplexity=float("inf"))
 
-                # Get target tokens (shifted by 1)
-                target_ids = input_ids[0, 1:]
+        if len(text) > self.max_context_length:
+            logger.warning(
+                f"Input text exceeds maximum context length of "
+                f"{self.max_context_length} tokens. Splitting into chunks."
+            )
+            first_block = text[: self.max_context_length]
+            second_block = text[self.max_context_length :]
 
-                # Calculate log probabilities
-                log_probs = F.log_softmax(logits, dim=-1)
-                token_log_probs = log_probs[
-                    torch.arange(len(target_ids)), target_ids
-                ]
+            perplexities = [
+                self._analyze_token_perplexity(
+                    first_block
+                ).avg_token_perplexity,
+                self._analyze_token_perplexity(
+                    second_block
+                ).avg_token_perplexity,
+            ]
 
-                # Calculate perplexity: exp(-mean(log_probs))
-                avg_log_prob = token_log_probs.mean().item()
-                perplexity = np.exp(-avg_log_prob)
+            return TokenPerplexityMetrics(
+                avg_token_perplexity=np.mean(perplexities)
+            )
 
-                return perplexity
+        # Get model predictions
+        with torch.no_grad():
+            outputs = self.token_model(**inputs)
+            logits = outputs.logits[
+                0, :-1, :
+            ]  # Shape: [seq_len-1, vocab_size]
 
-        # Get perplexity for current text
-        avg_perplexity = get_token_perplexity(text)
+            # Get target tokens (shifted by 1)
+            target_ids = input_ids[0, 1:]
 
-        return TokenPerplexityMetrics(
-            avg_token_perplexity=avg_perplexity,
-        )
+            # Calculate log probabilities
+            log_probs = F.log_softmax(logits, dim=-1)
+            token_log_probs = log_probs[
+                torch.arange(len(target_ids)), target_ids
+            ]
+
+            # Calculate perplexity: exp(-mean(log_probs))
+            avg_log_prob = token_log_probs.mean().item()
+            perplexity = np.exp(-avg_log_prob)
+
+        return TokenPerplexityMetrics(avg_token_perplexity=perplexity)
 
     def analyze(self, outputs: List[str]) -> AnalysisResult:
         """Orchestrate different analysis methods on the outputs.

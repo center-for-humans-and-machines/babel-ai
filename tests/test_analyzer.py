@@ -155,3 +155,48 @@ def test_token_perplexity_empty_text(analyzer, caplog):
 
     assert isinstance(result, TokenPerplexityMetrics)
     assert result.avg_token_perplexity == float("inf")
+
+
+def test_token_perplexity_single_token(analyzer, caplog):
+    """Test token perplexity analysis with single token input."""
+    text = "hello"
+    with caplog.at_level(logging.WARNING):
+        result = analyzer._analyze_token_perplexity(text)
+        assert (
+            "Input text has only one token. Perplexity calculation "
+            "requires at least two tokens. Returning max perplexity."
+        ) in caplog.text
+
+    assert isinstance(result, TokenPerplexityMetrics)
+    assert result.avg_token_perplexity == float("inf")
+
+
+def test_token_perplexity_long_text(analyzer):
+    """Test token perplexity analysis with a very long input."""
+
+    # Create a long text by repeating a sentence multiple times
+    smaller_then_model_context_text = " ".join(["a"] * 100)  # 50 repetitions
+    equal_to_model_context_text = " ".join(["a"] * analyzer.max_context_length)
+    larger_then_model_context_text = " ".join(
+        ["a"] * (analyzer.max_context_length * 2)
+    )
+
+    small_result = analyzer._analyze_token_perplexity(
+        smaller_then_model_context_text
+    )
+
+    equal_result = analyzer._analyze_token_perplexity(
+        equal_to_model_context_text
+    )
+
+    larger_result = analyzer._analyze_token_perplexity(
+        larger_then_model_context_text
+    )
+
+    assert small_result.avg_token_perplexity >= 1.0
+    assert equal_result.avg_token_perplexity >= 1.0
+    assert larger_result.avg_token_perplexity >= 1.0
+
+    assert (
+        equal_result.avg_token_perplexity == larger_result.avg_token_perplexity
+    )
