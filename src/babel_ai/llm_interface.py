@@ -4,7 +4,7 @@ import logging
 from typing import Dict, List
 
 from api.azure_openai import azure_openai_request
-from api.ollama import ollama_request
+from api.ollama import ollama_request, raven_ollama_request
 from api.openai import openai_request
 
 logger = logging.getLogger(__name__)
@@ -65,6 +65,8 @@ class LLMInterface:
                 f = openai_request
             case "ollama":
                 f = ollama_request
+            case "raven":
+                f = raven_ollama_request
             case "azure":
                 f = azure_openai_request
 
