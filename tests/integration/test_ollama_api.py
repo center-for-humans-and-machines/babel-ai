@@ -44,17 +44,22 @@ def test_basic_streaming_functionality():
 
 def test_raven_server_api():
     """Test API functionality with Raven server endpoint."""
+    import time
+
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "Say 'Hello, this is a test!'"},
     ]
 
+    start_time = time.time()
     response = raven_ollama_request(
         messages=messages,
         api_base_url="https://hpc-llm-inference-fastapi.chm.mpib-berlin.mpg.de/v1",  # noqa: E501
         model="llama3.3:70b",
         endpoint="chat/completions",
     )
+    end_time = time.time()
+    print(f"Response time: {end_time - start_time:.2f} seconds")
 
     assert response is not None
     assert isinstance(response, str)

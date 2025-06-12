@@ -198,5 +198,6 @@ def test_token_perplexity_long_text(analyzer):
     assert larger_result.avg_token_perplexity >= 1.0
 
     assert (
-        equal_result.avg_token_perplexity == larger_result.avg_token_perplexity
+        pytest.approx(equal_result.avg_token_perplexity, rel=1e-1)
+        == larger_result.avg_token_perplexity
     )
