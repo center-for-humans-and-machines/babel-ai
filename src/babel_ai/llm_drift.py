@@ -131,7 +131,9 @@ class DriftExperiment:
             content = initial_messages[i]["content"]
 
             # Analyze content
-            analysis = self.analyzer.analyze(content)
+            analysis = self.analyzer.analyze(
+                [message["content"] for message in initial_messages[: i + 1]]
+            )
 
             # Store results
             metrics.append(
