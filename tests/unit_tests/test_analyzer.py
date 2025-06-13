@@ -52,7 +52,7 @@ def test_analyze_similarity(analyzer):
     current_text = "The quick brown super good fox"
     previous_texts = ["Other sentence", "The quick brown super fox"]
 
-    result = analyzer._analyze_similarity(current_text, previous_texts)
+    result = analyzer._analyze_lexical_similarity(current_text, previous_texts)
 
     assert isinstance(result, LexicalMetrics)
     assert result.similarity == 5 / 6  # 5 intersection words and 6 union words
@@ -62,7 +62,7 @@ def test_analyze_similarity(analyzer):
     current_text = "The quick brown fox"
     previous_texts = ["Other sentence", "The unsimilar fox"]
 
-    result = analyzer._analyze_similarity(current_text, previous_texts)
+    result = analyzer._analyze_lexical_similarity(current_text, previous_texts)
 
     assert isinstance(result, LexicalMetrics)
     assert result.similarity == 2 / 5  # 2 intersection words and 5 union words

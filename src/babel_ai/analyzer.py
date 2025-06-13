@@ -69,7 +69,7 @@ class SimilarityAnalyzer:
             coherence_score=len(unique_words) / len(words) if words else 0.0,
         )
 
-    def _analyze_similarity(
+    def _analyze_lexical_similarity(
         self,
         current_text: str,
         previous_texts: List[str],
@@ -239,7 +239,7 @@ class SimilarityAnalyzer:
 
         if previous_texts:
             # Get lexical metrics
-            lexical_metrics = self._analyze_similarity(
+            lexical_metrics = self._analyze_lexical_similarity(
                 current_text, previous_texts
             )
 
