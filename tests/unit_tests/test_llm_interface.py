@@ -4,21 +4,19 @@ from unittest.mock import patch
 
 import pytest
 
-from babel_ai.llm_interface import LLMInterface
+from api.llm_interface import LLMInterface
 
 
 @pytest.fixture
 def llm_interface():
     """Create an LLMInterface instance for testing."""
-    with patch("babel_ai.llm_interface.openai_request") as mock_request:
-        with patch(
-            "babel_ai.llm_interface.ollama_request"
-        ) as mock_ollama_request:
+    with patch("api.llm_interface.openai_request") as mock_request:
+        with patch("api.llm_interface.ollama_request") as mock_ollama_request:
             with patch(
-                "babel_ai.llm_interface.raven_ollama_request"
+                "api.llm_interface.raven_ollama_request"
             ) as mock_raven_request:
                 with patch(
-                    "babel_ai.llm_interface.azure_openai_request"
+                    "api.llm_interface.azure_openai_request"
                 ) as mock_azure_request:
                     mock_request.return_value = "Test response"
                     mock_ollama_request.return_value = "Test response"

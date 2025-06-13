@@ -21,8 +21,8 @@ try:
 except ImportError:
     TQDM_AVAILABLE = False
 
+from api.llm_interface import LLMInterface
 from babel_ai.analyzer import SimilarityAnalyzer
-from babel_ai.llm_interface import LLMInterface
 from babel_ai.models import ExperimentConfig, Metric
 from babel_ai.prompt_fetcher import BasePromptFetcher, PromptFetcher
 

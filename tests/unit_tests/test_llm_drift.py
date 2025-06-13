@@ -7,9 +7,9 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
+from api.llm_interface import LLMInterface
 from babel_ai.analyzer import SimilarityAnalyzer
 from babel_ai.llm_drift import DriftExperiment
-from babel_ai.llm_interface import LLMInterface
 from babel_ai.models import (
     AnalysisResult,
     ExperimentConfig,
