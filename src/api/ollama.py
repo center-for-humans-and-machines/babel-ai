@@ -23,10 +23,15 @@ class OllamaModel(Enum):
 
     LLAMA3 = "llama3"
     LLAMA3_8B = "llama3:8b"
-    LLAMA3_70B = "llama3:70b"
     MISTRAL = "mistral"
+    MISTRAL_7B = "mistral:7b-instruct"
+    MISTRAL_7B_TEXT = "mistral:7b-text"
     MIXTRAL = "mixtral"
-    LLAMA33_70B = "llama3.3:70b"  # Used by Raven
+    LLAMA3_70B = "llama3:70b"
+    LLAMA3_70B_TEXT = "llama3:70b-text"
+    LLAMA33_70B = "llama3.3:70b"
+    DEEPSEEK_R1 = "deepseek-r1:70b"
+    GPT_2_1_5B = "gpt2:1.5b"
 
 
 def ollama_request(
