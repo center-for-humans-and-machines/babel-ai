@@ -6,7 +6,7 @@ functionality and API compatibility.
 
 import os
 
-from api.azure_openai import azure_openai_request
+from api.azure_openai import AzureModel, azure_openai_request
 
 
 def test_real_api_call_with_different_models_and_default_parameters():
@@ -16,7 +16,7 @@ def test_real_api_call_with_different_models_and_default_parameters():
         {"role": "user", "content": "Say 'Hello, this is a test!'"},
     ]
 
-    models = ["gpt-4o-2024-08-06"]
+    models = [AzureModel.GPT4O_2024_08_06]
 
     for model in models:
         response = azure_openai_request(
