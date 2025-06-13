@@ -4,27 +4,35 @@ from unittest.mock import patch
 
 import pytest
 
-from src.babel_ai.llm_interface import LLMInterface
+from babel_ai.llm_interface import LLMInterface
 
 
 @pytest.fixture
 def llm_interface():
     """Create an LLMInterface instance for testing."""
-    with patch("src.babel_ai.llm_interface.openai_request") as mock_request:
+    with patch("babel_ai.llm_interface.openai_request") as mock_request:
         with patch(
-            "src.babel_ai.llm_interface.ollama_request"
+            "babel_ai.llm_interface.ollama_request"
         ) as mock_ollama_request:
             with patch(
-                "src.babel_ai.llm_interface.azure_openai_request"
-            ) as mock_azure_request:
-                mock_request.return_value = "Test response"
-                mock_ollama_request.return_value = "Test response"
-                mock_azure_request.return_value = "Test response"
-                interface = LLMInterface()
-                interface._mock_request = mock_request
-                interface._mock_ollama_request = mock_ollama_request
-                interface._mock_azure_request = mock_azure_request
-                yield interface
+                "babel_ai.llm_interface.raven_ollama_request"
+            ) as mock_raven_request:
+                with patch(
+                    "babel_ai.llm_interface.azure_openai_request"
+                ) as mock_azure_request:
+                    mock_request.return_value = "Test response"
+                    mock_ollama_request.return_value = "Test response"
+                    mock_raven_request.return_value = "Test response"
+                    mock_azure_request.return_value = "Test response"
+                    interface = LLMInterface()
+                    # Store mocks in a dict for easy access
+                    interface.mocks = {
+                        "openai": mock_request,
+                        "ollama": mock_ollama_request,
+                        "raven": mock_raven_request,
+                        "azure": mock_azure_request,
+                    }
+                    yield interface
 
 
 def test_generate_with_default_params(llm_interface):
@@ -37,7 +45,7 @@ def test_generate_with_default_params(llm_interface):
     assert response == "Test response"
 
     # Verify azure_openai_request was called with correct parameters
-    mock_request = llm_interface._mock_request
+    mock_request = llm_interface.mocks["openai"]
     mock_request.assert_called_once()
     call_args = mock_request.call_args[1]
     assert call_args["messages"] == [{"role": "user", "content": prompt}]
@@ -52,7 +60,18 @@ def test_generate_with_default_params(llm_interface):
 def test_ollama_backend(llm_interface):
     """Test that LLMInterface works with Ollama backend."""
     response = llm_interface.generate("test", provider="ollama")
-    llm_interface._mock_ollama_request.assert_called_once()
+    mock_ollama_request = llm_interface.mocks["ollama"]
+    mock_ollama_request.assert_called_once()
+
+    # Verify response
+    assert response == "Test response"
+
+
+def test_raven_backend(llm_interface):
+    """Test that LLMInterface works with Raven backend."""
+    response = llm_interface.generate("test", provider="raven")
+    mock_raven_request = llm_interface.mocks["raven"]
+    mock_raven_request.assert_called_once()
 
     # Verify response
     assert response == "Test response"
@@ -61,7 +80,8 @@ def test_ollama_backend(llm_interface):
 def test_azure_backend(llm_interface):
     """Test that LLMInterface works with Azure backend."""
     response = llm_interface.generate("test", provider="azure")
-    llm_interface._mock_azure_request.assert_called_once()
+    mock_azure_request = llm_interface.mocks["azure"]
+    mock_azure_request.assert_called_once()
 
     # Verify response
     assert response == "Test response"
@@ -70,7 +90,7 @@ def test_azure_backend(llm_interface):
 def test_generate_with_custom_params(llm_interface):
     """Test generate method with custom parameters."""
     # Setup mock response
-    llm_interface._mock_request.return_value = "Custom response"
+    llm_interface.mocks["openai"].return_value = "Custom response"
 
     # Call generate with custom parameters
     prompt = "Custom prompt"
@@ -88,7 +108,7 @@ def test_generate_with_custom_params(llm_interface):
     assert response == "Custom response"
 
     # Verify azure_openai_request was called with correct parameters
-    mock_request = llm_interface._mock_request
+    mock_request = llm_interface.mocks["openai"]
     mock_request.assert_called_once()
     call_args = mock_request.call_args[1]
     assert call_args["messages"] == [{"role": "user", "content": prompt}]

@@ -7,19 +7,19 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from src.babel_ai.analyzer import SimilarityAnalyzer
-from src.babel_ai.llm_drift import DriftExperiment
-from src.babel_ai.llm_interface import LLMInterface
-from src.babel_ai.models import (
+from babel_ai.analyzer import SimilarityAnalyzer
+from babel_ai.llm_drift import DriftExperiment
+from babel_ai.llm_interface import LLMInterface
+from babel_ai.models import (
     AnalysisResult,
     ExperimentConfig,
     LexicalMetrics,
     Metric,
     SemanticMetrics,
-    SurpriseMetrics,
+    TokenPerplexityMetrics,
     WordStats,
 )
-from src.babel_ai.prompt_fetcher import PromptFetcher
+from babel_ai.prompt_fetcher import PromptFetcher
 
 
 @pytest.fixture
@@ -41,10 +41,8 @@ def mock_analyzer():
         ),
         lexical=LexicalMetrics(similarity=0.7, is_repetitive=False),
         semantic=SemanticMetrics(similarity=0.6, is_repetitive=False),
-        surprise=SurpriseMetrics(
-            semantic_surprise=0.3,
-            max_semantic_surprise=0.5,
-            is_surprising=False,
+        token_perplexity=TokenPerplexityMetrics(
+            avg_token_perplexity=10.0,
         ),
     )
     return analyzer

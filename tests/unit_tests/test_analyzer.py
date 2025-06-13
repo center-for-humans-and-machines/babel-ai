@@ -1,6 +1,7 @@
 """Tests for the analyzer module."""
 
-import numpy as np
+import logging
+
 import pytest
 
 from babel_ai.analyzer import SimilarityAnalyzer
@@ -8,7 +9,7 @@ from babel_ai.models import (
     AnalysisResult,
     LexicalMetrics,
     SemanticMetrics,
-    SurpriseMetrics,
+    TokenPerplexityMetrics,
     WordStats,
 )
 
@@ -51,7 +52,7 @@ def test_analyze_similarity(analyzer):
     current_text = "The quick brown super good fox"
     previous_texts = ["Other sentence", "The quick brown super fox"]
 
-    result = analyzer._analyze_similarity(current_text, previous_texts)
+    result = analyzer._analyze_lexical_similarity(current_text, previous_texts)
 
     assert isinstance(result, LexicalMetrics)
     assert result.similarity == 5 / 6  # 5 intersection words and 6 union words
@@ -61,7 +62,7 @@ def test_analyze_similarity(analyzer):
     current_text = "The quick brown fox"
     previous_texts = ["Other sentence", "The unsimilar fox"]
 
-    result = analyzer._analyze_similarity(current_text, previous_texts)
+    result = analyzer._analyze_lexical_similarity(current_text, previous_texts)
 
     assert isinstance(result, LexicalMetrics)
     assert result.similarity == 2 / 5  # 2 intersection words and 5 union words
@@ -96,33 +97,6 @@ def test_analyze_semantic_similarity(analyzer):
     assert result.is_repetitive is True
 
 
-def test_get_semantic_distribution(analyzer):
-    """Test semantic distribution generation."""
-    text = "The quick brown fox"
-    dist = analyzer._get_semantic_distribution(text)
-
-    assert isinstance(dist, np.ndarray)
-    assert np.all(dist >= 0)
-    assert np.isclose(np.sum(dist), 1.0)
-
-
-def test_analyze_semantic_surprise(analyzer):
-    """Test semantic surprise analysis."""
-    current_text = "The quick brown fox"
-    previous_texts = ["A fast brown fox", "A lazy dog"]
-
-    result = analyzer._analyze_semantic_surprise(current_text, previous_texts)
-
-    assert isinstance(result, SurpriseMetrics)
-    assert isinstance(result.semantic_surprise, float)
-    assert isinstance(result.max_semantic_surprise, float)
-    assert isinstance(result.is_surprising, bool)
-
-    assert result.semantic_surprise >= 0
-    assert result.max_semantic_surprise >= 0
-    assert result.is_surprising is False
-
-
 def test_analyze_full(analyzer):
     """Test the full analysis pipeline."""
     outputs = ["The quick brown fox", "A fast brown fox", "A lazy dog"]
@@ -133,7 +107,9 @@ def test_analyze_full(analyzer):
     assert isinstance(result.word_stats, WordStats)
     assert isinstance(result.lexical, LexicalMetrics)
     assert isinstance(result.semantic, SemanticMetrics)
-    assert isinstance(result.surprise, SurpriseMetrics)
+    assert isinstance(result.token_perplexity, TokenPerplexityMetrics)
+    assert isinstance(result.token_perplexity.avg_token_perplexity, float)
+    assert result.token_perplexity.avg_token_perplexity >= 1.0
 
 
 def test_analyze_empty_text(analyzer):
@@ -154,5 +130,74 @@ def test_analyze_single_output(analyzer):
     assert isinstance(result, AnalysisResult)
     assert result.lexical is None
     assert result.semantic is None
-    assert result.surprise is None
     assert isinstance(result.word_stats, WordStats)
+    assert isinstance(result.token_perplexity, TokenPerplexityMetrics)
+    assert isinstance(result.token_perplexity.avg_token_perplexity, float)
+    assert result.token_perplexity.avg_token_perplexity >= 1.0
+
+
+def test_token_perplexity_basic(analyzer):
+    """Test basic token perplexity analysis."""
+    text = "The quick brown fox"
+    result = analyzer._analyze_token_perplexity(text)
+
+    assert isinstance(result, TokenPerplexityMetrics)
+    assert isinstance(result.avg_token_perplexity, float)
+    assert result.avg_token_perplexity >= 1.0
+
+
+def test_token_perplexity_empty_text(analyzer, caplog):
+    """Test token perplexity analysis with empty text."""
+    text = ""
+    with caplog.at_level(logging.WARNING):
+        result = analyzer._analyze_token_perplexity(text)
+        assert "Input text is empty. Returning max perplexity." in caplog.text
+
+    assert isinstance(result, TokenPerplexityMetrics)
+    assert result.avg_token_perplexity == float("inf")
+
+
+def test_token_perplexity_single_token(analyzer, caplog):
+    """Test token perplexity analysis with single token input."""
+    text = "hello"
+    with caplog.at_level(logging.WARNING):
+        result = analyzer._analyze_token_perplexity(text)
+        assert (
+            "Input text has only one token. Perplexity calculation "
+            "requires at least two tokens. Returning max perplexity."
+        ) in caplog.text
+
+    assert isinstance(result, TokenPerplexityMetrics)
+    assert result.avg_token_perplexity == float("inf")
+
+
+def test_token_perplexity_long_text(analyzer):
+    """Test token perplexity analysis with a very long input."""
+
+    # Create a long text by repeating a sentence multiple times
+    smaller_then_model_context_text = " ".join(["a"] * 100)  # 50 repetitions
+    equal_to_model_context_text = " ".join(["a"] * analyzer.max_context_length)
+    larger_then_model_context_text = " ".join(
+        ["a"] * (analyzer.max_context_length * 2)
+    )
+
+    small_result = analyzer._analyze_token_perplexity(
+        smaller_then_model_context_text
+    )
+
+    equal_result = analyzer._analyze_token_perplexity(
+        equal_to_model_context_text
+    )
+
+    larger_result = analyzer._analyze_token_perplexity(
+        larger_then_model_context_text
+    )
+
+    assert small_result.avg_token_perplexity >= 1.0
+    assert equal_result.avg_token_perplexity >= 1.0
+    assert larger_result.avg_token_perplexity >= 1.0
+
+    assert (
+        pytest.approx(equal_result.avg_token_perplexity, rel=1e-1)
+        == larger_result.avg_token_perplexity
+    )

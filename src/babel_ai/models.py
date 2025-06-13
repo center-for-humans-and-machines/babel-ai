@@ -45,17 +45,12 @@ class SemanticMetrics(BaseModel):
     )
 
 
-class SurpriseMetrics(BaseModel):
-    """Metrics for semantic surprise analysis."""
+class TokenPerplexityMetrics(BaseModel):
+    """Metrics for token perplexity analysis."""
 
-    semantic_surprise: float = Field(
-        description="Average KL divergence from previous texts", ge=0.0
-    )
-    max_semantic_surprise: float = Field(
-        description="Maximum KL divergence from previous texts", ge=0.0
-    )
-    is_surprising: bool = Field(
-        description="Whether the text is considered surprising"
+    avg_token_perplexity: float = Field(
+        description="Average perplexity of all tokens in the text",
+        ge=1.0,  # Perplexity is always >= 1
     )
 
 
@@ -65,11 +60,24 @@ class AnalysisResult(BaseModel):
     word_stats: WordStats
     lexical: Optional[LexicalMetrics] = None
     semantic: Optional[SemanticMetrics] = None
-    surprise: Optional[SurpriseMetrics] = None
+    token_perplexity: Optional[TokenPerplexityMetrics] = None
 
 
 class ExperimentConfig(BaseModel):
-    """Configuration for the drift experiment."""
+    """Configuration for the drift experiment.
+
+    Attributes:
+        provider:               Name of the provider to use (e.g. 'openai', 'azure', 'ollama', 'raven')  # noqa: E501
+        model:                  Name of the model to use (e.g. 'gpt-4', 'llama2', 'llama3.3:70b')  # noqa: E501
+        temperature:            Sampling temperature for generation (0.0 to 2.0)
+        max_tokens:             Maximum number of tokens to generate per response (1 to 10000)
+        frequency_penalty:      Penalty for token frequency (-2.0 to 2.0)
+        presence_penalty:       Penalty for token presence (-2.0 to 2.0)
+        top_p:                  Top-p sampling parameter (0.0 to 1.0)
+        max_iterations:         Maximum number of back-and-forth iterations
+        max_total_characters:   Maximum total characters across all responses
+        analyze_window:         Number of previous responses to analyze for drift
+    """
 
     provider: str = (Field(description="Name of the provider to use"),)
     model: str = (Field(description="Name of the model to use"),)
@@ -134,13 +142,11 @@ class Metric(BaseModel):
                 }
             )
 
-        # Add surprise metrics if available
-        if self.analysis.surprise:
+        # Add token perplexity metrics if available
+        if self.analysis.token_perplexity:
             result.update(
                 {
-                    "semantic_surprise": self.analysis.surprise.semantic_surprise,  # noqa: E501
-                    "max_semantic_surprise": self.analysis.surprise.max_semantic_surprise,  # noqa: E501
-                    "is_surprising": self.analysis.surprise.is_surprising,
+                    "avg_token_perplexity": self.analysis.token_perplexity.avg_token_perplexity,  # noqa: E501
                 }
             )
 

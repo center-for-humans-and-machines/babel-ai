@@ -21,10 +21,10 @@ try:
 except ImportError:
     TQDM_AVAILABLE = False
 
-from src.babel_ai.analyzer import SimilarityAnalyzer
-from src.babel_ai.llm_interface import LLMInterface
-from src.babel_ai.models import ExperimentConfig, Metric
-from src.babel_ai.prompt_fetcher import BasePromptFetcher, PromptFetcher
+from babel_ai.analyzer import SimilarityAnalyzer
+from babel_ai.llm_interface import LLMInterface
+from babel_ai.models import ExperimentConfig, Metric
+from babel_ai.prompt_fetcher import BasePromptFetcher, PromptFetcher
 
 logger = logging.getLogger(__name__)
 
@@ -129,13 +129,20 @@ class DriftExperiment:
         ):
             role = initial_messages[i]["role"]
             content = initial_messages[i]["content"]
+
+            # Analyze content
+            analysis = self.analyzer.analyze(
+                [message["content"] for message in initial_messages[: i + 1]]
+            )
+
+            # Store results
             metrics.append(
                 Metric(
                     iteration=i,
                     timestamp=datetime.now(),
                     role=role,
                     response=content,
-                    analysis=self.analyzer.analyze(content),
+                    analysis=analysis,
                     config=self.config,
                 )
             )
