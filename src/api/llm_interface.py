@@ -58,63 +58,38 @@ class Provider(Enum):
 ModelType = Union[OpenAIModel, OllamaModel, AzureModel]
 
 
-class LLMInterface:
-    """Protocol defining the interface for LLM providers."""
+def generate_response(
+    messages: List[Dict[str, str]],
+    provider: Provider,
+    model: ModelType,
+    temperature: float = 0.7,
+    max_tokens: int = 100,
+    frequency_penalty: float = 0.0,
+    presence_penalty: float = 0.0,
+    top_p: float = 1.0,
+) -> str:
+    """Generate text response using the specified provider and model.
 
-    def __init__(self):
-        """Initialize the LLM interface."""
-        self.messages: List[Dict[str, str]] = []
+    Args:
+        messages: List of messages in the conversation
+        provider: The LLM provider to use
+        model: The model to use (must be a valid model for the provider)
+        temperature: Sampling temperature
+        max_tokens: Maximum tokens to generate
+        frequency_penalty: Penalty for frequency
+        presence_penalty: Penalty for presence
+        top_p: Top-p sampling parameter
 
-    def generate(
-        self,
-        prompt: str,
-        provider: Provider = Provider.OPENAI,
-        model: ModelType = OpenAIModel.GPT4_1106_PREVIEW,
-        temperature: float = 0.7,
-        max_tokens: int = 100,
-        frequency_penalty: float = 0.0,
-        presence_penalty: float = 0.0,
-        top_p: float = 1.0,
-        swap_roles: bool = True,
-    ) -> str:
-        """Generate text from the given prompt.
-
-        Args:
-            prompt: The input prompt
-            provider: The LLM provider to use
-            model: The model to use (must be a valid model for the provider)
-            temperature: Sampling temperature
-            max_tokens: Maximum tokens to generate
-            frequency_penalty: Penalty for frequency
-            presence_penalty: Penalty for presence
-            top_p: Top-p sampling parameter
-            swap_roles: Whether to swap roles of previous messages
-
-        Returns:
-            Generated text response
-        """
-        if swap_roles and self.messages:
-            # Swap roles of previous messages
-            logger.debug(
-                "Swapping roles of previous messages."
-                f" Role of last message: {self.messages[-1]['role']}"
-            )
-            for message in self.messages:
-                message["role"] = (
-                    "assistant" if message["role"] == "user" else "user"
-                )
-
-        # Add new prompt
-        logger.debug(f"Adding new prompt: {prompt}")
-        self.messages.append({"role": "user", "content": prompt})
-
-        request_function = provider.get_request_function()
-        return request_function(
-            messages=self.messages,
-            model=model,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            frequency_penalty=frequency_penalty,
-            presence_penalty=presence_penalty,
-            top_p=top_p,
-        )
+    Returns:
+        Generated text response
+    """
+    request_function = provider.get_request_function()
+    return request_function(
+        messages=messages,
+        model=model,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        frequency_penalty=frequency_penalty,
+        presence_penalty=presence_penalty,
+        top_p=top_p,
+    )

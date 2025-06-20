@@ -31,7 +31,7 @@ class OllamaModel(Enum):
 
 def ollama_request(
     messages: list,
-    model: OllamaModel = OllamaModel.LLAMA3,
+    model: OllamaModel = OllamaModel.LLAMA3_70B,
     temperature: float = 1.0,
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
@@ -172,7 +172,7 @@ def raven_ollama_request(*args, **kwargs) -> str:
         The generated text response.
     """
     defaults = {
-        "model": OllamaModel.LLAMA33_70B,
+        "model": OllamaModel.LLAMA3_70B,
         "api_base_url": "https://hpc-llm-inference-fastapi.chm.mpib-berlin.mpg.de/v1",  # noqa: E501
         "endpoint": "chat/completions",
     }

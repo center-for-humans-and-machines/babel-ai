@@ -21,7 +21,7 @@ try:
 except ImportError:
     TQDM_AVAILABLE = False
 
-from api.llm_interface import LLMInterface
+from api.llm_interface import Provider, generate_response
 from babel_ai.analyzer import SimilarityAnalyzer
 from babel_ai.models import ExperimentConfig, Metric
 from babel_ai.prompt_fetcher import BasePromptFetcher, PromptFetcher
@@ -34,19 +34,27 @@ class DriftExperiment:
 
     def __init__(
         self,
-        llm_provider: Optional[LLMInterface] = None,
+        llm_provider: Optional[object] = None,  # Keep for compatibility
         analyzer: Optional[SimilarityAnalyzer] = None,
         prompt_fetcher: Optional[BasePromptFetcher] = None,
         config: Optional[ExperimentConfig] = None,
         use_notebook_tqdm: bool = False,
     ):
-        self.llm = llm_provider or LLMInterface()
+        # llm_provider is now ignored as we use the function directly
+        if llm_provider is not None:
+            logger.warning(
+                "llm_provider parameter is deprecated and will be ignored"
+            )
+
         self.config = config or ExperimentConfig()
         self.analyzer = analyzer or SimilarityAnalyzer(
             analyze_window=self.config.analyze_window
         )
         self.prompt_fetcher = prompt_fetcher or PromptFetcher()
         self.results: List[Metric] = []
+
+        # Keep track of message history for the experiment
+        self.messages: List[Dict[str, str]] = []
 
         # Set up progress tracking
         self.range_func = range
@@ -117,9 +125,9 @@ class DriftExperiment:
         Raises:
             ValueError: If messages are not properly formatted
         """
-        # Initialize LLM's message history with all but the last message
+        # Initialize message history with all but the last message
         self._validate_messages(initial_messages)
-        self.llm.messages = initial_messages[:-1]
+        self.messages = initial_messages[:-1].copy()
 
         # Analyze initial messages
         msgs_text = [message["content"] for message in initial_messages]
@@ -147,17 +155,14 @@ class DriftExperiment:
                 )
             )
 
-        # Initialize prompt
-        prompt = msgs_text[-1]
-
         # Run experiment
         for i in self._get_progress_range(
             self.config.max_iterations, desc="Running drift experiment"
         ):
-            # Generate next response
-            response = self.llm.generate(
-                prompt=prompt,
-                provider=self.config.provider,
+            # Generate next response using the function
+            response = generate_response(
+                messages=self.messages,
+                provider=Provider(self.config.provider),
                 model=self.config.model,
                 temperature=self.config.temperature,
                 max_tokens=self.config.max_tokens,
@@ -165,6 +170,9 @@ class DriftExperiment:
                 presence_penalty=self.config.presence_penalty,
                 top_p=self.config.top_p,
             )
+
+            # Add the response to message history
+            self.messages.append({"role": "assistant", "content": response})
 
             # Store output
             msgs_text.append(response)
@@ -190,9 +198,6 @@ class DriftExperiment:
                 > self.config.max_total_characters
             ):
                 break
-
-            # Update prompt for next iteration
-            prompt = response
 
         # Save results to CSV
         self._save_results_to_csv(metrics, metrics[0].timestamp)

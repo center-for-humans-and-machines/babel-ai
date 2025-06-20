@@ -53,6 +53,11 @@ def test_raven_server_api():
 
     start_time = time.time()
     response = raven_ollama_request(messages=messages)
+    try:
+        response = raven_ollama_request(messages=messages)
+    except Exception as e:
+        print(f"Error in Raven request: {str(e)}")
+        raise
     end_time = time.time()
     print(f"Response time: {end_time - start_time:.2f} seconds")
 

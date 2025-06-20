@@ -51,7 +51,7 @@ def test_successful_api_call(mock_ollama_response, sample_messages):
     ) as mock_post:
         response = ollama_request(
             messages=sample_messages,
-            model=OllamaModel.LLAMA3,
+            model=OllamaModel.LLAMA3_70B,
             temperature=0.7,
             max_tokens=100,
         )
@@ -62,7 +62,7 @@ def test_successful_api_call(mock_ollama_response, sample_messages):
         # Verify the API was called with correct parameters
         mock_post.assert_called_once()
         call_args = mock_post.call_args[1]
-        assert call_args["json"]["model"] == OllamaModel.LLAMA3.value
+        assert call_args["json"]["model"] == OllamaModel.LLAMA3_70B.value
         assert call_args["json"]["messages"] == sample_messages
         assert call_args["json"]["options"]["temperature"] == 0.7
         assert call_args["json"]["options"]["num_predict"] == 100
@@ -77,7 +77,7 @@ def test_successful_streaming_api_call(
     ) as mock_post:
         response = ollama_request(
             messages=sample_messages,
-            model=OllamaModel.LLAMA3,
+            model=OllamaModel.LLAMA3_70B,
             stream=True,
         )
 
@@ -113,7 +113,7 @@ def test_default_parameters(sample_messages):
 
         # Verify default parameters were used
         call_args = mock_post.call_args[1]
-        assert call_args["json"]["model"] == OllamaModel.LLAMA3.value
+        assert call_args["json"]["model"] == OllamaModel.LLAMA3_70B.value
         assert call_args["json"]["options"]["temperature"] == 1.0
         assert call_args["json"]["options"]["num_predict"] == 1000
         assert call_args["json"]["options"]["frequency_penalty"] == 0.0
@@ -136,7 +136,7 @@ def test_ollama_request_stream(mock_ollama_stream_response, sample_messages):
     ) as mock_post:
         response = ollama_request_stream(
             messages=sample_messages,
-            model=OllamaModel.LLAMA3,
+            model=OllamaModel.LLAMA3_70B,
         )
 
         # Verify the response
@@ -162,7 +162,7 @@ def test_raven_ollama_request(mock_ollama_response, sample_messages):
         # Verify the API was called with Raven defaults
         mock_post.assert_called_once()
         call_args = mock_post.call_args[1]
-        assert call_args["json"]["model"] == OllamaModel.LLAMA33_70B.value
+        assert call_args["json"]["model"] == OllamaModel.LLAMA3_70B.value
         assert (
             call_args["url"]
             == "https://hpc-llm-inference-fastapi.chm.mpib-berlin.mpg.de/v1/chat/completions"  # noqa: E501
@@ -178,7 +178,7 @@ def test_raven_ollama_request_custom_params(
     ) as mock_post:
         response = raven_ollama_request(
             messages=sample_messages,
-            model=OllamaModel.MISTRAL,  # Override default model
+            model=OllamaModel.LLAMA3_70B,  # Override default model
             temperature=0.5,  # Add custom parameter
         )
 
@@ -188,7 +188,7 @@ def test_raven_ollama_request_custom_params(
         # Verify custom parameters were used
         mock_post.assert_called_once()
         call_args = mock_post.call_args[1]
-        assert call_args["json"]["model"] == OllamaModel.MISTRAL.value
+        assert call_args["json"]["model"] == OllamaModel.LLAMA3_70B.value
         assert call_args["json"]["options"]["temperature"] == 0.5
         # Verify other Raven defaults are still present
         assert (

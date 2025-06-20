@@ -1,55 +1,54 @@
-"""Tests for the LLMInterface class."""
+"""Tests for the generate_response function."""
 
 from unittest.mock import patch
 
 import pytest
 
 from api.azure_openai import AzureModel
-from api.llm_interface import LLMInterface, Provider
+from api.llm_interface import Provider, generate_response
 from api.ollama import OllamaModel
 from api.openai import OpenAIModel
 
 
 @pytest.fixture
-def llm_interface():
-    """Create an LLMInterface instance for testing."""
-    with patch("api.llm_interface.openai_request") as mock_request:
-        with patch("api.llm_interface.ollama_request") as mock_ollama_request:
-            with patch(
-                "api.llm_interface.raven_ollama_request"
-            ) as mock_raven_request:
+def mock_request_functions():
+    """Mock all request functions for testing."""
+    with patch("api.llm_interface.openai_request") as mock_openai:
+        with patch("api.llm_interface.ollama_request") as mock_ollama:
+            with patch("api.llm_interface.raven_ollama_request") as mock_raven:
                 with patch(
                     "api.llm_interface.azure_openai_request"
-                ) as mock_azure_request:
-                    mock_request.return_value = "Test response"
-                    mock_ollama_request.return_value = "Test response"
-                    mock_raven_request.return_value = "Test response"
-                    mock_azure_request.return_value = "Test response"
-                    interface = LLMInterface()
-                    # Store mocks in a dict for easy access
-                    interface.mocks = {
-                        Provider.OPENAI: mock_request,
-                        Provider.OLLAMA: mock_ollama_request,
-                        Provider.RAVEN: mock_raven_request,
-                        Provider.AZURE: mock_azure_request,
+                ) as mock_azure:
+                    mock_openai.return_value = "Test response"
+                    mock_ollama.return_value = "Test response"
+                    mock_raven.return_value = "Test response"
+                    mock_azure.return_value = "Test response"
+                    yield {
+                        Provider.OPENAI: mock_openai,
+                        Provider.OLLAMA: mock_ollama,
+                        Provider.RAVEN: mock_raven,
+                        Provider.AZURE: mock_azure,
                     }
-                    yield interface
 
 
-def test_generate_with_default_params(llm_interface):
-    """Test generate method with default parameters."""
-    # Call generate
-    prompt = "Test prompt"
-    response = llm_interface.generate(prompt)
+def test_generate_response_with_default_params(mock_request_functions):
+    """Test generate_response function with default parameters."""
+    messages = [{"role": "user", "content": "Test prompt"}]
+
+    response = generate_response(
+        messages=messages,
+        provider=Provider.OPENAI,
+        model=OpenAIModel.GPT4_1106_PREVIEW,
+    )
 
     # Verify response
     assert response == "Test response"
 
-    # Verify azure_openai_request was called with correct parameters
-    mock_request = llm_interface.mocks[Provider.OPENAI]
+    # Verify openai_request was called with correct parameters
+    mock_request = mock_request_functions[Provider.OPENAI]
     mock_request.assert_called_once()
     call_args = mock_request.call_args[1]
-    assert call_args["messages"] == [{"role": "user", "content": prompt}]
+    assert call_args["messages"] == messages
     assert call_args["model"] == OpenAIModel.GPT4_1106_PREVIEW
     assert call_args["temperature"] == 0.7
     assert call_args["max_tokens"] == 100
@@ -58,38 +57,53 @@ def test_generate_with_default_params(llm_interface):
     assert call_args["top_p"] == 1.0
 
 
-def test_ollama_backend(llm_interface):
-    """Test that LLMInterface works with Ollama backend."""
-    response = llm_interface.generate(
-        "test", provider=Provider.OLLAMA, model=OllamaModel.LLAMA3
+def test_generate_response_ollama_backend(mock_request_functions):
+    """Test that generate_response works with Ollama backend."""
+    messages = [{"role": "user", "content": "test"}]
+
+    response = generate_response(
+        messages=messages,
+        provider=Provider.OLLAMA,
+        model=OllamaModel.LLAMA3_70B,
     )
-    mock_ollama_request = llm_interface.mocks[Provider.OLLAMA]
+
+    mock_ollama_request = mock_request_functions[Provider.OLLAMA]
     mock_ollama_request.assert_called_once()
-    assert mock_ollama_request.call_args[1]["model"] == OllamaModel.LLAMA3
+    assert mock_ollama_request.call_args[1]["model"] == OllamaModel.LLAMA3_70B
 
     # Verify response
     assert response == "Test response"
 
 
-def test_raven_backend(llm_interface):
-    """Test that LLMInterface works with Raven backend."""
-    response = llm_interface.generate(
-        "test", provider=Provider.RAVEN, model=OllamaModel.LLAMA33_70B
+def test_generate_response_raven_backend(mock_request_functions):
+    """Test that generate_response works with Raven backend."""
+    messages = [{"role": "user", "content": "test"}]
+
+    response = generate_response(
+        messages=messages,
+        provider=Provider.RAVEN,
+        model=OllamaModel.LLAMA3_70B,
     )
-    mock_raven_request = llm_interface.mocks[Provider.RAVEN]
+
+    mock_raven_request = mock_request_functions[Provider.RAVEN]
     mock_raven_request.assert_called_once()
-    assert mock_raven_request.call_args[1]["model"] == OllamaModel.LLAMA33_70B
+    assert mock_raven_request.call_args[1]["model"] == OllamaModel.LLAMA3_70B
 
     # Verify response
     assert response == "Test response"
 
 
-def test_azure_backend(llm_interface):
-    """Test that LLMInterface works with Azure backend."""
-    response = llm_interface.generate(
-        "test", provider=Provider.AZURE, model=AzureModel.GPT4O_2024_08_06
+def test_generate_response_azure_backend(mock_request_functions):
+    """Test that generate_response works with Azure backend."""
+    messages = [{"role": "user", "content": "test"}]
+
+    response = generate_response(
+        messages=messages,
+        provider=Provider.AZURE,
+        model=AzureModel.GPT4O_2024_08_06,
     )
-    mock_azure_request = llm_interface.mocks[Provider.AZURE]
+
+    mock_azure_request = mock_request_functions[Provider.AZURE]
     mock_azure_request.assert_called_once()
     assert (
         mock_azure_request.call_args[1]["model"] == AzureModel.GPT4O_2024_08_06
@@ -99,15 +113,13 @@ def test_azure_backend(llm_interface):
     assert response == "Test response"
 
 
-def test_generate_with_custom_params(llm_interface):
-    """Test generate method with custom parameters."""
-    # Setup mock response
-    llm_interface.mocks[Provider.OPENAI].return_value = "Custom response"
+def test_generate_response_with_custom_params(mock_request_functions):
+    """Test generate_response function with custom parameters."""
+    messages = [{"role": "user", "content": "Custom prompt"}]
 
-    # Call generate with custom parameters
-    prompt = "Custom prompt"
-    response = llm_interface.generate(
-        prompt=prompt,
+    response = generate_response(
+        messages=messages,
+        provider=Provider.OPENAI,
         model=OpenAIModel.GPT4_0125_PREVIEW,
         temperature=0.5,
         max_tokens=200,
@@ -117,13 +129,13 @@ def test_generate_with_custom_params(llm_interface):
     )
 
     # Verify response
-    assert response == "Custom response"
+    assert response == "Test response"
 
-    # Verify azure_openai_request was called with correct parameters
-    mock_request = llm_interface.mocks[Provider.OPENAI]
+    # Verify openai_request was called with correct parameters
+    mock_request = mock_request_functions[Provider.OPENAI]
     mock_request.assert_called_once()
     call_args = mock_request.call_args[1]
-    assert call_args["messages"] == [{"role": "user", "content": prompt}]
+    assert call_args["messages"] == messages
     assert call_args["model"] == OpenAIModel.GPT4_0125_PREVIEW
     assert call_args["temperature"] == 0.5
     assert call_args["max_tokens"] == 200
@@ -132,37 +144,25 @@ def test_generate_with_custom_params(llm_interface):
     assert call_args["top_p"] == 0.9
 
 
-def test_message_history_management(llm_interface):
-    """Test that message history is properly managed."""
-    # Make multiple calls
-    llm_interface.generate("First prompt")
-    llm_interface.generate("Second prompt")
+def test_generate_response_multiple_messages(mock_request_functions):
+    """Test generate_response with multiple messages in conversation."""
+    messages = [
+        {"role": "user", "content": "First message"},
+        {"role": "assistant", "content": "First response"},
+        {"role": "user", "content": "Second message"},
+    ]
 
-    # Verify message history
-    assert len(llm_interface.messages) == 2
-    assert llm_interface.messages[0] == {
-        "role": "assistant",
-        "content": "First prompt",
-    }
-    assert llm_interface.messages[1] == {
-        "role": "user",
-        "content": "Second prompt",
-    }
+    response = generate_response(
+        messages=messages,
+        provider=Provider.OPENAI,
+        model=OpenAIModel.GPT4_1106_PREVIEW,
+    )
 
+    # Verify response
+    assert response == "Test response"
 
-def test_message_history_without_role_swap(llm_interface):
-    """Test message history when swap_roles is False."""
-    # Make multiple calls with swap_roles=False
-    llm_interface.generate("First prompt", swap_roles=False)
-    llm_interface.generate("Second prompt", swap_roles=False)
-
-    # Verify message history - roles should remain as user
-    assert len(llm_interface.messages) == 2
-    assert llm_interface.messages[0] == {
-        "role": "user",
-        "content": "First prompt",
-    }
-    assert llm_interface.messages[1] == {
-        "role": "user",
-        "content": "Second prompt",
-    }
+    # Verify all messages were passed correctly
+    mock_request = mock_request_functions[Provider.OPENAI]
+    mock_request.assert_called_once()
+    call_args = mock_request.call_args[1]
+    assert call_args["messages"] == messages

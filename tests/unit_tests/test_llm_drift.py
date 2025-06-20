@@ -7,7 +7,6 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from api.llm_interface import LLMInterface
 from babel_ai.analyzer import SimilarityAnalyzer
 from babel_ai.llm_drift import DriftExperiment
 from babel_ai.models import (
@@ -20,15 +19,6 @@ from babel_ai.models import (
     WordStats,
 )
 from babel_ai.prompt_fetcher import PromptFetcher
-
-
-@pytest.fixture
-def mock_llm():
-    """Create a mock LLMInterface instance."""
-    llm = MagicMock(spec=LLMInterface)
-    llm.generate.return_value = "Test response"
-    llm.messages = []
-    return llm
 
 
 @pytest.fixture
@@ -74,12 +64,9 @@ def experiment_config():
 
 
 @pytest.fixture
-def drift_experiment(
-    mock_llm, mock_analyzer, mock_prompt_fetcher, experiment_config
-):
+def drift_experiment(mock_analyzer, mock_prompt_fetcher, experiment_config):
     """Create a DriftExperiment instance with mocked dependencies."""
     return DriftExperiment(
-        llm_provider=mock_llm,
         analyzer=mock_analyzer,
         prompt_fetcher=mock_prompt_fetcher,
         config=experiment_config,
@@ -88,18 +75,38 @@ def drift_experiment(
 
 def test_drift_experiment_init(
     drift_experiment,
-    mock_llm,
     mock_analyzer,
     mock_prompt_fetcher,
     experiment_config,
 ):
     """Test DriftExperiment initialization."""
-    assert drift_experiment.llm == mock_llm
     assert drift_experiment.analyzer == mock_analyzer
     assert drift_experiment.prompt_fetcher == mock_prompt_fetcher
     assert drift_experiment.config == experiment_config
     assert isinstance(drift_experiment.results, list)
     assert len(drift_experiment.results) == 0
+    assert isinstance(drift_experiment.messages, list)
+    assert len(drift_experiment.messages) == 0
+
+
+def test_drift_experiment_init_with_deprecated_llm_provider(
+    mock_analyzer, mock_prompt_fetcher, experiment_config
+):
+    """Test DriftExperiment initialization with deprecated llm_provider."""
+    mock_llm = MagicMock()
+
+    with patch("babel_ai.llm_drift.logger") as mock_logger:
+        DriftExperiment(
+            llm_provider=mock_llm,
+            analyzer=mock_analyzer,
+            prompt_fetcher=mock_prompt_fetcher,
+            config=experiment_config,
+        )
+
+        # Verify warning was logged
+        mock_logger.warning.assert_called_once_with(
+            "llm_provider parameter is deprecated and will be ignored"
+        )
 
 
 def test_validate_messages_valid(drift_experiment):
@@ -119,9 +126,14 @@ def test_validate_messages_invalid(drift_experiment):
         drift_experiment._validate_messages(invalid_messages)
 
 
-@patch("src.babel_ai.llm_drift.datetime")
+@patch("babel_ai.llm_drift.generate_response")
+@patch("babel_ai.llm_drift.datetime")
 def test_run_experiment(
-    mock_datetime, drift_experiment, mock_llm, mock_analyzer, tmp_path
+    mock_datetime,
+    mock_generate_response,
+    drift_experiment,
+    mock_analyzer,
+    tmp_path,
 ):
     """Test running the drift experiment."""
     # Setup
@@ -130,7 +142,7 @@ def test_run_experiment(
         {"role": "system", "content": "Test system message"},
         {"role": "user", "content": "Test user message"},
     ]
-    mock_llm.generate.return_value = "Test response"
+    mock_generate_response.return_value = "Test response"
 
     # Run experiment within tmp_path
     with patch("pathlib.Path.cwd", return_value=tmp_path):
@@ -140,12 +152,13 @@ def test_run_experiment(
     assert len(results) > 0
     assert all(isinstance(result, Metric) for result in results)
     assert (
-        mock_llm.generate.call_count == drift_experiment.config.max_iterations
+        mock_generate_response.call_count
+        == drift_experiment.config.max_iterations
     )
     assert mock_analyzer.analyze.call_count == len(results)
 
 
-@patch("src.babel_ai.llm_drift.datetime")
+@patch("babel_ai.llm_drift.datetime")
 def test_save_results_to_csv(
     mock_datetime, drift_experiment, mock_analyzer, tmp_path
 ):
