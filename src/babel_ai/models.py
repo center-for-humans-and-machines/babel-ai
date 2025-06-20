@@ -5,6 +5,8 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
 
+from api.llm_interface import ModelType, Provider
+
 
 class WordStats(BaseModel):
     """Statistics about word usage in text."""
@@ -61,6 +63,18 @@ class AnalysisResult(BaseModel):
     lexical: Optional[LexicalMetrics] = None
     semantic: Optional[SemanticMetrics] = None
     token_perplexity: Optional[TokenPerplexityMetrics] = None
+
+
+class AgentConfig(BaseModel):
+    """Configuration for an agent."""
+
+    provider: Provider = Field(description="Name of the provider to use")
+    model: ModelType = Field(description="Name of the model to use")
+    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    max_tokens: int = Field(default=100, ge=1)
+    frequency_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
+    presence_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
+    top_p: float = Field(default=1.0, ge=0.0, le=1.0)
 
 
 class ExperimentConfig(BaseModel):
