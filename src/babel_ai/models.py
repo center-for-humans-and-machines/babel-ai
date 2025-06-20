@@ -8,61 +8,31 @@ from pydantic import BaseModel, Field
 from api.llm_interface import ModelType, Provider
 
 
-class WordStats(BaseModel):
-    """Statistics about word usage in text."""
+class AnalysisResult(BaseModel):
+    """Analysis results for LLM outputs."""
 
     word_count: int = Field(description="Total number of words in the text")
     unique_word_count: int = Field(description="Number of unique words")
     coherence_score: float = Field(
         description="Ratio of unique words to total words", ge=0.0, le=1.0
     )
-
-
-class LexicalMetrics(BaseModel):
-    """Metrics for lexical similarity analysis."""
-
-    similarity: Optional[float] = Field(
+    lexical_similarity: Optional[float] = Field(
         None,
         description="Jaccard similarity between current and previous text",
         ge=0.0,
         le=1.0,
     )
-    is_repetitive: bool = Field(
-        default=False, description="Whether the text is lexically repetitive"
-    )
-
-
-class SemanticMetrics(BaseModel):
-    """Metrics for semantic similarity analysis."""
-
-    similarity: Optional[float] = Field(
+    semantic_similarity: Optional[float] = Field(
         None,
         description="Cosine similarity between sentence embeddings",
         ge=-1.0,
         le=1.0,
     )
-    is_repetitive: bool = Field(
-        default=False,
-        description="Whether the text is semantically repetitive",
-    )
-
-
-class TokenPerplexityMetrics(BaseModel):
-    """Metrics for token perplexity analysis."""
-
-    avg_token_perplexity: float = Field(
+    token_perplexity: Optional[float] = Field(
+        None,
         description="Average perplexity of all tokens in the text",
-        ge=1.0,  # Perplexity is always >= 1
+        ge=1.0,
     )
-
-
-class AnalysisResult(BaseModel):
-    """Combined analysis results for text outputs."""
-
-    word_stats: WordStats
-    lexical: Optional[LexicalMetrics] = None
-    semantic: Optional[SemanticMetrics] = None
-    token_perplexity: Optional[TokenPerplexityMetrics] = None
 
 
 class AgentConfig(BaseModel):
@@ -132,40 +102,17 @@ class Metric(BaseModel):
             "timestamp": self.timestamp,
             "role": self.role,
             "response": self.response,
-            # Word stats
-            "word_count": self.analysis.word_stats.word_count,
-            "unique_word_count": self.analysis.word_stats.unique_word_count,
-            "coherence_score": self.analysis.word_stats.coherence_score,
+            # Analysis fields
+            "word_count": self.analysis.word_count,
+            "unique_word_count": self.analysis.unique_word_count,
+            "coherence_score": self.analysis.coherence_score,
+            "lexical_similarity": self.analysis.lexical_similarity,
+            "semantic_similarity": self.analysis.semantic_similarity,
+            "token_perplexity": self.analysis.token_perplexity,
         }
-
-        # Add lexical metrics if available
-        if self.analysis.lexical:
-            result.update(
-                {
-                    "lexical_similarity": self.analysis.lexical.similarity,
-                    "is_repetitive": self.analysis.lexical.is_repetitive,
-                }
-            )
-
-        # Add semantic metrics if available
-        if self.analysis.semantic:
-            result.update(
-                {
-                    "semantic_similarity": self.analysis.semantic.similarity,
-                    "is_semantically_repetitive": self.analysis.semantic.is_repetitive,  # noqa: E501
-                }
-            )
-
-        # Add token perplexity metrics if available
-        if self.analysis.token_perplexity:
-            result.update(
-                {
-                    "avg_token_perplexity": self.analysis.token_perplexity.avg_token_perplexity,  # noqa: E501
-                }
-            )
 
         # Add config if available
         if self.config:
-            result.update(self.config.dict())
+            result.update(self.config.model_dump())
 
         return result

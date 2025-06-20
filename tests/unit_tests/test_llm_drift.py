@@ -9,15 +9,7 @@ import pytest
 
 from babel_ai.analyzer import SimilarityAnalyzer
 from babel_ai.llm_drift import DriftExperiment
-from babel_ai.models import (
-    AnalysisResult,
-    ExperimentConfig,
-    LexicalMetrics,
-    Metric,
-    SemanticMetrics,
-    TokenPerplexityMetrics,
-    WordStats,
-)
+from babel_ai.models import AnalysisResult, ExperimentConfig, Metric
 from babel_ai.prompt_fetcher import PromptFetcher
 
 
@@ -26,14 +18,12 @@ def mock_analyzer():
     """Create a mock SimilarityAnalyzer instance."""
     analyzer = MagicMock(spec=SimilarityAnalyzer)
     analyzer.analyze.return_value = AnalysisResult(
-        word_stats=WordStats(
-            word_count=10, unique_word_count=8, coherence_score=0.8
-        ),
-        lexical=LexicalMetrics(similarity=0.7, is_repetitive=False),
-        semantic=SemanticMetrics(similarity=0.6, is_repetitive=False),
-        token_perplexity=TokenPerplexityMetrics(
-            avg_token_perplexity=10.0,
-        ),
+        word_count=10,
+        unique_word_count=8,
+        coherence_score=0.8,
+        lexical_similarity=0.7,
+        semantic_similarity=0.6,
+        token_perplexity=10.0,
     )
     return analyzer
 
