@@ -130,6 +130,13 @@ class Agent:
 
         return response
 
+    def get_model_info(self) -> Dict[str, Any]:
+        """Get the model info."""
+        info = self.provider.get_model_info(self.model)
+        info["model_type"] = self.model_type
+        info["context_size"] = self.context_size
+        return info
+
 
 # Analysis #
 
@@ -201,6 +208,12 @@ class Analyzer:
 # Prompt Fetcher #
 
 
+class AnalyzerType(Enum):
+    """Analyzer for LLM outputs."""
+
+    SIMILARITY = "similarity"
+
+
 class Fetcher(Enum):
     """Fetcher for prompts."""
 
@@ -208,6 +221,14 @@ class Fetcher(Enum):
     RANDOM = "random"
     INFINITE_CONVERSATION = "infinite_conversation"
     HUMAN_HUMAN = "human_human"
+
+
+class FetcherConfig(BaseModel):
+    """Configuration for the fetcher."""
+
+    data_path: str
+    min_messages: int
+    max_messages: int
 
 
 class PromptFetcher:
@@ -267,6 +288,7 @@ class ExperimentConfig(BaseModel):
     """Configuration for the experiment."""
 
     fetcher: str
+    fetcher_config: Dict[str, Any]
     analyzer: str
     analyzer_config: AnalyzerConfig
     agent_configs: List[AgentConfig]
