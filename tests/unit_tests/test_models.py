@@ -14,6 +14,7 @@ from babel_ai.models import (
     AnalysisResult,
     AnalyzerConfig,
     ExperimentConfig,
+    ExperimentMetadata,
     FetcherConfig,
     FetcherMetric,
     Metric,
@@ -632,3 +633,59 @@ class TestAgentMetric:
             "presence_penalty": 0.0,
             "top_p": 1.0,
         }
+
+
+class TestExperimentMetadata:
+    """Test the ExperimentMetadata model."""
+
+    @pytest.fixture
+    def mock_config(self):
+        """Mock ExperimentConfig for testing."""
+        return ExperimentConfig(
+            fetcher=FetcherType.SHAREGPT,
+            fetcher_config=FetcherConfig(
+                data_path="/test/data.json",
+                min_messages=2,
+                max_messages=10,
+            ),
+            analyzer=AnalyzerType.SIMILARITY,
+            analyzer_config=AnalyzerConfig(analyze_window=5),
+            agent_configs=[
+                AgentConfig(
+                    provider=Provider.OPENAI,
+                    model=OpenAIModel.GPT4_1106_PREVIEW,
+                )
+            ],
+            agent_selection_method=AgentSelectionMethod.ROUND_ROBIN,
+        )
+
+    def test_experiment_metadata_minimal(self, mock_config):
+        """Test creating ExperimentMetadata with minimal fields."""
+        timestamp = datetime.now()
+        metadata = ExperimentMetadata(
+            timestamp=timestamp,
+            config=mock_config,
+        )
+
+        assert metadata.timestamp == timestamp
+        assert metadata.config == mock_config
+        assert metadata.num_iterations_total is None
+        assert metadata.num_fetcher_messages is None
+        assert metadata.total_characters is None
+
+    def test_experiment_metadata_complete(self, mock_config):
+        """Test creating ExperimentMetadata with all fields."""
+        timestamp = datetime.now()
+        metadata = ExperimentMetadata(
+            timestamp=timestamp,
+            config=mock_config,
+            num_iterations_total=50,
+            num_fetcher_messages=3,
+            total_characters=1000,
+        )
+
+        assert metadata.timestamp == timestamp
+        assert metadata.config == mock_config
+        assert metadata.num_iterations_total == 50
+        assert metadata.num_fetcher_messages == 3
+        assert metadata.total_characters == 1000

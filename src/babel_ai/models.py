@@ -360,3 +360,42 @@ class AgentMetric(Metric):
         )
 
         return result
+
+
+class ExperimentMetadata(BaseModel):
+    """Metadata container for LLM drift experiments.
+
+    This class stores comprehensive metadata about an experiment run,
+    including timing information, configuration details, and execution
+    statistics. It provides a structured way to track and persist
+    experiment information for analysis and reproducibility.
+
+    Attributes:
+        timestamp: When the experiment was initiated
+        config: Complete experiment configuration used
+        num_iterations_total: Total number of iterations completed
+            (includes both fetcher and agent-generated messages)
+        num_fetcher_messages: Number of initial messages from fetcher
+        total_characters: Total character count across all messages
+
+    Example:
+        >>> config = ExperimentConfig(
+        ...     max_iterations=100,
+        ...     max_total_characters=10000,
+        ...     # ... other config fields
+        ... )
+        >>>
+        >>> metadata = ExperimentMetadata(
+        ...     timestamp=datetime.now(),
+        ...     config=config,
+        ...     num_iterations_total=87,
+        ...     num_fetcher_messages=5,
+        ...     total_characters=8543
+        ... )
+    """
+
+    timestamp: datetime
+    config: ExperimentConfig
+    num_iterations_total: Optional[int] = None
+    num_fetcher_messages: Optional[int] = None
+    total_characters: Optional[int] = None
