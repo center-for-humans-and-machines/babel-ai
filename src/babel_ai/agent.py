@@ -1,6 +1,7 @@
 """Agent for generating responses using various LLM providers."""
 
-from typing import Dict, List
+import itertools
+from typing import Dict, Generator, List
 
 from api.llm_interface import generate_response
 from babel_ai.models import AgentConfig
@@ -38,3 +39,21 @@ class Agent:
             presence_penalty=self.config.presence_penalty,
             top_p=self.config.top_p,
         )
+
+
+def round_robin_agent_selection(
+    agents: List[Agent],
+) -> Generator[Agent, None, None]:
+    """Select the next agent in the round-robin sequence.
+
+    Args:
+        agents: List of agents to select from
+
+    Yields:
+        The next agent in the sequence, cycling infinitely
+    """
+    if not agents:
+        raise ValueError("Cannot select from an empty list of agents")
+
+    for agent in itertools.cycle(agents):
+        yield agent
