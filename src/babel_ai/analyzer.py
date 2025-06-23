@@ -1,7 +1,9 @@
 """Analyzer classes for LLM drift experiments."""
 
 import logging
-from typing import List, Optional, Tuple
+from abc import ABC, abstractmethod
+from enum import Enum
+from typing import List, Optional, Tuple, Type
 
 import numpy as np
 import torch
@@ -15,7 +17,37 @@ from .models import AnalysisResult
 logger = logging.getLogger(__name__)
 
 
-class SimilarityAnalyzer:
+class AnalyzerType(Enum):
+    """Analyzer types for LLM outputs."""
+
+    SIMILARITY = "similarity"
+
+    def get_analyzer_class(self) -> Type["Analyzer"]:
+        """Get the corresponding analyzer class for this type."""
+        mapping = {
+            AnalyzerType.SIMILARITY: SimilarityAnalyzer,
+        }
+        return mapping[self]
+
+
+class Analyzer(ABC):
+    """Abstract base class for analyzers."""
+
+    @abstractmethod
+    def analyze(self, outputs: List[str]) -> AnalysisResult:
+        """Analyze the outputs."""
+        pass
+
+    @classmethod
+    def create_analyzer(
+        cls, analyzer_type: "AnalyzerType", **kwargs
+    ) -> "Analyzer":
+        """Create an analyzer from a analyzer type."""
+        analyzer_class = analyzer_type.get_analyzer_class()
+        return analyzer_class(**kwargs)
+
+
+class SimilarityAnalyzer(Analyzer):
     """Analyzes similarity patterns in LLM outputs."""
 
     # Semantic similarity model
