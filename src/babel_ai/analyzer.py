@@ -2,8 +2,7 @@
 
 import logging
 from abc import ABC, abstractmethod
-from enum import Enum
-from typing import List, Optional, Tuple, Type
+from typing import List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -12,22 +11,10 @@ from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import cos_sim
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from .models import AnalysisResult
+from babel_ai.enums import AnalyzerType
+from babel_ai.models import AnalysisResult
 
 logger = logging.getLogger(__name__)
-
-
-class AnalyzerType(Enum):
-    """Analyzer types for LLM outputs."""
-
-    SIMILARITY = "similarity"
-
-    def get_analyzer_class(self) -> Type["Analyzer"]:
-        """Get the corresponding analyzer class for this type."""
-        mapping = {
-            AnalyzerType.SIMILARITY: SimilarityAnalyzer,
-        }
-        return mapping[self]
 
 
 class Analyzer(ABC):
@@ -43,7 +30,7 @@ class Analyzer(ABC):
         cls, analyzer_type: "AnalyzerType", **kwargs
     ) -> "Analyzer":
         """Create an analyzer from a analyzer type."""
-        analyzer_class = analyzer_type.get_analyzer_class()
+        analyzer_class = analyzer_type.get_class()
         return analyzer_class(**kwargs)
 
 

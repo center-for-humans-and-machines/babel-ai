@@ -4,9 +4,9 @@ from unittest.mock import patch
 
 import pytest
 
+from babel_ai.enums import FetcherType
 from babel_ai.prompt_fetcher import (
     BasePromptFetcher,
-    FetcherType,
     InfiniteConversationFetcher,
     RandomPromptFetcher,
     ShareGPTConversationFetcher,
@@ -54,36 +54,3 @@ class TestBasePromptFetcher:
                 freq_file_path="dummy_freq.jsonl",
             )
             assert isinstance(fetcher, TopicalChatConversationFetcher)
-
-
-class TestFetcherType:
-    """Test suite for FetcherType enum."""
-
-    def test_enum_values(self):
-        """Test that enum has correct values."""
-        assert FetcherType.RANDOM.value == "random"
-        assert FetcherType.SHAREGPT.value == "sharegpt"
-        assert (
-            FetcherType.INFINITE_CONVERSATION.value == "infinite_conversation"
-        )
-        assert FetcherType.TOPICAL_CHAT.value == "topical_chat"
-
-    def test_get_fetcher_class_random(self):
-        """Test getting RandomPromptFetcher class."""
-        fetcher_class = FetcherType.RANDOM.get_fetcher_class()
-        assert fetcher_class == RandomPromptFetcher
-
-    def test_get_fetcher_class_sharegpt(self):
-        """Test getting ShareGPTConversationFetcher class."""
-        fetcher_class = FetcherType.SHAREGPT.get_fetcher_class()
-        assert fetcher_class == ShareGPTConversationFetcher
-
-    def test_get_fetcher_class_infinite_conversation(self):
-        """Test getting InfiniteConversationFetcher class."""
-        fetcher_class = FetcherType.INFINITE_CONVERSATION.get_fetcher_class()
-        assert fetcher_class == InfiniteConversationFetcher
-
-    def test_get_fetcher_class_topical_chat(self):
-        """Test getting TopicalChatConversationFetcher class."""
-        fetcher_class = FetcherType.TOPICAL_CHAT.get_fetcher_class()
-        assert fetcher_class == TopicalChatConversationFetcher

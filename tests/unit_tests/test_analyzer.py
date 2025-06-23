@@ -4,7 +4,8 @@ import logging
 
 import pytest
 
-from babel_ai.analyzer import SimilarityAnalyzer
+from babel_ai.analyzer import Analyzer, SimilarityAnalyzer
+from babel_ai.enums import AnalyzerType
 from babel_ai.models import AnalysisResult
 
 
@@ -172,3 +173,29 @@ def test_token_perplexity_long_text(analyzer):
     assert larger_result >= 1.0
 
     assert pytest.approx(equal_result, rel=1e-1) == larger_result
+
+
+# Additional tests for abstract class implementations
+
+
+class TestAnalyzerAbstractBase:
+    """Test the abstract Analyzer base class."""
+
+    def test_analyzer_is_abstract(self):
+        """Test that Analyzer cannot be instantiated directly."""
+        with pytest.raises(TypeError):
+            Analyzer()
+
+    def test_create_analyzer_default_params(self):
+        """Test creating analyzer with default parameters."""
+        analyzer = Analyzer.create_analyzer(AnalyzerType.SIMILARITY)
+        assert isinstance(analyzer, SimilarityAnalyzer)
+        assert analyzer.analyze_window == 20  # default value
+
+    def test_create_analyzer_with_kwargs(self):
+        """Test creating analyzer with various keyword arguments."""
+        analyzer = Analyzer.create_analyzer(
+            AnalyzerType.SIMILARITY, analyze_window=30
+        )
+        assert isinstance(analyzer, SimilarityAnalyzer)
+        assert analyzer.analyze_window == 30

@@ -4,11 +4,12 @@ import json
 import logging
 import random
 from abc import ABC, abstractmethod
-from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Type, Union
+from typing import Dict, List, Optional, Union
 
 import requests
+
+from babel_ai.enums import FetcherType
 
 logger = logging.getLogger(__name__)
 
@@ -44,29 +45,6 @@ class BasePromptFetcher(ABC):
         """
         fetcher_class = fetcher_type.get_fetcher_class()
         return fetcher_class(**kwargs)
-
-
-class FetcherType(Enum):
-    """Fetcher types for prompts."""
-
-    SHAREGPT = "sharegpt"
-    RANDOM = "random"
-    INFINITE_CONVERSATION = "infinite_conversation"
-    TOPICAL_CHAT = "topical_chat"
-
-    def get_fetcher_class(self) -> Type[BasePromptFetcher]:
-        """Get the corresponding fetcher class for this type.
-
-        Returns:
-            The fetcher class corresponding to this enum value
-        """
-        mapping = {
-            FetcherType.RANDOM: RandomPromptFetcher,
-            FetcherType.SHAREGPT: ShareGPTConversationFetcher,
-            FetcherType.INFINITE_CONVERSATION: InfiniteConversationFetcher,
-            FetcherType.TOPICAL_CHAT: TopicalChatConversationFetcher,
-        }
-        return mapping[self]
 
 
 class RandomPromptFetcher(BasePromptFetcher):

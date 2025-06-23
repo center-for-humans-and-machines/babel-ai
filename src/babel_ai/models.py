@@ -6,9 +6,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from api.llm_interface import ModelType, Provider
-from babel_ai.analyzer import AnalyzerType
-from babel_ai.llm_drift import AgentSelectionMethod
-from babel_ai.prompt_fetcher import FetcherType
+from babel_ai.enums import AgentSelectionMethod, AnalyzerType, FetcherType
 
 
 class AnalysisResult(BaseModel):

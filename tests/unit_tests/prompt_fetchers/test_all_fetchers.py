@@ -3,7 +3,7 @@
 import unittest
 
 # Import all test classes
-from .test_base_fetcher import TestBasePromptFetcher, TestFetcherType
+from .test_base_fetcher import TestBasePromptFetcher
 from .test_infinite_conversation_fetcher import TestInfiniteConversationFetcher
 from .test_random_fetcher import TestRandomPromptFetcher
 from .test_sharegpt_fetcher import TestShareGPTConversationFetcher
@@ -14,10 +14,9 @@ def create_test_suite():
     """Create a test suite with all prompt fetcher tests."""
     test_suite = unittest.TestSuite()
 
-    # Add all test classes
+    # Add all test classes (enum tests are now in separate test_enums.py)
     test_classes = [
         TestBasePromptFetcher,
-        TestFetcherType,
         TestRandomPromptFetcher,
         TestShareGPTConversationFetcher,
         TestInfiniteConversationFetcher,
