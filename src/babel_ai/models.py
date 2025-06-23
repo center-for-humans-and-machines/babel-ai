@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 from api.llm_interface import ModelType, Provider
 from babel_ai.enums import AgentSelectionMethod, AnalyzerType, FetcherType
@@ -86,7 +86,8 @@ class AnalyzerConfig(BaseModel):
     """
 
     analyze_window: int = Field(
-        description="Number of previous responses to analyze for drift"
+        description="Number of previous responses to analyze for drift",
+        ge=1,
     )
 
 
@@ -117,11 +118,27 @@ class FetcherConfig(BaseModel):
 
     data_path: str = Field(description="Path to the data file")
     min_messages: int = Field(
-        description="Minimum number of messages in a conversation"
+        description="Minimum number of messages in a conversation",
+        ge=1,
     )
     max_messages: int = Field(
-        description="Maximum number of messages in a conversation"
+        description="Maximum number of messages in a conversation",
+        ge=1,
     )
+
+    @field_validator("max_messages")
+    def validate_max_messages(cls, v: int, values: ValidationInfo) -> int:
+        """Validate that max_messages is >= min_messages."""
+        if "min_messages" not in values.data.keys():
+            raise ValueError(
+                "min_messages is required to validate max_messages"
+            )
+        min_messages = values.data["min_messages"]
+        if v < min_messages:
+            raise ValueError(
+                f"max_messages ({v}) must be >= min_messages ({min_messages})"
+            )
+        return v
 
 
 class AgentConfig(BaseModel):
@@ -272,12 +289,9 @@ class Metric(BaseModel):
     role: str = Field(
         description="Role of the message (system/user/assistant)"
     )
-    response: str = Field(description="The actual text response")
-    analysis: AnalysisResult = Field(
-        description="Analysis results for this response"
-    )
-    config: Optional[ExperimentConfig] = Field(
-        default=None, description="Configuration used for this experiment"
+    content: str = Field(description="The actual text response")
+    analysis: Optional[AnalysisResult] = Field(
+        None, description="Analysis results for this response"
     )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -290,18 +304,54 @@ class Metric(BaseModel):
             "iteration": self.iteration,
             "timestamp": self.timestamp,
             "role": self.role,
-            "response": self.response,
-            # Analysis fields
-            "word_count": self.analysis.word_count,
-            "unique_word_count": self.analysis.unique_word_count,
-            "coherence_score": self.analysis.coherence_score,
-            "lexical_similarity": self.analysis.lexical_similarity,
-            "semantic_similarity": self.analysis.semantic_similarity,
-            "token_perplexity": self.analysis.token_perplexity,
+            "content": self.content,
+            "analysis": self.analysis.model_dump() if self.analysis else None,
         }
 
-        # Add config if available
-        if self.config:
-            result.update(self.config.model_dump())
+        return result
+
+
+class FetcherMetric(Metric):
+    """A single data point collected during a drift experiment."""
+
+    fetcher_type: FetcherType = Field(
+        description="Type of fetcher that generated the response"
+    )
+    fetcher_config: FetcherConfig = Field(
+        description="Configuration of the fetcher that generated the response"
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert metric to a dictionary format suitable for CSV export."""
+        result = super().to_dict()
+        result.update(
+            {
+                "fetcher_type": self.fetcher_type,
+                "fetcher_config": self.fetcher_config.model_dump(),
+            }
+        )
+
+        return result
+
+
+class AgentMetric(Metric):
+    """A single data point collected during a drift experiment."""
+
+    agent_id: str = Field(
+        description="ID of the agent that generated the response"
+    )
+    agent_config: AgentConfig = Field(
+        description="Configuration of the agent that generated the response"
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert metric to a dictionary format suitable for CSV export."""
+        result = super().to_dict()
+        result.update(
+            {
+                "agent_id": self.agent_id,
+                "agent_config": self.agent_config.model_dump(),
+            }
+        )
 
         return result
