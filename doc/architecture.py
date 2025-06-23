@@ -224,6 +224,20 @@ class PromptFetcher:
             {"role": "assistant", "content": "Paris"},
         ]
 
+    def create_fetcher(
+        self, fetcher_type: Fetcher, **kwargs
+    ) -> "PromptFetcher":
+        """Create a fetcher from a fetcher type."""
+        match fetcher_type:
+            case Fetcher.SHAREGPT:
+                return SpecificPromptFetcher(**kwargs)
+            case Fetcher.RANDOM:
+                return SpecificPromptFetcher(**kwargs)
+            case Fetcher.INFINITE_CONVERSATION:
+                return SpecificPromptFetcher(**kwargs)
+            case Fetcher.HUMAN_HUMAN:
+                return SpecificPromptFetcher(**kwargs)
+
 
 class SpecificPromptFetcher(PromptFetcher):
     # Implement for

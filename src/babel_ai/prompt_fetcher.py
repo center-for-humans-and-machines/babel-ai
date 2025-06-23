@@ -4,8 +4,9 @@ import json
 import logging
 import random
 from abc import ABC, abstractmethod
+from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Type, Union
 
 import requests
 
@@ -16,16 +17,59 @@ class BasePromptFetcher(ABC):
     """Abstract base class for prompt fetchers."""
 
     @abstractmethod
-    def get_random_prompt(self) -> Union[str, List[Dict[str, str]]]:
-        """Get a random prompt.
+    def get_conversation(self) -> List[Dict[str, str]]:
+        """Get a conversation.
 
         Returns:
-            Either a string prompt or a list of message dictionaries
+            List of message dictionaries in the format:
+            [
+                {"role": "user", "content": "..."},
+                {"role": "assistant", "content": "..."},
+            ]
         """
         pass
 
+    @classmethod
+    def create_fetcher(
+        cls, fetcher_type: "FetcherType", **kwargs
+    ) -> "BasePromptFetcher":
+        """Factory method to create appropriate fetcher instance.
 
-class PromptFetcher(BasePromptFetcher):
+        Args:
+            fetcher_type: Type of fetcher to create
+            **kwargs: Fetcher-specific arguments
+
+        Returns:
+            Initialized fetcher instance
+        """
+        fetcher_class = fetcher_type.get_fetcher_class()
+        return fetcher_class(**kwargs)
+
+
+class FetcherType(Enum):
+    """Fetcher types for prompts."""
+
+    SHAREGPT = "sharegpt"
+    RANDOM = "random"
+    INFINITE_CONVERSATION = "infinite_conversation"
+    TOPICAL_CHAT = "topical_chat"
+
+    def get_fetcher_class(self) -> Type[BasePromptFetcher]:
+        """Get the corresponding fetcher class for this type.
+
+        Returns:
+            The fetcher class corresponding to this enum value
+        """
+        mapping = {
+            FetcherType.RANDOM: RandomPromptFetcher,
+            FetcherType.SHAREGPT: ShareGPTConversationFetcher,
+            FetcherType.INFINITE_CONVERSATION: InfiniteConversationFetcher,
+            FetcherType.TOPICAL_CHAT: TopicalChatConversationFetcher,
+        }
+        return mapping[self]
+
+
+class RandomPromptFetcher(BasePromptFetcher):
     """Fetches random prompts from various online sources."""
 
     REDDIT_WRITING_PROMPTS = "https://www.reddit.com/r/WritingPrompts/new.json"
@@ -36,15 +80,18 @@ class PromptFetcher(BasePromptFetcher):
             "User-Agent": "Mozilla/5.0 (compatible; PromptFetcher/1.0)"
         }
 
-    def get_random_prompt(self, category: Optional[str] = None) -> str:
-        """Get a random prompt from available sources.
+    def get_conversation(
+        self, category: Optional[str] = None
+    ) -> List[Dict[str, str]]:
+        """Get a random prompt from available sources
+        as single-message conversation.
 
         Args:
             category: Optional category
             ('creative', 'analytical', 'conversational')
 
         Returns:
-            A random prompt string
+            A single-message conversation as List[Dict[str, str]]
         """
         methods = {
             "creative": self._get_writing_prompt,
@@ -58,10 +105,13 @@ class PromptFetcher(BasePromptFetcher):
             method = random.choice(list(methods.values()))
 
         try:
-            return method()
+            prompt_text = method()
         except Exception as e:
             logger.warning(f"Failed to fetch prompt: {e}")
-            return self._get_fallback_prompt()
+            prompt_text = self._get_fallback_prompt()
+
+        # Return as single-message conversation
+        return [{"role": "user", "content": prompt_text}]
 
     def _get_writing_prompt(self) -> str:
         """Fetch a writing prompt from Reddit."""
@@ -123,7 +173,7 @@ class PromptFetcher(BasePromptFetcher):
         return random.choice(fallback_prompts)
 
 
-class ShareGPTPromptFetcher(BasePromptFetcher):
+class ShareGPTConversationFetcher(BasePromptFetcher):
     """Fetches random conversations from ShareGPT conversations dataset."""
 
     def __init__(
@@ -132,7 +182,7 @@ class ShareGPTPromptFetcher(BasePromptFetcher):
         min_messages: int = 2,
         max_messages: Optional[int] = None,
     ):
-        """Initialize the ShareGPT prompt fetcher.
+        """Initialize the ShareGPT conversation fetcher.
 
         Args:
             data_path: Path to sharegpt_clean.json file
@@ -161,7 +211,7 @@ class ShareGPTPromptFetcher(BasePromptFetcher):
             and (self.max_messages is None or len(conv) <= self.max_messages)
         ]
 
-    def get_random_prompt(self) -> List[Dict[str, str]]:
+    def get_conversation(self) -> List[Dict[str, str]]:
         """Get a random conversation thread from ShareGPT conversations.
 
         Returns:
@@ -183,19 +233,25 @@ class ShareGPTPromptFetcher(BasePromptFetcher):
         return messages
 
 
-class InfiniteConversationPromptFetcher(BasePromptFetcher):
+class InfiniteConversationFetcher(BasePromptFetcher):
     """Fetches random conversations from the Infinite Conversation dataset."""
 
     def __init__(
         self,
         data_dir: Union[str, Path],
+        min_messages: int = 2,
+        max_messages: Optional[int] = None,
     ):
-        """Initialize the Infinite Conversation prompt fetcher.
+        """Initialize the Infinite Conversation fetcher.
 
         Args:
             data_dir: Path to directory containing conversation JSON files
+            min_messages: Minimum number of messages in conversation
+            max_messages: Maximum number of messages. If None, no upper limit.
         """
         self.data_dir = Path(data_dir)
+        self.min_messages = min_messages
+        self.max_messages = max_messages
         self.conversations = []
         self._load_data()
 
@@ -212,10 +268,14 @@ class InfiniteConversationPromptFetcher(BasePromptFetcher):
                 # Extract messages from the conversation
                 messages = self._extract_messages(data)
 
-                # Add all conversations regardless of message count
-                self.conversations.append(
-                    {"id": file_path.stem, "messages": messages}
-                )
+                # Filter based on message count
+                if len(messages) >= self.min_messages and (
+                    self.max_messages is None
+                    or len(messages) <= self.max_messages
+                ):
+                    self.conversations.append(
+                        {"id": file_path.stem, "messages": messages}
+                    )
             except Exception as e:
                 logger.warning(
                     f"Failed to load conversation from {file_path}: {e}"
@@ -268,7 +328,7 @@ class InfiniteConversationPromptFetcher(BasePromptFetcher):
 
         return messages
 
-    def get_random_prompt(self) -> List[Dict[str, str]]:
+    def get_conversation(self) -> List[Dict[str, str]]:
         """Get a random conversation from the Infinite Conversation dataset.
 
         Returns:
@@ -302,3 +362,122 @@ class InfiniteConversationPromptFetcher(BasePromptFetcher):
             current_role = "assistant" if current_role == "user" else "user"
 
         return messages
+
+
+class TopicalChatConversationFetcher(BasePromptFetcher):
+    """Fetches random conversations from the Topical-Chat dataset."""
+
+    def __init__(
+        self,
+        rare_file_path: Union[str, Path],
+        freq_file_path: Union[str, Path],
+        min_messages: int = 2,
+        max_messages: Optional[int] = None,
+        use_rare: bool = True,
+        use_freq: bool = True,
+    ):
+        """Initialize the Topical-Chat conversation fetcher.
+
+        Args:
+            rare_file_path: Path to test_rare.jsonl file
+            freq_file_path: Path to test_freq.jsonl file
+            min_messages: Minimum number of messages in conversation
+            max_messages: Maximum number of messages. If None, no upper limit.
+            use_rare: Whether to include rare conversations
+            use_freq: Whether to include frequent conversations
+        """
+        self.rare_file_path = Path(rare_file_path)
+        self.freq_file_path = Path(freq_file_path)
+        self.min_messages = min_messages
+        self.max_messages = max_messages
+        self.use_rare = use_rare
+        self.use_freq = use_freq
+        self.conversations = []
+        self._load_data()
+
+    def _load_data(self) -> None:
+        """Load and preprocess the Topical-Chat dataset."""
+        files_to_load = []
+        if self.use_rare:
+            files_to_load.append(self.rare_file_path)
+        if self.use_freq:
+            files_to_load.append(self.freq_file_path)
+
+        for file_path in files_to_load:
+            try:
+                with open(file_path, "r") as f:
+                    for line in f:
+                        data = json.loads(line.strip())
+                        # Extract conversation from the nested structure
+                        conversation_data = data[1]["content"]
+
+                        # Convert to standard message format
+                        messages = self._extract_messages(conversation_data)
+
+                        # Filter based on message count
+                        if len(messages) >= self.min_messages and (
+                            self.max_messages is None
+                            or len(messages) <= self.max_messages
+                        ):
+                            self.conversations.append(
+                                {
+                                    "id": data[0],
+                                    "messages": messages,
+                                    "article_url": data[1].get(
+                                        "article_url", ""
+                                    ),
+                                    "config": data[1].get("config", ""),
+                                    "conversation_rating": data[1].get(
+                                        "conversation_rating", {}
+                                    ),
+                                }
+                            )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to load conversations from {file_path}: {e}"
+                )
+
+        logger.info(
+            f"Loaded {len(self.conversations)} "
+            f"conversations from Topical-Chat dataset"
+        )
+
+    def _extract_messages(
+        self, conversation_data: List[Dict]
+    ) -> List[Dict[str, str]]:
+        """Extract and format messages from a Topical-Chat conversation.
+
+        Args:
+            conversation_data: List of message dictionaries from JSON
+
+        Returns:
+            List of formatted message dictionaries
+        """
+        messages = []
+        for msg in conversation_data:
+            messages.append(
+                {
+                    "role": msg["agent"],
+                    "content": msg["message"],
+                }
+            )
+
+        return messages
+
+    def get_conversation(self) -> List[Dict[str, str]]:
+        """Get a random conversation from the Topical-Chat dataset.
+
+        Returns:
+            List of messages in the format expected by LLMProvider
+            [
+                {"role": "user", "content": "..."},
+                {"role": "assistant", "content": "..."},
+            ]
+        """
+        if not self.conversations:
+            logger.warning("No conversations loaded")
+            return []
+
+        # Select a random conversation
+        conversation = random.choice(self.conversations)
+        return conversation["messages"]

@@ -1,15 +1,15 @@
-"""Tests for ShareGPTPromptFetcher class."""
+"""Tests for ShareGPTConversationFetcher class."""
 
 import json
 import os
 import tempfile
 from unittest import TestCase, main
 
-from babel_ai.prompt_fetcher import ShareGPTPromptFetcher
+from babel_ai.prompt_fetcher import ShareGPTConversationFetcher
 
 
-class TestShareGPTPromptFetcher(TestCase):
-    """Test cases for ShareGPTPromptFetcher."""
+class TestShareGPTConversationFetcher(TestCase):
+    """Test cases for ShareGPTConversationFetcher."""
 
     def setUp(self):
         """Set up test fixtures."""
@@ -56,37 +56,37 @@ class TestShareGPTPromptFetcher(TestCase):
     def test_initialization_with_min_messages(self):
         """Test initialization with different min_messages values."""
         # Should include all conversations (all have >= 2 messages)
-        fetcher = ShareGPTPromptFetcher(self.data_path, min_messages=2)
+        fetcher = ShareGPTConversationFetcher(self.data_path, min_messages=2)
         self.assertEqual(len(fetcher.conversations), 3)
 
         # Should include conversations with 4 or more messages
-        fetcher = ShareGPTPromptFetcher(self.data_path, min_messages=4)
+        fetcher = ShareGPTConversationFetcher(self.data_path, min_messages=4)
         self.assertEqual(len(fetcher.conversations), 2)
 
         # Should include only the longest conversation
-        fetcher = ShareGPTPromptFetcher(self.data_path, min_messages=6)
+        fetcher = ShareGPTConversationFetcher(self.data_path, min_messages=6)
         self.assertEqual(len(fetcher.conversations), 1)
 
         # Should include no conversations
-        fetcher = ShareGPTPromptFetcher(self.data_path, min_messages=8)
+        fetcher = ShareGPTConversationFetcher(self.data_path, min_messages=8)
         self.assertEqual(len(fetcher.conversations), 0)
 
     def test_initialization_with_max_messages(self):
         """Test initialization with different max_messages values."""
         # Should include only conversations with 2-3 messages
-        fetcher = ShareGPTPromptFetcher(
+        fetcher = ShareGPTConversationFetcher(
             self.data_path, min_messages=2, max_messages=3
         )
         self.assertEqual(len(fetcher.conversations), 1)
 
         # Should include conversations with 2-4 messages
-        fetcher = ShareGPTPromptFetcher(
+        fetcher = ShareGPTConversationFetcher(
             self.data_path, min_messages=2, max_messages=4
         )
         self.assertEqual(len(fetcher.conversations), 2)
 
         # Should include all conversations (none have > 6 messages)
-        fetcher = ShareGPTPromptFetcher(
+        fetcher = ShareGPTConversationFetcher(
             self.data_path, min_messages=2, max_messages=6
         )
         self.assertEqual(len(fetcher.conversations), 3)
@@ -94,33 +94,85 @@ class TestShareGPTPromptFetcher(TestCase):
     def test_initialization_with_min_and_max_messages(self):
         """Test initialization with both min and max message constraints."""
         # Should include conversations with 4-5 messages
-        fetcher = ShareGPTPromptFetcher(
+        fetcher = ShareGPTConversationFetcher(
             self.data_path, min_messages=4, max_messages=5
         )
         self.assertEqual(len(fetcher.conversations), 1)
 
         # Should include no conversations (impossible range)
-        fetcher = ShareGPTPromptFetcher(
+        fetcher = ShareGPTConversationFetcher(
             self.data_path, min_messages=5, max_messages=3
         )
         self.assertEqual(len(fetcher.conversations), 0)
 
-    def test_get_random_prompt(self):
-        """Test getting random prompts."""
-        fetcher = ShareGPTPromptFetcher(
+    def test_get_conversation(self):
+        """Test getting random conversations."""
+        fetcher = ShareGPTConversationFetcher(
             self.data_path, min_messages=2, max_messages=4
         )
-        prompt = fetcher.get_random_prompt()
+        conversation = fetcher.get_conversation()
 
-        # Verify prompt structure
-        self.assertIsInstance(prompt, list)
-        self.assertTrue(2 <= len(prompt) <= 4)
+        # Verify conversation structure
+        self.assertIsInstance(conversation, list)
+        self.assertTrue(2 <= len(conversation) <= 4)
 
         # Verify message format
-        first_message = prompt[0]
+        first_message = conversation[0]
         self.assertIn("role", first_message)
         self.assertIn("content", first_message)
         self.assertIn(first_message["role"], ["user", "assistant"])
+
+    def test_get_conversation_empty_dataset(self):
+        """Test getting conversation from empty dataset."""
+        # Create empty dataset
+        empty_data = []
+        empty_path = os.path.join(self.temp_dir, "empty_data.json")
+        with open(empty_path, "w") as f:
+            json.dump(empty_data, f)
+
+        fetcher = ShareGPTConversationFetcher(empty_path, min_messages=2)
+
+        # Should raise an exception when trying to get conversation
+        with self.assertRaises(IndexError):
+            fetcher.get_conversation()
+
+        # Clean up
+        os.remove(empty_path)
+
+    def test_role_conversion(self):
+        """Test that roles are properly converted from ShareGPT format."""
+        fetcher = ShareGPTConversationFetcher(
+            self.data_path, min_messages=2, max_messages=2
+        )
+        conversation = fetcher.get_conversation()
+
+        # First message should be from human -> user
+        self.assertEqual(conversation[0]["role"], "user")
+        self.assertEqual(conversation[0]["content"], "Hi")
+
+        # Second message should be from assistant -> assistant
+        self.assertEqual(conversation[1]["role"], "assistant")
+        self.assertEqual(conversation[1]["content"], "Hello")
+
+    def test_content_preservation(self):
+        """Test that message content is preserved correctly."""
+        fetcher = ShareGPTConversationFetcher(
+            self.data_path, min_messages=6, max_messages=6
+        )
+        conversation = fetcher.get_conversation()
+
+        # Check that content matches expected values
+        expected_contents = [
+            "What is Python?",
+            "A programming language",
+            "Tell me more",
+            "Python is versatile...",
+            "What can I build with it?",
+            "Many things...",
+        ]
+
+        for i, message in enumerate(conversation):
+            self.assertEqual(message["content"], expected_contents[i])
 
 
 if __name__ == "__main__":
