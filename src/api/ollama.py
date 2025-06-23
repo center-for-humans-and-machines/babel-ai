@@ -36,7 +36,7 @@ def ollama_request(
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
     top_p: float = 1.0,
-    max_tokens: int = 1000,
+    max_tokens: Optional[int] = None,
     api_base_url: Optional[str] = API_BASE,
     endpoint: str = "api/chat",
     stream: bool = False,

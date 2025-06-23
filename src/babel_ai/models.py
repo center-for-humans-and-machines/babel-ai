@@ -160,8 +160,8 @@ class AgentConfig(BaseModel):
 
     provider: Provider = Field(description="Name of the provider to use")
     model: ModelType = Field(description="Name of the model to use")
-    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
-    max_tokens: int = Field(default=100, ge=1)
+    temperature: float = Field(default=1.0, ge=0.0, le=2.0)
+    max_tokens: Optional[int] = Field(default=None, ge=1)
     frequency_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
     presence_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
     top_p: float = Field(default=1.0, ge=0.0, le=1.0)
@@ -213,7 +213,7 @@ class ExperimentConfig(BaseModel):
     """
 
     fetcher: FetcherType = Field(description="Type of fetcher to use")
-    fetcher_config: Dict[str, Any] = Field(
+    fetcher_config: FetcherConfig = Field(
         description="Configuration for the fetcher"
     )
     analyzer: AnalyzerType = Field(description="Type of analyzer to use")

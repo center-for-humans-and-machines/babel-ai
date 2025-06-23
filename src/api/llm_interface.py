@@ -2,7 +2,7 @@
 
 import logging
 from enum import Enum
-from typing import Callable, Dict, List, Type, Union
+from typing import Callable, Dict, List, Optional, Type, Union
 
 from api.azure_openai import AzureModel, azure_openai_request
 from api.ollama import OllamaModel, ollama_request, raven_ollama_request
@@ -62,8 +62,8 @@ def generate_response(
     messages: List[Dict[str, str]],
     provider: Provider,
     model: ModelType,
-    temperature: float = 0.7,
-    max_tokens: int = 100,
+    temperature: float = 1.0,
+    max_tokens: Optional[int] = None,
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
     top_p: float = 1.0,

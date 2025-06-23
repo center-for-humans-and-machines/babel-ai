@@ -3,6 +3,7 @@
 import logging
 import os
 from enum import Enum
+from typing import Optional
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -32,7 +33,7 @@ def openai_request(
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
     top_p: float = 1.0,
-    max_tokens: int = 1000,
+    max_tokens: Optional[int] = None,
 ) -> str:
     """
     Send a request to the OpenAI API using the specified GPT-4 model.

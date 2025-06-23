@@ -3,6 +3,7 @@
 import logging
 import os
 from enum import Enum
+from typing import Optional
 
 from dotenv import load_dotenv
 from openai import AzureOpenAI
@@ -36,7 +37,7 @@ def azure_openai_request(
     frequency_penalty: float = 0.0,  # -2.0 to 2.0 higher = less repetition
     presence_penalty: float = 0.0,  # -2.0 to 2.0 higher = more diverse
     top_p: float = 1.0,  # 0.0 to 1.0 higher = more creative
-    max_tokens: int = 1000,
+    max_tokens: Optional[int] = None,
 ) -> str:
     """Send a request to Azure OpenAI API.
 
