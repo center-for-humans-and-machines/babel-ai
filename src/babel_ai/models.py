@@ -1,15 +1,50 @@
 """Pydantic models for analysis results."""
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
 from api.llm_interface import ModelType, Provider
+from babel_ai.analyzer import AnalyzerType
+from babel_ai.llm_drift import AgentSelectionMethod
+from babel_ai.prompt_fetcher import FetcherType
 
 
 class AnalysisResult(BaseModel):
-    """Analysis results for LLM outputs."""
+    """Comprehensive analysis results for LLM-generated text outputs.
+
+    This class contains various metrics computed from analyzing LLM responses
+    to measure text quality, coherence, similarity, and complexity. It's used
+    in drift experiments to track how model outputs change over time.
+
+    Attributes:
+        word_count (int): Total number of words in the analyzed text
+        unique_word_count (int): Number of unique/distinct words used
+        coherence_score (float): Ratio of unique words to total words
+            (0.0-1.0). Higher values indicate more diverse vocabulary usage
+        lexical_similarity (Optional[float]): Jaccard similarity coefficient
+            between current and previous text (0.0-1.0). Measures word overlap
+        semantic_similarity (Optional[float]): Cosine similarity between
+            sentence embeddings (-1.0 to 1.0). Measures meaning similarity
+        token_perplexity (Optional[float]): Average perplexity of tokens
+            (≥1.0). Lower values indicate more predictable/coherent text
+
+    Note:
+        Optional fields (lexical_similarity, semantic_similarity,
+        token_perplexity) may be None if comparison data is unavailable
+        or if the analysis couldn't be performed.
+
+    Example:
+        >>> result = AnalysisResult(
+        ...     word_count=45,
+        ...     unique_word_count=38,
+        ...     coherence_score=0.844,
+        ...     lexical_similarity=0.23,
+        ...     semantic_similarity=0.78,
+        ...     token_perplexity=12.5
+        ... )
+    """
 
     word_count: int = Field(description="Total number of words in the text")
     unique_word_count: int = Field(description="Number of unique words")
@@ -35,8 +70,95 @@ class AnalysisResult(BaseModel):
     )
 
 
+class AnalyzerConfig(BaseModel):
+    """Configuration parameters for text analysis in drift experiments.
+
+    This class defines how the analyzer should process and compare LLM
+    responses to detect drift patterns. It controls the scope and methodology
+    of the analysis performed on generated text.
+
+    Attributes:
+        analyze_window (int): Number of previous responses to include when
+            calculating similarity metrics. Larger windows provide more
+            context but may dilute recent drift signals. Must be ≥1.
+
+    Example:
+        >>> config = AnalyzerConfig(analyze_window=5)
+        >>> # This will compare each response against the 5 most recent ones
+    """
+
+    analyze_window: int = Field(
+        description="Number of previous responses to analyze for drift"
+    )
+
+
+class FetcherConfig(BaseModel):
+    """Configuration parameters for conversation prompt fetching.
+
+    This class defines how the prompt fetcher should select and prepare
+    conversation data for drift experiments. It controls data source location
+    and conversation filtering criteria.
+
+    Attributes:
+        data_path (str): File path to the conversation dataset. Should point
+            to a valid data file in the expected format for the fetcher type
+        min_messages (int): Minimum number of messages required in a
+            conversation for it to be selected. Filters out very short
+            conversations
+        max_messages (int): Maximum number of messages to include from a
+            conversation. Longer conversations will be truncated
+
+    Example:
+        >>> config = FetcherConfig(
+        ...     data_path="/data/conversations.json",
+        ...     min_messages=3,
+        ...     max_messages=20
+        ... )
+        >>> # Will load conversations with 3-20 messages from the JSON file
+    """
+
+    data_path: str = Field(description="Path to the data file")
+    min_messages: int = Field(
+        description="Minimum number of messages in a conversation"
+    )
+    max_messages: int = Field(
+        description="Maximum number of messages in a conversation"
+    )
+
+
 class AgentConfig(BaseModel):
-    """Configuration for an agent."""
+    """Configuration for an LLM agent used in drift experiments.
+
+    This class defines the parameters for configuring an agent that will
+    generate responses during a drift experiment. It includes settings for
+    the LLM provider, model selection, and various generation parameters
+    that control the behavior and output characteristics of the agent.
+
+    Attributes:
+        provider (Provider): The LLM provider to use (e.g., OpenAI, Ollama)
+        model (ModelType): The specific model to use from the provider
+        temperature (float): Controls randomness in generation (0.0-2.0).
+            Higher values make output more random. Default: 0.7
+        max_tokens (int): Maximum number of tokens to generate per response.
+            Default: 100
+        frequency_penalty (float): Penalty for frequently used tokens
+            (-2.0 to 2.0). Positive values discourage repetition. Default: 0.0
+        presence_penalty (float): Penalty for tokens that have already
+            appeared (-2.0 to 2.0). Positive values encourage new topics.
+            Default: 0.0
+        top_p (float): Nucleus sampling parameter (0.0-1.0). Only consider
+            tokens with cumulative probability up to top_p. Default: 1.0
+
+    Example:
+        >>> config = AgentConfig(
+        ...     provider=Provider.OPENAI,
+        ...     model=ModelType.GPT_3_5_TURBO,
+        ...     temperature=0.8,
+        ...     max_tokens=150,
+        ...     frequency_penalty=0.1,
+        ...     presence_penalty=0.1
+        ... )
+    """
 
     provider: Provider = Field(description="Name of the provider to use")
     model: ModelType = Field(description="Name of the model to use")
@@ -48,35 +170,104 @@ class AgentConfig(BaseModel):
 
 
 class ExperimentConfig(BaseModel):
-    """Configuration for the drift experiment.
+    """Configuration for running a drift experiment.
+
+    This class defines the complete configuration for running a drift
+    experiment, including fetcher settings, analyzer settings, agent
+    configurations, and experiment parameters.
 
     Attributes:
-        provider:               Name of the provider to use (e.g. 'openai', 'azure', 'ollama', 'raven')  # noqa: E501
-        model:                  Name of the model to use (e.g. 'gpt-4', 'llama2', 'llama3.3:70b')  # noqa: E501
-        temperature:            Sampling temperature for generation (0.0 to 2.0)
-        max_tokens:             Maximum number of tokens to generate per response (1 to 10000)
-        frequency_penalty:      Penalty for token frequency (-2.0 to 2.0)
-        presence_penalty:       Penalty for token presence (-2.0 to 2.0)
-        top_p:                  Top-p sampling parameter (0.0 to 1.0)
-        max_iterations:         Maximum number of back-and-forth iterations
-        max_total_characters:   Maximum total characters across all responses
-        analyze_window:         Number of previous responses to analyze for drift
+        fetcher: Type of fetcher to use for getting conversation prompts
+        fetcher_config: Dictionary of configuration parameters for the fetcher
+        analyzer: Type of analyzer to use for measuring drift
+        analyzer_config: Configuration parameters for the analyzer
+        agent_configs: List of agent configurations to use in the experiment
+        agent_selection_method: Method for selecting which agent responds next
+        max_iterations: Maximum number of conversation turns to run
+        max_total_characters: Maximum total characters across all responses
+
+    Example:
+        >>> config = ExperimentConfig(
+        ...     fetcher=FetcherType.SHAREGPT,
+        ...     fetcher_config={
+        ...         "data_path": "/path/to/sharegpt.json",
+        ...         "min_messages": 2,
+        ...         "max_messages": 10
+        ...     },
+        ...     analyzer=AnalyzerType.SIMILARITY,
+        ...     analyzer_config=AnalyzerConfig(analyze_window=5),
+        ...     agent_configs=[
+        ...         AgentConfig(
+        ...             provider=Provider.OPENAI,
+        ...             model=ModelType.GPT_3_5_TURBO,
+        ...             temperature=0.7
+        ...         ),
+        ...         AgentConfig(
+        ...             provider=Provider.OLLAMA,
+        ...             model=ModelType.LLAMA2_7B,
+        ...             temperature=0.8
+        ...         )
+        ...     ],
+        ...     agent_selection_method=AgentSelectionMethod.ROUND_ROBIN,
+        ...     max_iterations=50,
+        ...     max_total_characters=500000
+        ... )
     """
 
-    provider: str = (Field(description="Name of the provider to use"),)
-    model: str = (Field(description="Name of the model to use"),)
-    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
-    max_tokens: int = Field(default=100, ge=1)
-    frequency_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
-    presence_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
-    top_p: float = Field(default=1.0, ge=0.0, le=1.0)
+    fetcher: FetcherType = Field(description="Type of fetcher to use")
+    fetcher_config: Dict[str, Any] = Field(
+        description="Configuration for the fetcher"
+    )
+    analyzer: AnalyzerType = Field(description="Type of analyzer to use")
+    analyzer_config: AnalyzerConfig = Field(
+        description="Configuration for the analyzer"
+    )
+    agent_configs: List[AgentConfig] = Field(
+        description="Configurations for the agents"
+    )
+    agent_selection_method: AgentSelectionMethod = Field(
+        description="Method to select the next agent"
+    )
     max_iterations: int = Field(default=100, ge=1)
     max_total_characters: int = Field(default=1000000, ge=1)
-    analyze_window: int = Field(default=20, ge=1)
 
 
 class Metric(BaseModel):
-    """A single metric entry from a drift experiment."""
+    """A single data point collected during a drift experiment.
+
+    This class represents one measurement taken during an experiment,
+    containing both the raw response data and its computed analysis metrics.
+    It serves as the fundamental unit of data collection for tracking model
+    drift over time.
+
+    Attributes:
+        iteration (int): Sequential number of this measurement in the
+            experiment. Starts from 0 and increments with each new response
+        timestamp (datetime): Exact time when this metric was recorded.
+            Used for temporal analysis and experiment tracking
+        role (str): The role/type of the message in the conversation
+            (typically "system", "user", or "assistant")
+        response (str): The actual text content generated by the LLM.
+            This is the raw output being analyzed for drift
+        analysis (AnalysisResult): Computed metrics for this response
+            including word counts, similarity scores, and perplexity measures
+        config (Optional[ExperimentConfig]): The experiment configuration
+            used when this metric was collected. May be None for space
+            efficiency
+
+    Example:
+        >>> metric = Metric(
+        ...     iteration=42,
+        ...     timestamp=datetime.now(),
+        ...     role="assistant",
+        ...     response="This is a sample response from the model.",
+        ...     analysis=AnalysisResult(
+        ...         word_count=9,
+        ...         unique_word_count=9,
+        ...         coherence_score=1.0
+        ...     )
+        ... )
+    """
 
     iteration: int = Field(description="Iteration number in the experiment")
     timestamp: datetime = Field(description="When this metric was recorded")
