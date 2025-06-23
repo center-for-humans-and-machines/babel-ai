@@ -10,7 +10,7 @@ import pytest
 from babel_ai.analyzer import SimilarityAnalyzer
 from babel_ai.llm_drift import DriftExperiment
 from babel_ai.models import AnalysisResult, ExperimentConfig, Metric
-from babel_ai.prompt_fetcher import PromptFetcher
+from babel_ai.prompt_fetcher import RandomPromptFetcher
 
 
 @pytest.fixture
@@ -31,7 +31,7 @@ def mock_analyzer():
 @pytest.fixture
 def mock_prompt_fetcher():
     """Create a mock PromptFetcher instance."""
-    fetcher = MagicMock(spec=PromptFetcher)
+    fetcher = MagicMock(spec=RandomPromptFetcher)
     fetcher.get_random_prompt.return_value = "Test prompt"
     return fetcher
 

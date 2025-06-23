@@ -13,18 +13,13 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
-try:
-    from tqdm import tqdm as terminal_tqdm
-    from tqdm.notebook import tqdm as notebook_tqdm
-
-    TQDM_AVAILABLE = True
-except ImportError:
-    TQDM_AVAILABLE = False
-
 from api.llm_interface import Provider, generate_response
-from babel_ai.analyzer import SimilarityAnalyzer
+from babel_ai.agent import Agent
+from babel_ai.analyzer import Analyzer
+from babel_ai.enums import AgentSelectionMethod
 from babel_ai.models import ExperimentConfig, Metric
-from babel_ai.prompt_fetcher import BasePromptFetcher, PromptFetcher
+from babel_ai.prompt_fetcher import PromptFetcher
+from utils import progress_range
 
 logger = logging.getLogger(__name__)
 
@@ -34,81 +29,41 @@ class DriftExperiment:
 
     def __init__(
         self,
-        llm_provider: Optional[object] = None,  # Keep for compatibility
-        analyzer: Optional[SimilarityAnalyzer] = None,
-        prompt_fetcher: Optional[BasePromptFetcher] = None,
-        config: Optional[ExperimentConfig] = None,
+        config: ExperimentConfig,
         use_notebook_tqdm: bool = False,
     ):
-        # llm_provider is now ignored as we use the function directly
-        if llm_provider is not None:
-            logger.warning(
-                "llm_provider parameter is deprecated and will be ignored"
-            )
+        # save config
+        self.config = config
 
-        self.config = config or ExperimentConfig()
-        self.analyzer = analyzer or SimilarityAnalyzer(
-            analyze_window=self.config.analyze_window
+        # create analyzer
+        self.analyzer = Analyzer.create_analyzer(
+            analyzer_type=self.config.analyzer,
+            analyze_window=self.config.analyze_window,
         )
-        self.prompt_fetcher = prompt_fetcher or PromptFetcher()
+
+        # create prompt fetcher
+        self.prompt_fetcher = PromptFetcher.create_fetcher(
+            fetcher_type=self.config.fetcher,
+            **self.config.fetcher_config,
+        )
+
+        # create agents
+        self.agents = [
+            Agent(agent_config) for agent_config in self.config.agent_configs
+        ]
+
+        # create agent selection method
+        self.agent_selection_method = AgentSelectionMethod(
+            self.config.agent_selection_method
+        ).get_generator(self.agents)
+
+        # set up results list
         self.results: List[Metric] = []
 
-        # Keep track of message history for the experiment
-        self.messages: List[Dict[str, str]] = []
-
-        # Set up progress tracking
-        self.range_func = range
-        if TQDM_AVAILABLE:
-            tqdm_class = notebook_tqdm if use_notebook_tqdm else terminal_tqdm
-            self.tqdm = tqdm_class
-        else:
-            self.tqdm = None
-
-    def _get_progress_range(self, total: int, desc: str = "Progress") -> range:
-        """Create a progress-tracked range.
-
-        Args:
-            total: Total number of iterations
-            desc: Description for the progress bar
-
-        Returns:
-            Range object, optionally wrapped in tqdm
-        """
-        if self.tqdm is not None:
-            return self.tqdm(range(total), desc=desc)
-        return range(total)
-
-    def _validate_messages(self, messages: List[Dict[str, str]]) -> None:
-        """Validate message format for OpenAI API.
-
-        Args:
-            messages: List of message dictionaries to validate
-
-        Raises:
-            ValueError: If messages are not properly formatted
-        """
-        if not messages:
-            raise ValueError("Messages list cannot be empty")
-
-        valid_roles = {"system", "user", "assistant"}
-        for i, message in enumerate(messages):
-            if not isinstance(message, dict):
-                raise ValueError(f"Message {i} must be a dictionary")
-
-            if "role" not in message:
-                raise ValueError(f"Message {i} must have a 'role' key")
-
-            if message["role"] not in valid_roles:
-                raise ValueError(
-                    f"Message {i} has invalid role '{message['role']}'. "
-                    f"Must be one of: {valid_roles}"
-                )
-
-            if "content" not in message:
-                raise ValueError(f"Message {i} must have a 'content' key")
-
-            if not isinstance(message["content"], str):
-                raise ValueError(f"Message {i} content must be a string")
+        # keep track of message history for the experiment
+        self.messages: List[
+            Dict[str, str]
+        ] = self.prompt_fetcher.get_conversation()
 
     def run(
         self,
@@ -132,7 +87,7 @@ class DriftExperiment:
         # Analyze initial messages
         msgs_text = [message["content"] for message in initial_messages]
         metrics = []
-        for i in self._get_progress_range(
+        for i in progress_range(
             len(initial_messages), desc="Analyzing initial messages"
         ):
             role = initial_messages[i]["role"]
@@ -156,7 +111,7 @@ class DriftExperiment:
             )
 
         # Run experiment
-        for i in self._get_progress_range(
+        for i in progress_range(
             self.config.max_iterations, desc="Running drift experiment"
         ):
             # Generate next response using the function
