@@ -200,6 +200,7 @@ class ExperimentConfig(BaseModel):
         agent_selection_method: Method for selecting which agent responds next
         max_iterations: Maximum number of conversation turns to run
         max_total_characters: Maximum total characters across all responses
+        output_dir: Directory to save results
 
     Example:
         >>> config = ExperimentConfig(
@@ -225,7 +226,8 @@ class ExperimentConfig(BaseModel):
         ...     ],
         ...     agent_selection_method=AgentSelectionMethod.ROUND_ROBIN,
         ...     max_iterations=50,
-        ...     max_total_characters=500000
+        ...     max_total_characters=500000,
+        ...     output_dir="results",
         ... )
     """
 
@@ -245,6 +247,9 @@ class ExperimentConfig(BaseModel):
     )
     max_iterations: int = Field(default=100, ge=1)
     max_total_characters: int = Field(default=1000000, ge=1)
+    output_dir: Optional[str] = Field(
+        default=None, description="Directory to save results"
+    )
 
 
 class Metric(BaseModel):

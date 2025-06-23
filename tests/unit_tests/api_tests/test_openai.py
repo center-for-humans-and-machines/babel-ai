@@ -80,7 +80,7 @@ def test_default_parameters(sample_messages):
         call_args = mock_create.call_args[1]
         assert call_args["model"] == OpenAIModel.GPT4_1106_PREVIEW.value
         assert call_args["temperature"] == 1.0
-        assert call_args["max_tokens"] == 1000
+        assert call_args["max_tokens"] is None
         assert call_args["frequency_penalty"] == 0.0
         assert call_args["presence_penalty"] == 0.0
         assert call_args["top_p"] == 1.0

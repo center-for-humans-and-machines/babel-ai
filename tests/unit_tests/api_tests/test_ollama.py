@@ -115,7 +115,7 @@ def test_default_parameters(sample_messages):
         call_args = mock_post.call_args[1]
         assert call_args["json"]["model"] == OllamaModel.LLAMA3_70B.value
         assert call_args["json"]["options"]["temperature"] == 1.0
-        assert call_args["json"]["options"]["num_predict"] == 1000
+        assert call_args["json"]["options"]["num_predict"] is None
         assert call_args["json"]["options"]["frequency_penalty"] == 0.0
         assert call_args["json"]["options"]["presence_penalty"] == 0.0
         assert call_args["json"]["options"]["top_p"] == 1.0

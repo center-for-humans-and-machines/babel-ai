@@ -50,8 +50,8 @@ def test_generate_response_with_default_params(mock_request_functions):
     call_args = mock_request.call_args[1]
     assert call_args["messages"] == messages
     assert call_args["model"] == OpenAIModel.GPT4_1106_PREVIEW
-    assert call_args["temperature"] == 0.7
-    assert call_args["max_tokens"] == 100
+    assert call_args["temperature"] == 1.0
+    assert call_args["max_tokens"] is None
     assert call_args["frequency_penalty"] == 0.0
     assert call_args["presence_penalty"] == 0.0
     assert call_args["top_p"] == 1.0
