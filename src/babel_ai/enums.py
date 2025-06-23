@@ -2,7 +2,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Generator, List, Type
 
 if TYPE_CHECKING:
-    from babel_ai.agent import Agent, round_robin_agent_selection
+    from babel_ai.agent import Agent
     from babel_ai.analyzer import Analyzer
     from babel_ai.prompt_fetcher import BasePromptFetcher
 
@@ -44,9 +44,12 @@ class AgentSelectionMethod(Enum):
     ROUND_ROBIN = "round_robin"
 
     def get_generator(
-        self, agents: List[Agent]
-    ) -> Generator[Agent, None, None]:
+        self, agents: List[Type["Agent"]]
+    ) -> Generator[Type["Agent"], None, None]:
         """Get the corresponding generator for this method."""
+        # Import here to avoid circular imports
+        from babel_ai.agent import round_robin_agent_selection
+
         if self == AgentSelectionMethod.ROUND_ROBIN:
             return round_robin_agent_selection(agents)
 
