@@ -1,6 +1,7 @@
 """Agent for generating responses using various LLM providers."""
 
 import itertools
+import uuid
 from typing import Dict, Generator, List
 
 from api.llm_interface import generate_response
@@ -17,6 +18,7 @@ class Agent:
             agent_config: Configuration containing provider, model,
                          and generation parameters
         """
+        self.id = uuid.uuid4()
         self.config: AgentConfig = agent_config
 
     def generate_response(self, messages: List[Dict[str, str]]) -> str:
