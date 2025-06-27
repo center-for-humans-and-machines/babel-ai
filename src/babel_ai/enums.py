@@ -8,7 +8,23 @@ if TYPE_CHECKING:
 
 
 class FetcherType(Enum):
-    """Fetcher types for prompts."""
+    """Fetcher types for loading conversation prompts.
+
+    This enum defines the different data sources and formats that can be used
+    to load conversation prompts for drift experiments.
+
+    Available types:
+        SHAREGPT: Loads conversations from ShareGPT dataset format
+        RANDOM: Generates random prompts for testing
+        INFINITE_CONVERSATION: Loads from Infinite Conversation dataset
+        TOPICAL_CHAT: Loads from Topical Chat dataset format
+
+    Example:
+        >>> fetcher_type = FetcherType.SHAREGPT
+        >>> fetcher_class = fetcher_type.get_fetcher_class()
+        >>> fetcher = fetcher_class(data_path="conversations.json")
+        >>> conversation = fetcher.get_conversation()
+    """
 
     SHAREGPT = "sharegpt"
     RANDOM = "random"
@@ -39,7 +55,26 @@ class FetcherType(Enum):
 
 
 class AgentSelectionMethod(Enum):
-    """Agent selection methods."""
+    """Agent selection methods for choosing which agent responds next.
+
+    This enum defines different strategies for selecting which agent
+    from a pool of agents should generate the next response
+    in a conversation.
+
+    Available methods:
+        ROUND_ROBIN: Cycles through agents in order, giving each agent a turn
+            before starting over at the beginning. This ensures even
+            distribution of responses across all agents.
+
+    Example:
+        >>> method = AgentSelectionMethod.ROUND_ROBIN
+        >>> agents = [Agent1(), Agent2(), Agent3()]
+        >>> generator = method.get_generator(agents)
+        >>> next(generator)  # Returns Agent1
+        >>> next(generator)  # Returns Agent2
+        >>> next(generator)  # Returns Agent3
+        >>> next(generator)  # Returns Agent1 again
+    """
 
     ROUND_ROBIN = "round_robin"
 
@@ -55,7 +90,22 @@ class AgentSelectionMethod(Enum):
 
 
 class AnalyzerType(Enum):
-    """Analyzer types for LLM outputs."""
+    """Analyzer types for measuring drift in LLM outputs.
+
+    This enum defines different strategies for analyzing and measuring how LLM
+    responses change or drift over the course of a conversation.
+
+    Available types:
+        SIMILARITY: Measures lexical and semantic similarity between responses
+            to detect changes in language patterns and content. Includes both
+            pairwise comparisons and sliding window analysis.
+
+    Example:
+        >>> analyzer_type = AnalyzerType.SIMILARITY
+        >>> analyzer_class = analyzer_type.get_class()
+        >>> analyzer = analyzer_class(analyze_window=5)
+        >>> # Analyzer will compute similarity metrics between responses
+    """
 
     SIMILARITY = "similarity"
 
