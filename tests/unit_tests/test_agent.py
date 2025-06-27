@@ -41,14 +41,36 @@ class TestAgent:
         """Test that Agent initializes correctly with AgentConfig."""
         agent = Agent(sample_agent_config)
 
+        # Config attributes
         assert agent.config == sample_agent_config
         assert agent.config.provider == Provider.OPENAI
         assert agent.config.model == OpenAIModel.GPT4_1106_PREVIEW
+        assert agent.config.system_prompt is None
         assert agent.config.temperature == 0.8
         assert agent.config.max_tokens == 150
         assert agent.config.frequency_penalty == 0.2
         assert agent.config.presence_penalty == 0.1
         assert agent.config.top_p == 0.9
+
+        # Explicite attributes
+        assert agent.id is not None
+        assert agent.provider == Provider.OPENAI
+        assert agent.model == OpenAIModel.GPT4_1106_PREVIEW
+        assert agent.system_prompt is None
+
+    def test_agent_initialization_with_system_prompt(self):
+        """Test that Agent initializes correctly with system prompt."""
+        config = AgentConfig(
+            provider=Provider.OPENAI,
+            model=OpenAIModel.GPT4_1106_PREVIEW,
+            system_prompt="You are a helpful assistant.",
+            temperature=0.0,
+        )
+
+        agent = Agent(config)
+
+        assert agent.system_prompt == "You are a helpful assistant."
+        assert agent.config.system_prompt == "You are a helpful assistant."
 
     @patch("babel_ai.agent.generate_response")
     def test_generate_response_calls_api(
@@ -74,4 +96,76 @@ class TestAgent:
             frequency_penalty=0.2,
             presence_penalty=0.1,
             top_p=0.9,
+        )
+
+    @patch("babel_ai.agent.generate_response")
+    def test_generate_response_with_system_prompt(
+        self, mock_generate_response
+    ):
+        """Test that system prompt is prepended to messages."""
+        mock_generate_response.return_value = "Test response"
+
+        config = AgentConfig(
+            provider=Provider.OPENAI,
+            model=OpenAIModel.GPT4_1106_PREVIEW,
+            system_prompt="You are a helpful assistant.",
+            temperature=0.5,
+        )
+
+        agent = Agent(config)
+        messages = [{"role": "user", "content": "Hello!"}]
+
+        response = agent.generate_response(messages)
+
+        # Verify the response
+        assert response == "Test response"
+
+        # Verify generate_response was called with system prompt prepended
+        expected_messages = [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "Hello!"},
+        ]
+
+        mock_generate_response.assert_called_once_with(
+            messages=expected_messages,
+            provider=Provider.OPENAI,
+            model=OpenAIModel.GPT4_1106_PREVIEW,
+            temperature=0.5,
+            max_tokens=None,
+            frequency_penalty=0.0,
+            presence_penalty=0.0,
+            top_p=1.0,
+        )
+
+    @patch("babel_ai.agent.generate_response")
+    def test_generate_response_without_system_prompt(
+        self, mock_generate_response
+    ):
+        """Test that messages are passed unchanged when no system prompt."""
+        mock_generate_response.return_value = "Test response"
+
+        config = AgentConfig(
+            provider=Provider.OPENAI,
+            model=OpenAIModel.GPT4_1106_PREVIEW,
+            temperature=0.5,
+        )
+
+        agent = Agent(config)
+        messages = [{"role": "user", "content": "Hello!"}]
+
+        response = agent.generate_response(messages)
+
+        # Verify the response
+        assert response == "Test response"
+
+        # Verify generate_response was called with original messages unchanged
+        mock_generate_response.assert_called_once_with(
+            messages=messages,
+            provider=Provider.OPENAI,
+            model=OpenAIModel.GPT4_1106_PREVIEW,
+            temperature=0.5,
+            max_tokens=None,
+            frequency_penalty=0.0,
+            presence_penalty=0.0,
+            top_p=1.0,
         )

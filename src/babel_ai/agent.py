@@ -19,6 +19,9 @@ class Agent:
                          and generation parameters
         """
         self.id = uuid.uuid4()
+        self.provider = agent_config.provider
+        self.model = agent_config.model
+        self.system_prompt = agent_config.system_prompt
         self.config: AgentConfig = agent_config
 
     def generate_response(self, messages: List[Dict[str, str]]) -> str:
@@ -30,11 +33,23 @@ class Agent:
 
         Returns:
             Generated response string
+
+        Note:
+            If a system_prompt is configured, it will be prepended as the
+            first message with role 'system' to guide the agent's behavior.
         """
+        # Prepare messages with system prompt if configured
+        final_messages = []
+        if self.system_prompt:
+            final_messages.append(
+                {"role": "system", "content": self.system_prompt}
+            )
+        final_messages.extend(messages)
+
         return generate_response(
-            messages=messages,
-            provider=self.config.provider,
-            model=self.config.model,
+            messages=final_messages,
+            provider=self.provider,
+            model=self.model,
             temperature=self.config.temperature,
             max_tokens=self.config.max_tokens,
             frequency_penalty=self.config.frequency_penalty,

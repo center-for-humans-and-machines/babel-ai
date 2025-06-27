@@ -171,6 +171,8 @@ class AgentConfig(BaseModel):
     Attributes:
         provider (Provider): The LLM provider to use (e.g., OpenAI, Ollama)
         model (ModelType): The specific model to use from the provider
+        system_prompt (Optional[str]): System prompt to guide the agent's
+            behavior and responses. Default: None
         temperature (float): Controls randomness in generation (0.0-2.0).
             Higher values make output more random. Default: 0.7
         max_tokens (int): Maximum number of tokens to generate per response.
@@ -187,6 +189,7 @@ class AgentConfig(BaseModel):
         >>> config = AgentConfig(
         ...     provider=Provider.OPENAI,
         ...     model=ModelType.GPT_3_5_TURBO,
+        ...     system_prompt="You are a helpful assistant.",
         ...     temperature=0.8,
         ...     max_tokens=150,
         ...     frequency_penalty=0.1,
@@ -196,11 +199,30 @@ class AgentConfig(BaseModel):
 
     provider: Provider = Field(description="Name of the provider to use")
     model: ModelType = Field(description="Name of the model to use")
+    system_prompt: Optional[str] = Field(
+        default=None, description="System prompt to guide agent behavior"
+    )
     temperature: float = Field(default=1.0, ge=0.0, le=2.0)
     max_tokens: Optional[int] = Field(default=None, ge=1)
     frequency_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
     presence_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
     top_p: float = Field(default=1.0, ge=0.0, le=1.0)
+
+    @field_validator("model")
+    def validate_model_provider_compatibility(
+        cls, v: ModelType, values: ValidationInfo
+    ) -> ModelType:
+        """Validate that the model is compatible with the provider."""
+        provider = values.data["provider"]
+        expected_model_enum = provider.get_model_enum()
+
+        if not isinstance(v, expected_model_enum):
+            raise ValueError(
+                f"Model {v} is not compatible with provider {provider}. "
+                f"Expected model type: {expected_model_enum.__name__}"
+            )
+
+        return v
 
 
 class ExperimentConfig(BaseModel):

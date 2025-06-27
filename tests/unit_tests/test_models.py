@@ -238,102 +238,122 @@ class TestAgentConfig:
         )
         assert config.provider == Provider.OPENAI
         assert config.model == OpenAIModel.GPT4_1106_PREVIEW
-        assert config.temperature == 1.0  # default
-        assert config.max_tokens is None  # default
-        assert config.frequency_penalty == 0.0  # default
-        assert config.presence_penalty == 0.0  # default
-        assert config.top_p == 1.0  # default
+        assert config.system_prompt is None
+        assert config.temperature == 1.0
+        assert config.max_tokens is None
+        assert config.frequency_penalty == 0.0
+        assert config.presence_penalty == 0.0
+        assert config.top_p == 1.0
 
     def test_valid_agent_config_complete(self):
         """Test creating a valid AgentConfig with all fields."""
         config = AgentConfig(
             provider=Provider.OPENAI,
             model=OpenAIModel.GPT4_1106_PREVIEW,
+            system_prompt="You are a helpful assistant",
             temperature=0.8,
             max_tokens=150,
-            frequency_penalty=0.1,
-            presence_penalty=0.2,
+            frequency_penalty=0.5,
+            presence_penalty=0.3,
             top_p=0.9,
         )
         assert config.provider == Provider.OPENAI
         assert config.model == OpenAIModel.GPT4_1106_PREVIEW
+        assert config.system_prompt == "You are a helpful assistant"
         assert config.temperature == 0.8
         assert config.max_tokens == 150
-        assert config.frequency_penalty == 0.1
-        assert config.presence_penalty == 0.2
+        assert config.frequency_penalty == 0.5
+        assert config.presence_penalty == 0.3
         assert config.top_p == 0.9
 
+    def test_model_provider_compatibility_validation(self):
+        """Test that model-provider compatibility validation works."""
+        from api.ollama import OllamaModel
+
+        # This should raise a ValidationError because OllamaModel is not
+        # compatible with OpenAI provider
+        with pytest.raises(ValidationError) as exc_info:
+            AgentConfig(
+                provider=Provider.OPENAI,
+                model=OllamaModel.MISTRAL_7B,  # Incompatible model
+            )
+
+        # Check that the error message is informative
+        error_msg = str(exc_info.value)
+        assert "not compatible with provider" in error_msg
+        assert "OpenAI" in error_msg
+
     def test_invalid_temperature(self):
-        """Test that temperature must be between 0 and 2."""
+        """Test that temperature validation works correctly."""
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
                 model=OpenAIModel.GPT4_1106_PREVIEW,
-                temperature=2.5,
+                temperature=2.5,  # Invalid: > 2.0
             )
 
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
                 model=OpenAIModel.GPT4_1106_PREVIEW,
-                temperature=-0.1,
+                temperature=-0.1,  # Invalid: < 0.0
             )
 
     def test_invalid_max_tokens(self):
-        """Test that max_tokens must be >= 1."""
+        """Test that max_tokens validation works correctly."""
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
                 model=OpenAIModel.GPT4_1106_PREVIEW,
-                max_tokens=0,
+                max_tokens=0,  # Invalid: < 1
             )
 
     def test_invalid_frequency_penalty(self):
-        """Test that frequency_penalty must be between -2 and 2."""
+        """Test that frequency_penalty validation works correctly."""
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
                 model=OpenAIModel.GPT4_1106_PREVIEW,
-                frequency_penalty=2.5,
+                frequency_penalty=2.5,  # Invalid: > 2.0
             )
 
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
                 model=OpenAIModel.GPT4_1106_PREVIEW,
-                frequency_penalty=-2.5,
+                frequency_penalty=-2.5,  # Invalid: < -2.0
             )
 
     def test_invalid_presence_penalty(self):
-        """Test that presence_penalty must be between -2 and 2."""
+        """Test that presence_penalty validation works correctly."""
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
                 model=OpenAIModel.GPT4_1106_PREVIEW,
-                presence_penalty=2.5,
+                presence_penalty=2.5,  # Invalid: > 2.0
             )
 
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
                 model=OpenAIModel.GPT4_1106_PREVIEW,
-                presence_penalty=-2.5,
+                presence_penalty=-2.5,  # Invalid: < -2.0
             )
 
     def test_invalid_top_p(self):
-        """Test that top_p must be between 0 and 1."""
+        """Test that top_p validation works correctly."""
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
                 model=OpenAIModel.GPT4_1106_PREVIEW,
-                top_p=1.5,
+                top_p=1.5,  # Invalid: > 1.0
             )
 
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
                 model=OpenAIModel.GPT4_1106_PREVIEW,
-                top_p=-0.1,
+                top_p=-0.1,  # Invalid: < 0.0
             )
 
 
@@ -671,6 +691,7 @@ class TestAgentMetric:
         assert result["agent_config"] == {
             "provider": Provider.OPENAI,
             "model": OpenAIModel.GPT4_1106_PREVIEW,
+            "system_prompt": None,
             "temperature": 0.8,
             "max_tokens": None,
             "frequency_penalty": 0.0,
