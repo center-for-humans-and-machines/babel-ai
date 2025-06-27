@@ -82,70 +82,89 @@ class SimilarityAnalyzer(Analyzer):
         return word_count, unique_word_count, coherence_score
 
     def _analyze_lexical_similarity(
-        self, outputs: List[str]
+        self, outputs: List[str], window_size: int = 1
     ) -> Optional[float]:
         """Analyze lexical similarity with previous outputs.
 
         Args:
             outputs: List of all outputs including the current one
+            window_size: Number of previous outputs to compare against
 
         Returns:
-            Jaccard similarity score or None if no comparison possible
+            Average Jaccard similarity score or None if no comparison possible
         """
         if len(outputs) < 2:
             return None
 
         current_text = outputs[-1]
-        previous_text = outputs[-2]
-
         current_words = set(current_text.lower().split())
-        prev_words = set(previous_text.lower().split())
 
-        if prev_words and current_words:
-            intersection = current_words.intersection(prev_words)
-            union = current_words.union(prev_words)
-            return len(intersection) / len(union)
+        # Calculate similarities within the specified window
+        similarities = []
+        start_idx = max(0, len(outputs) - 1 - window_size)
+
+        for i in range(start_idx, len(outputs) - 1):
+            compare_text = outputs[i]
+            compare_words = set(compare_text.lower().split())
+
+            if compare_words and current_words:
+                intersection = current_words.intersection(compare_words)
+                union = current_words.union(compare_words)
+                similarity = len(intersection) / len(union)
+                similarities.append(similarity)
+
+        if similarities:
+            return sum(similarities) / len(similarities)
 
         return None
 
     def _analyze_semantic_similarity(
-        self, outputs: List[str]
+        self, outputs: List[str], window_size: int = 1
     ) -> Optional[float]:
         """Analyze semantic similarity using Sentence-BERT.
 
         Args:
             outputs: List of all outputs including the current one
+            window_size: Number of previous outputs to compare against
 
         Returns:
-            Cosine similarity score or None if no comparison possible
+            Average cosine similarity score or None if no comparison possible
         """
         if len(outputs) < 2:
             return None
 
         current_text = outputs[-1]
-        previous_text = outputs[-2]
-
-        # Encode current and previous text
         current_embedding = self.semantic_model.encode(
             current_text, convert_to_tensor=True
         )
-        prev_embedding = self.semantic_model.encode(
-            previous_text, convert_to_tensor=True
-        )
 
-        # Calculate cosine similarity and clamp to valid range
-        similarity = cos_sim(current_embedding, prev_embedding).item()
-        similarity = max(-1.0, min(1.0, similarity))  # Clamp to [-1, 1]
+        # Calculate similarities within the specified window
+        similarities = []
+        start_idx = max(0, len(outputs) - 1 - window_size)
 
-        if similarity <= 0:
-            logger.warning(
-                f"Semantic similarity is <= 0. "
-                f"Similarity: {similarity} "
-                f"Current text: {current_text} "
-                f"Previous text: {previous_text} "
+        for i in range(start_idx, len(outputs) - 1):
+            compare_text = outputs[i]
+            compare_embedding = self.semantic_model.encode(
+                compare_text, convert_to_tensor=True
             )
 
-        return similarity
+            similarity = cos_sim(current_embedding, compare_embedding).item()
+            similarity = max(-1.0, min(1.0, similarity))  # Clamp to [-1, 1]
+            similarities.append(similarity)
+
+            # Log warning for the direct comparison case (window_size=1)
+            if similarity <= 0:
+                logger.warning(
+                    f"Semantic similarity is <= 0. "
+                    f"Similarity: {similarity} "
+                    f"Current text: {current_text} "
+                    f"Previous text: {compare_text} "
+                )
+
+        if similarities:
+            return sum(similarities) / len(similarities)
+
+        return None
 
     def _analyze_token_perplexity(self, text: str) -> Optional[float]:
         """Analyze the perplexity of tokens in the text.
@@ -234,8 +253,21 @@ class SimilarityAnalyzer(Analyzer):
         token_perplexity = self._analyze_token_perplexity(current_text)
 
         # Get similarity metrics (will return None if not enough outputs)
-        lexical_similarity = self._analyze_lexical_similarity(outputs)
-        semantic_similarity = self._analyze_semantic_similarity(outputs)
+        # Direct similarity with previous output (window_size=1)
+        lexical_similarity = self._analyze_lexical_similarity(
+            outputs, window_size=1
+        )
+        semantic_similarity = self._analyze_semantic_similarity(
+            outputs, window_size=1
+        )
+
+        # Rolling window similarity using the configured analyze_window
+        lexical_similarity_window = self._analyze_lexical_similarity(
+            outputs, window_size=self.analyze_window
+        )
+        semantic_similarity_window = self._analyze_semantic_similarity(
+            outputs, window_size=self.analyze_window
+        )
 
         return AnalysisResult(
             word_count=word_count,
@@ -244,4 +276,6 @@ class SimilarityAnalyzer(Analyzer):
             token_perplexity=token_perplexity,
             lexical_similarity=lexical_similarity,
             semantic_similarity=semantic_similarity,
+            lexical_similarity_window=lexical_similarity_window,
+            semantic_similarity_window=semantic_similarity_window,
         )

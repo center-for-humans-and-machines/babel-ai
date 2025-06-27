@@ -36,6 +36,8 @@ class TestAnalysisResult:
         assert analysis.coherence_score == 0.8
         assert analysis.lexical_similarity is None
         assert analysis.semantic_similarity is None
+        assert analysis.lexical_similarity_window is None
+        assert analysis.semantic_similarity_window is None
         assert analysis.token_perplexity is None
 
     def test_valid_analysis_result_complete(self):
@@ -46,6 +48,8 @@ class TestAnalysisResult:
             coherence_score=0.8,
             lexical_similarity=0.75,
             semantic_similarity=0.65,
+            lexical_similarity_window=0.70,
+            semantic_similarity_window=0.60,
             token_perplexity=10.0,
         )
         assert analysis.word_count == 100
@@ -53,6 +57,8 @@ class TestAnalysisResult:
         assert analysis.coherence_score == 0.8
         assert analysis.lexical_similarity == 0.75
         assert analysis.semantic_similarity == 0.65
+        assert analysis.lexical_similarity_window == 0.70
+        assert analysis.semantic_similarity_window == 0.60
         assert analysis.token_perplexity == 10.0
 
     def test_invalid_coherence_score(self):
@@ -105,6 +111,42 @@ class TestAnalysisResult:
                 unique_word_count=80,
                 coherence_score=0.8,
                 semantic_similarity=-1.5,  # Invalid: < -1.0
+            )
+
+    def test_invalid_lexical_similarity_window(self):
+        """Test that lexical_similarity_window must be between 0 and 1."""
+        with pytest.raises(ValidationError):
+            AnalysisResult(
+                word_count=100,
+                unique_word_count=80,
+                coherence_score=0.8,
+                lexical_similarity_window=1.5,  # Invalid: > 1.0
+            )
+
+        with pytest.raises(ValidationError):
+            AnalysisResult(
+                word_count=100,
+                unique_word_count=80,
+                coherence_score=0.8,
+                lexical_similarity_window=-0.1,  # Invalid: < 0.0
+            )
+
+    def test_invalid_semantic_similarity_window(self):
+        """Test that semantic_similarity_window must be between -1 and 1."""
+        with pytest.raises(ValidationError):
+            AnalysisResult(
+                word_count=100,
+                unique_word_count=80,
+                coherence_score=0.8,
+                semantic_similarity_window=1.5,  # Invalid: > 1.0
+            )
+
+        with pytest.raises(ValidationError):
+            AnalysisResult(
+                word_count=100,
+                unique_word_count=80,
+                coherence_score=0.8,
+                semantic_similarity_window=-1.5,  # Invalid: < -1.0
             )
 
     def test_invalid_token_perplexity(self):
@@ -481,6 +523,8 @@ class TestMetric:
             "coherence_score": 0.8,
             "lexical_similarity": None,
             "semantic_similarity": None,
+            "lexical_similarity_window": None,
+            "semantic_similarity_window": None,
             "token_perplexity": None,
         }
 

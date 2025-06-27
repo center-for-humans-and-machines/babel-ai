@@ -110,9 +110,9 @@ def mock_agent(sample_agent_config):
 class TestExperiment:
     """Test the Experiment class."""
 
-    @patch("babel_ai.llm_drift.Analyzer.create_analyzer")
-    @patch("babel_ai.llm_drift.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.llm_drift.Agent")
+    @patch("babel_ai.experiment.Analyzer.create_analyzer")
+    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
+    @patch("babel_ai.experiment.Agent")
     def test_experiment_initialization(
         self,
         mock_agent_class,
@@ -163,9 +163,9 @@ class TestExperiment:
         assert experiment.messages == sample_messages
         assert experiment.results == []
 
-    @patch("babel_ai.llm_drift.Analyzer.create_analyzer")
-    @patch("babel_ai.llm_drift.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.llm_drift.Agent")
+    @patch("babel_ai.experiment.Analyzer.create_analyzer")
+    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
+    @patch("babel_ai.experiment.Agent")
     def test_experiment_initialization_with_custom_output_dir(
         self,
         mock_agent_class,
@@ -189,9 +189,9 @@ class TestExperiment:
 
         assert experiment.output_dir == Path("/custom/output/path")
 
-    @patch("babel_ai.llm_drift.Analyzer.create_analyzer")
-    @patch("babel_ai.llm_drift.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.llm_drift.Agent")
+    @patch("babel_ai.experiment.Analyzer.create_analyzer")
+    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
+    @patch("babel_ai.experiment.Agent")
     def test_should_continue_generation(
         self,
         mock_agent_class,
@@ -223,9 +223,9 @@ class TestExperiment:
         experiment.total_characters = 1001  # Exceed max_total_characters
         assert experiment._should_continue_generation() is False
 
-    @patch("babel_ai.llm_drift.Analyzer.create_analyzer")
-    @patch("babel_ai.llm_drift.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.llm_drift.Agent")
+    @patch("babel_ai.experiment.Analyzer.create_analyzer")
+    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
+    @patch("babel_ai.experiment.Agent")
     def test_generate_conversation(
         self,
         mock_agent_class,
@@ -288,9 +288,9 @@ class TestExperiment:
         )
         assert experiment.metadata.num_iterations_total == 4
 
-    @patch("babel_ai.llm_drift.Analyzer.create_analyzer")
-    @patch("babel_ai.llm_drift.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.llm_drift.Agent")
+    @patch("babel_ai.experiment.Analyzer.create_analyzer")
+    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
+    @patch("babel_ai.experiment.Agent")
     @patch("builtins.open", new_callable=mock_open)
     @patch("pandas.DataFrame.to_csv")
     @patch("pathlib.Path.mkdir")
@@ -344,9 +344,9 @@ class TestExperiment:
         mock_file_open.assert_called()
         mock_json_dump.assert_called_once()
 
-    @patch("babel_ai.llm_drift.Analyzer.create_analyzer")
-    @patch("babel_ai.llm_drift.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.llm_drift.Agent")
+    @patch("babel_ai.experiment.Analyzer.create_analyzer")
+    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
+    @patch("babel_ai.experiment.Agent")
     def test_run_method(
         self,
         mock_agent_class,
@@ -386,9 +386,9 @@ class TestExperiment:
 
             assert results == []
 
-    @patch("babel_ai.llm_drift.Analyzer.create_analyzer")
-    @patch("babel_ai.llm_drift.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.llm_drift.Agent")
+    @patch("babel_ai.experiment.Analyzer.create_analyzer")
+    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
+    @patch("babel_ai.experiment.Agent")
     def test_run_method_with_custom_output_dir(
         self,
         mock_agent_class,
@@ -425,9 +425,9 @@ class TestExperiment:
                 output_dir=custom_output_dir,
             )
 
-    @patch("babel_ai.llm_drift.Analyzer.create_analyzer")
-    @patch("babel_ai.llm_drift.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.llm_drift.Agent")
+    @patch("babel_ai.experiment.Analyzer.create_analyzer")
+    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
+    @patch("babel_ai.experiment.Agent")
     def test_multiple_agents_selection(
         self,
         mock_agent_class,
@@ -490,9 +490,9 @@ class TestExperiment:
         assert agent_metrics[0].agent_id == "agent_1"
         assert agent_metrics[1].agent_id == "agent_2"
 
-    @patch("babel_ai.llm_drift.Analyzer.create_analyzer")
-    @patch("babel_ai.llm_drift.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.llm_drift.Agent")
+    @patch("babel_ai.experiment.Analyzer.create_analyzer")
+    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
+    @patch("babel_ai.experiment.Agent")
     def test_experiment_stops_at_character_limit(
         self,
         mock_agent_class,
@@ -532,9 +532,9 @@ class TestExperiment:
         assert len(results) >= 3
         assert experiment.total_characters >= 100
 
-    @patch("babel_ai.llm_drift.Analyzer.create_analyzer")
-    @patch("babel_ai.llm_drift.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.llm_drift.Agent")
+    @patch("babel_ai.experiment.Analyzer.create_analyzer")
+    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
+    @patch("babel_ai.experiment.Agent")
     def test_experiment_with_empty_messages(
         self,
         mock_agent_class,
@@ -571,9 +571,9 @@ class TestExperiment:
         assert len(agent_metrics) > 0
         assert experiment.metadata.num_fetcher_messages == 0
 
-    @patch("babel_ai.llm_drift.Analyzer.create_analyzer")
-    @patch("babel_ai.llm_drift.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.llm_drift.Agent")
+    @patch("babel_ai.experiment.Analyzer.create_analyzer")
+    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
+    @patch("babel_ai.experiment.Agent")
     def test_experiment_with_notebook_tqdm_flag(
         self,
         mock_agent_class,
@@ -596,9 +596,9 @@ class TestExperiment:
 
         assert experiment.use_notebook_tqdm is True
 
-    @patch("babel_ai.llm_drift.Analyzer.create_analyzer")
-    @patch("babel_ai.llm_drift.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.llm_drift.Agent")
+    @patch("babel_ai.experiment.Analyzer.create_analyzer")
+    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
+    @patch("babel_ai.experiment.Agent")
     def test_experiment_messages_accumulate_correctly(
         self,
         mock_agent_class,

@@ -44,42 +44,94 @@ def test_analyze_word_stats(analyzer):
 
 def test_analyze_lexical_similarity(analyzer):
     """Test lexical similarity analysis."""
-    # Test similar text case
+    # Test similar text case with window_size=1 (direct similarity)
     outputs = [
         "Other sentence",
         "The quick brown super fox",
         "The quick brown super good fox",
     ]
 
-    result = analyzer._analyze_lexical_similarity(outputs)
+    result = analyzer._analyze_lexical_similarity(outputs, window_size=1)
 
     assert result == 5 / 6  # 5 intersection words and 6 union words
 
     # Test non-similar text case
     outputs = ["Other sentence", "The unsimilar fox", "The quick brown fox"]
 
-    result = analyzer._analyze_lexical_similarity(outputs)
+    result = analyzer._analyze_lexical_similarity(outputs, window_size=1)
 
     assert result == 2 / 5  # 2 intersection words and 5 union words
 
 
 def test_analyze_semantic_similarity(analyzer):
     """Test semantic similarity analysis."""
-    # Test similar but not identical text
+    # Test similar but not identical text with window_size=1
     outputs = [
         "A fast brown fox",
         "A slow not brown dog",
         "The quick brown fox",
     ]
 
-    result = analyzer._analyze_semantic_similarity(outputs)
+    result = analyzer._analyze_semantic_similarity(outputs, window_size=1)
     assert -1.0 <= result <= 1.0  # Ensure within valid range
 
     # Test identical text
     outputs = ["A lazy dog", "The quick brown fox", "The quick brown fox"]
 
-    result = analyzer._analyze_semantic_similarity(outputs)
+    result = analyzer._analyze_semantic_similarity(outputs, window_size=1)
     assert result == 1.0
+
+
+def test_analyze_lexical_similarity_window(analyzer):
+    """Test lexical similarity analysis with rolling window."""
+    outputs = [
+        "The quick brown fox",
+        "The fast brown fox",
+        "The slow brown fox",
+        "The lazy brown fox",
+        "The quick brown cat",  # Current output
+    ]
+
+    # Test with window_size=2 (average of last 2 comparisons)
+    result = analyzer._analyze_lexical_similarity(outputs, window_size=2)
+    assert result is not None
+    assert 0.0 <= result <= 1.0
+
+    # Test with window_size=4 (average of last 4 comparisons)
+    result = analyzer._analyze_lexical_similarity(outputs, window_size=4)
+    assert result is not None
+    assert 0.0 <= result <= 1.0
+
+    # Test with window_size larger than available outputs
+    result = analyzer._analyze_lexical_similarity(outputs, window_size=10)
+    assert result is not None
+    assert 0.0 <= result <= 1.0
+
+
+def test_analyze_semantic_similarity_window(analyzer):
+    """Test semantic similarity analysis with rolling window."""
+    outputs = [
+        "The quick brown fox",
+        "The fast brown fox",
+        "The slow brown fox",
+        "The lazy brown fox",
+        "The quick brown cat",  # Current output
+    ]
+
+    # Test with window_size=2 (average of last 2 comparisons)
+    result = analyzer._analyze_semantic_similarity(outputs, window_size=2)
+    assert result is not None
+    assert -1.0 <= result <= 1.0
+
+    # Test with window_size=4 (average of last 4 comparisons)
+    result = analyzer._analyze_semantic_similarity(outputs, window_size=4)
+    assert result is not None
+    assert -1.0 <= result <= 1.0
+
+    # Test with window_size larger than available outputs
+    result = analyzer._analyze_semantic_similarity(outputs, window_size=10)
+    assert result is not None
+    assert -1.0 <= result <= 1.0
 
 
 def test_analyze_full(analyzer):
@@ -91,6 +143,10 @@ def test_analyze_full(analyzer):
     assert isinstance(result, AnalysisResult)
     assert isinstance(result.token_perplexity, float)
     assert result.token_perplexity >= 1.0
+    assert result.lexical_similarity is not None
+    assert result.semantic_similarity is not None
+    assert result.lexical_similarity_window is not None
+    assert result.semantic_similarity_window is not None
 
 
 def test_analyze_empty_text(analyzer):
@@ -113,6 +169,8 @@ def test_analyze_single_output(analyzer):
     assert result.token_perplexity
     assert result.lexical_similarity is None
     assert result.semantic_similarity is None
+    assert result.lexical_similarity_window is None
+    assert result.semantic_similarity_window is None
 
 
 def test_token_perplexity_basic(analyzer):
@@ -199,3 +257,41 @@ class TestAnalyzerAbstractBase:
         )
         assert isinstance(analyzer, SimilarityAnalyzer)
         assert analyzer.analyze_window == 30
+
+
+def test_analyze_rolling_window_vs_direct(analyzer):
+    """Test that rolling window and direct similarity are different."""
+    outputs = [
+        "This is a completely different sentence.",
+        "Another totally unrelated text here.",
+        "Some random words about nothing.",
+        "The quick brown fox jumps over the lazy dog.",
+        "The quick brown fox jumps over the lazy cat.",
+        # Current - similar to [-2]
+    ]
+
+    result = analyzer.analyze(outputs)
+
+    # Both should be calculated
+    assert result.lexical_similarity is not None
+    assert result.semantic_similarity is not None
+    assert result.lexical_similarity_window is not None
+    assert result.semantic_similarity_window is not None
+
+    # Window similarity should generally be lower than direct similarity
+    # since it includes comparison with more dissimilar texts
+    assert result.lexical_similarity_window <= result.lexical_similarity
+    assert result.semantic_similarity_window <= result.semantic_similarity
+
+
+def test_analyze_window_size_one_equivalent_to_direct():
+    """Test that window_size=1 gives same result as direct similarity."""
+    analyzer = SimilarityAnalyzer(analyze_window=1)
+
+    outputs = ["The quick brown fox", "A fast brown fox", "A lazy dog"]
+
+    result = analyzer.analyze(outputs)
+
+    # When analyze_window=1, window similarity should equal direct similarity
+    assert result.lexical_similarity == result.lexical_similarity_window
+    assert result.semantic_similarity == result.semantic_similarity_window

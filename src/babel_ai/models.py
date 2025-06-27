@@ -25,11 +25,16 @@ class AnalysisResult(BaseModel):
             between current and previous text (0.0-1.0). Measures word overlap
         semantic_similarity (Optional[float]): Cosine similarity between
             sentence embeddings (-1.0 to 1.0). Measures meaning similarity
+        lexical_similarity_window (Optional[float]): Average Jaccard similarity
+            across analysis window (0.0-1.0)
+        semantic_similarity_window (Optional[float]): Average cosine similarity
+            across analysis window (-1.0 to 1.0)
         token_perplexity (Optional[float]): Average perplexity of tokens
             (≥1.0). Lower values indicate more predictable/coherent text
 
     Note:
         Optional fields (lexical_similarity, semantic_similarity,
+        lexical_similarity_window, semantic_similarity_window,
         token_perplexity) may be None if comparison data is unavailable
         or if the analysis couldn't be performed.
 
@@ -40,6 +45,8 @@ class AnalysisResult(BaseModel):
         ...     coherence_score=0.844,
         ...     lexical_similarity=0.23,
         ...     semantic_similarity=0.78,
+        ...     lexical_similarity_window=0.3,
+        ...     semantic_similarity_window=0.8,
         ...     token_perplexity=12.5
         ... )
     """
@@ -58,6 +65,18 @@ class AnalysisResult(BaseModel):
     semantic_similarity: Optional[float] = Field(
         None,
         description="Cosine similarity between sentence embeddings",
+        ge=-1.0,
+        le=1.0,
+    )
+    lexical_similarity_window: Optional[float] = Field(
+        None,
+        description="Average Jaccard similarity across analysis window",
+        ge=0.0,
+        le=1.0,
+    )
+    semantic_similarity_window: Optional[float] = Field(
+        None,
+        description="Average cosine similarity across analysis window",
         ge=-1.0,
         le=1.0,
     )
