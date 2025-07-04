@@ -5,7 +5,7 @@ import uuid
 from typing import Dict, Generator, List
 
 from api.llm_interface import generate_response
-from babel_ai.models import AgentConfig
+from models import AgentConfig
 
 
 class Agent:

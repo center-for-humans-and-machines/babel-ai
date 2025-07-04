@@ -16,7 +16,8 @@ import pandas as pd
 from babel_ai.agent import Agent
 from babel_ai.analyzer import Analyzer
 from babel_ai.enums import AgentSelectionMethod
-from babel_ai.models import (
+from babel_ai.prompt_fetcher import BasePromptFetcher
+from models import (
     AgentMetric,
     AnalysisResult,
     ExperimentConfig,
@@ -24,7 +25,6 @@ from babel_ai.models import (
     FetcherMetric,
     Metric,
 )
-from babel_ai.prompt_fetcher import BasePromptFetcher
 
 logger = logging.getLogger(__name__)
 

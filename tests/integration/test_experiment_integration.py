@@ -17,7 +17,7 @@ from api.llm_interface import Provider
 from api.openai import OpenAIModel
 from babel_ai.enums import AgentSelectionMethod, AnalyzerType, FetcherType
 from babel_ai.experiment import Experiment
-from babel_ai.models import (
+from models import (
     AgentConfig,
     AgentMetric,
     AnalyzerConfig,

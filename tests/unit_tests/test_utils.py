@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from utils import load_yaml_config
 
 
-class TestConfig(BaseModel):
+class ConfigModel(BaseModel):
     """Test configuration model with various field types."""
 
     name: str
@@ -37,10 +37,10 @@ items:
         config_file.write_text(config_content.strip())
 
         # Load configuration
-        config = load_yaml_config(TestConfig, str(config_file))
+        config = load_yaml_config(ConfigModel, str(config_file))
 
         # Verify all fields
-        assert isinstance(config, TestConfig)
+        assert isinstance(config, ConfigModel)
         assert config.name == "test_config"
         assert config.value == 42
         assert config.enabled is False
@@ -56,7 +56,7 @@ value: 100
 """
         config_file.write_text(config_content.strip())
 
-        config = load_yaml_config(TestConfig, str(config_file))
+        config = load_yaml_config(ConfigModel, str(config_file))
 
         assert config.name == "minimal_config"
         assert config.value == 100
@@ -74,7 +74,7 @@ value: 200
         config_file.write_text(config_content.strip())
 
         # Use Path object instead of string
-        config = load_yaml_config(TestConfig, config_file)
+        config = load_yaml_config(ConfigModel, config_file)
 
         assert config.name == "path_test"
         assert config.value == 200
@@ -82,7 +82,7 @@ value: 200
     def test_load_yaml_config_file_not_found(self):
         """Test FileNotFoundError for non-existent file."""
         with pytest.raises(FileNotFoundError):
-            load_yaml_config(TestConfig, "nonexistent.yaml")
+            load_yaml_config(ConfigModel, "nonexistent.yaml")
 
     def test_load_yaml_config_validation_error(self, tmp_path):
         """Test validation error when data doesn't match schema."""
@@ -95,4 +95,4 @@ value: "not_a_number"  # Should be int
 
         # Pydantic will raise ValidationError
         with pytest.raises(Exception):
-            load_yaml_config(TestConfig, str(config_file))
+            load_yaml_config(ConfigModel, str(config_file))

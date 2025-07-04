@@ -12,7 +12,7 @@ from sentence_transformers.util import cos_sim
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from babel_ai.enums import AnalyzerType
-from babel_ai.models import AnalysisResult
+from models import AnalysisResult
 
 logger = logging.getLogger(__name__)
 

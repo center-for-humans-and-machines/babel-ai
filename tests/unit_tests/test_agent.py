@@ -7,7 +7,7 @@ import pytest
 from api.llm_interface import Provider
 from api.openai import OpenAIModel
 from babel_ai.agent import Agent
-from babel_ai.models import AgentConfig
+from models import AgentConfig
 
 
 @pytest.fixture

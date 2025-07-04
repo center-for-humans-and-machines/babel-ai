@@ -6,7 +6,7 @@ import pytest
 
 from babel_ai.analyzer import Analyzer, SimilarityAnalyzer
 from babel_ai.enums import AnalyzerType
-from babel_ai.models import AnalysisResult
+from models import AnalysisResult
 
 
 @pytest.fixture

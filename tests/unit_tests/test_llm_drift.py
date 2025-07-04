@@ -12,7 +12,8 @@ from babel_ai.agent import Agent
 from babel_ai.analyzer import Analyzer
 from babel_ai.enums import AgentSelectionMethod, AnalyzerType, FetcherType
 from babel_ai.experiment import Experiment
-from babel_ai.models import (
+from babel_ai.prompt_fetcher import BasePromptFetcher
+from models import (
     AgentConfig,
     AgentMetric,
     AnalyzerConfig,
@@ -21,7 +22,6 @@ from babel_ai.models import (
     FetcherConfig,
     FetcherMetric,
 )
-from babel_ai.prompt_fetcher import BasePromptFetcher
 
 
 @pytest.fixture
