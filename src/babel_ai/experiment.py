@@ -57,14 +57,23 @@ class Experiment:
 
         # create analyzer
         self.analyzer = Analyzer.create_analyzer(
-            analyzer_type=self.config.analyzer,
+            analyzer_type=self.config.analyzer_config.analyzer,
             analyze_window=self.config.analyzer_config.analyze_window,
         )
 
         # create prompt fetcher
+        # TODO: this is a hack to get the fetcher kwargs
+        # we should consider something more elegant
+        fetcher_kwargs = {
+            k: v
+            for k, v in self.config.fetcher_config.model_dump(
+                exclude={"fetcher"}
+            ).items()
+            if v is not None
+        }
         self.prompt_fetcher = BasePromptFetcher.create_fetcher(
-            fetcher_type=self.config.fetcher,
-            **self.config.fetcher_config.model_dump(),
+            fetcher_type=self.config.fetcher_config.fetcher,
+            **fetcher_kwargs,
         )
 
         # create agents
@@ -123,7 +132,7 @@ class Experiment:
                     timestamp=datetime.now(),
                     role=message["role"],
                     content=message["content"],
-                    fetcher_type=self.config.fetcher,
+                    fetcher_type=self.config.fetcher_config.fetcher,
                     fetcher_config=self.config.fetcher_config,
                 )
             )

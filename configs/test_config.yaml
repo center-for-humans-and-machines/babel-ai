@@ -1,20 +1,16 @@
 # Test configuration for LLM Drift Experiment
 # This file defines a complete ExperimentConfig in YAML format
 
-# Type of fetcher to use for getting conversation prompts
-fetcher: "sharegpt"
-
 # Configuration for the fetcher
 fetcher_config:
+  fetcher: "sharegpt"
   data_path: "data/sharegpt_sample.json"
   min_messages: 2
   max_messages: 10
 
-# Type of analyzer to use for measuring drift
-analyzer: "similarity"
-
 # Configuration for the analyzer
 analyzer_config:
+  analyzer: "similarity"
   analyze_window: 5
 
 # List of agent configurations to use in the experiment

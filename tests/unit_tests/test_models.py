@@ -165,7 +165,10 @@ class TestAnalyzerConfig:
 
     def test_valid_analyzer_config(self):
         """Test creating a valid AnalyzerConfig."""
-        config = AnalyzerConfig(analyze_window=10)
+        config = AnalyzerConfig(
+            analyzer=AnalyzerType.SIMILARITY, analyze_window=10
+        )
+        assert config.analyzer == AnalyzerType.SIMILARITY
         assert config.analyze_window == 10
 
     def test_invalid_analyze_window(self):
@@ -173,7 +176,12 @@ class TestAnalyzerConfig:
         # Note: The current model doesn't have explicit validation
         # but we can test basic functionality
         with pytest.raises(ValidationError):
-            AnalyzerConfig(analyze_window=0)
+            AnalyzerConfig(analyzer=AnalyzerType.SIMILARITY, analyze_window=0)
+
+    def test_invalid_analyzer_type(self):
+        """Test that invalid analyzer type is rejected."""
+        with pytest.raises(ValidationError):
+            AnalyzerConfig(analyzer="invalid_analyzer_type", analyze_window=5)
 
 
 class TestFetcherConfig:
@@ -182,10 +190,12 @@ class TestFetcherConfig:
     def test_valid_fetcher_config(self):
         """Test creating a valid FetcherConfig."""
         config = FetcherConfig(
+            fetcher=FetcherType.SHAREGPT,
             data_path="/path/to/data.json",
             min_messages=2,
             max_messages=10,
         )
+        assert config.fetcher == FetcherType.SHAREGPT
         assert config.data_path == "/path/to/data.json"
         assert config.min_messages == 2
         assert config.max_messages == 10
@@ -193,10 +203,12 @@ class TestFetcherConfig:
     def test_fetcher_config_edge_cases(self):
         """Test FetcherConfig with edge case values."""
         config = FetcherConfig(
+            fetcher=FetcherType.SHAREGPT,
             data_path="",
             min_messages=1,
             max_messages=1,
         )
+        assert config.fetcher == FetcherType.SHAREGPT
         assert config.data_path == ""
         assert config.min_messages == 1
         assert config.max_messages == 1
@@ -205,6 +217,7 @@ class TestFetcherConfig:
         """Test that min_messages must be >= 1."""
         with pytest.raises(ValidationError):
             FetcherConfig(
+                fetcher=FetcherType.SHAREGPT,
                 data_path="",
                 min_messages=0,
                 max_messages=1,
@@ -214,6 +227,7 @@ class TestFetcherConfig:
         """Test that max_messages must be >= min_messages."""
         with pytest.raises(ValidationError):
             FetcherConfig(
+                fetcher=FetcherType.SHAREGPT,
                 data_path="",
                 min_messages=0,
                 max_messages=0,
@@ -221,10 +235,255 @@ class TestFetcherConfig:
 
         with pytest.raises(ValidationError):
             FetcherConfig(
+                fetcher=FetcherType.SHAREGPT,
                 data_path="",
                 min_messages=2,
                 max_messages=1,
             )
+
+    def test_invalid_fetcher_type(self):
+        """Test that invalid fetcher type is rejected."""
+        with pytest.raises(ValidationError):
+            FetcherConfig(
+                fetcher="invalid_fetcher_type",
+                data_path="/path/to/data.json",
+                min_messages=2,
+                max_messages=10,
+            )
+
+    # New tests for updated validation logic
+    def test_valid_category_values(self):
+        """Test that valid category values are accepted."""
+        valid_categories = ["creative", "analytical", "conversational"]
+
+        for category in valid_categories:
+            config = FetcherConfig(
+                fetcher=FetcherType.RANDOM, category=category
+            )
+            assert config.category == category
+
+    def test_invalid_category_values(self):
+        """Test that invalid category values are rejected."""
+        invalid_categories = ["invalid", "wrong", "bad_category", "", None]
+
+        for category in invalid_categories:
+            with pytest.raises(ValidationError):
+                FetcherConfig(fetcher=FetcherType.RANDOM, category=category)
+
+    def test_max_messages_validation_edge_cases(self):
+        """Test max_messages validation edge cases."""
+        # Equal values should work
+        config = FetcherConfig(
+            fetcher=FetcherType.SHAREGPT,
+            data_path="/path/to/data.json",
+            min_messages=5,
+            max_messages=5,
+        )
+        assert config.min_messages == 5
+        assert config.max_messages == 5
+
+    def test_sharegpt_fetcher_valid_params(self):
+        """Test SHAREGPT fetcher with valid parameters."""
+        config = FetcherConfig(
+            fetcher=FetcherType.SHAREGPT,
+            data_path="/path/to/data.json",
+            min_messages=2,
+            max_messages=10,
+        )
+        assert config.fetcher == FetcherType.SHAREGPT
+        assert config.data_path == "/path/to/data.json"
+        assert config.min_messages == 2
+        assert config.max_messages == 10
+
+    def test_sharegpt_fetcher_missing_required_params(self):
+        """Test SHAREGPT fetcher with missing required parameters."""
+        # Missing data_path
+        with pytest.raises(ValidationError) as exc_info:
+            FetcherConfig(
+                fetcher=FetcherType.SHAREGPT, min_messages=2, max_messages=10
+            )
+        assert "Parameter data_path is required for fetcher type" in str(
+            exc_info.value
+        )
+
+        # Missing min_messages
+        with pytest.raises(ValidationError) as exc_info:
+            FetcherConfig(
+                fetcher=FetcherType.SHAREGPT,
+                data_path="/path/to/data.json",
+                max_messages=10,
+            )
+        assert "Parameter min_messages is required for fetcher type" in str(
+            exc_info.value
+        )
+
+        # Missing max_messages
+        with pytest.raises(ValidationError) as exc_info:
+            FetcherConfig(
+                fetcher=FetcherType.SHAREGPT,
+                data_path="/path/to/data.json",
+                min_messages=2,
+            )
+        assert "Parameter max_messages is required for fetcher type" in str(
+            exc_info.value
+        )
+
+    def test_sharegpt_fetcher_invalid_params(self):
+        """Test SHAREGPT fetcher with invalid parameters."""
+        with pytest.raises(ValidationError) as exc_info:
+            FetcherConfig(
+                fetcher=FetcherType.SHAREGPT,
+                data_path="/path/to/data.json",
+                min_messages=2,
+                max_messages=10,
+                category="creative",  # Not allowed for SHAREGPT
+            )
+        assert "Parameter category is not allowed for fetcher type" in str(
+            exc_info.value
+        )
+
+    def test_infinite_conversation_fetcher_valid_params(self):
+        """Test INFINITE_CONVERSATION fetcher with valid parameters."""
+        config = FetcherConfig(
+            fetcher=FetcherType.INFINITE_CONVERSATION,
+            data_path="/path/to/data.json",
+            min_messages=2,
+            max_messages=10,
+        )
+        assert config.fetcher == FetcherType.INFINITE_CONVERSATION
+        assert config.data_path == "/path/to/data.json"
+        assert config.min_messages == 2
+        assert config.max_messages == 10
+
+    def test_infinite_conversation_fetcher_missing_required_params(self):
+        """
+        Test INFINITE_CONVERSATION fetcher
+        with missing required parameters.
+        """
+        # Missing data_path
+        with pytest.raises(ValidationError) as exc_info:
+            FetcherConfig(
+                fetcher=FetcherType.INFINITE_CONVERSATION,
+                min_messages=2,
+                max_messages=10,
+            )
+        assert "Parameter data_path is required for fetcher type" in str(
+            exc_info.value
+        )
+
+    def test_infinite_conversation_fetcher_invalid_params(self):
+        """Test INFINITE_CONVERSATION fetcher with invalid parameters."""
+        with pytest.raises(ValidationError) as exc_info:
+            FetcherConfig(
+                fetcher=FetcherType.INFINITE_CONVERSATION,
+                data_path="/path/to/data.json",
+                min_messages=2,
+                max_messages=10,
+                second_data_path="/another/path",
+            )
+        assert (
+            "Parameter second_data_path is not allowed for fetcher type"
+            in str(exc_info.value)
+        )
+
+    def test_topical_chat_fetcher_valid_params(self):
+        """Test TOPICAL_CHAT fetcher with valid parameters."""
+        config = FetcherConfig(
+            fetcher=FetcherType.TOPICAL_CHAT,
+            data_path="/path/to/test_rare.jsonl",
+            second_data_path="/path/to/test_freq.jsonl",
+            min_messages=2,
+            max_messages=10,
+        )
+        assert config.fetcher == FetcherType.TOPICAL_CHAT
+        assert config.data_path == "/path/to/test_rare.jsonl"
+        assert config.second_data_path == "/path/to/test_freq.jsonl"
+        assert config.min_messages == 2
+        assert config.max_messages == 10
+
+    def test_topical_chat_fetcher_missing_required_params(self):
+        """Test TOPICAL_CHAT fetcher with missing required parameters."""
+        # Missing data_path
+        with pytest.raises(ValidationError) as exc_info:
+            FetcherConfig(
+                fetcher=FetcherType.TOPICAL_CHAT,
+                second_data_path="/path/to/test_freq.jsonl",
+                min_messages=2,
+                max_messages=10,
+            )
+        assert "Parameter data_path is required for fetcher type" in str(
+            exc_info.value
+        )
+
+        # Missing second_data_path
+        with pytest.raises(ValidationError) as exc_info:
+            FetcherConfig(
+                fetcher=FetcherType.TOPICAL_CHAT,
+                data_path="/path/to/test_rare.jsonl",
+                min_messages=2,
+                max_messages=10,
+            )
+        assert (
+            "Parameter second_data_path is required for fetcher type"
+            in str(exc_info.value)
+        )
+
+    def test_topical_chat_fetcher_invalid_params(self):
+        """Test TOPICAL_CHAT fetcher with invalid parameters."""
+        with pytest.raises(ValidationError) as exc_info:
+            FetcherConfig(
+                fetcher=FetcherType.TOPICAL_CHAT,
+                data_path="/path/to/test_rare.jsonl",
+                second_data_path="/path/to/test_freq.jsonl",
+                min_messages=2,
+                max_messages=10,
+                category="creative",  # Not allowed for TOPICAL_CHAT
+            )
+        assert "Parameter category is not allowed for fetcher type" in str(
+            exc_info.value
+        )
+
+    def test_multiple_validation_errors(self):
+        """Test that multiple validation errors are caught."""
+        # Test with both invalid category and missing required parameter
+        with pytest.raises(ValidationError) as exc_info:
+            FetcherConfig(
+                fetcher=FetcherType.RANDOM, category="invalid_category"
+            )
+        # Should fail on category validation first
+        assert "category must be one of" in str(exc_info.value)
+
+    def test_fetcher_parameter_validation_with_none_values(self):
+        """Test fetcher parameter validation handles None values correctly."""
+        # This should work - None values are treated as missing
+        config = FetcherConfig(
+            fetcher=FetcherType.RANDOM,
+            category="creative",
+            data_path=None,  # None is fine for non-required params
+            min_messages=None,
+            max_messages=None,
+        )
+        assert config.category == "creative"
+        assert config.data_path is None
+        assert config.min_messages is None
+        assert config.max_messages is None
+
+    def test_fetcher_parameter_validation_order(self):
+        """
+        Test that fetcher parameter validation
+        runs after field validation.
+        """
+        # This should fail on field validation first (invalid category)
+        # before getting to fetcher parameter validation
+        with pytest.raises(ValidationError) as exc_info:
+            FetcherConfig(
+                fetcher=FetcherType.RANDOM, category="invalid_category"
+            )
+        assert "category must be one of" in str(exc_info.value)
+        # Should not contain fetcher parameter validation message
+        assert "Parameter category is required for fetcher type" not in str(
+            exc_info.value
+        )
 
 
 class TestAgentConfig:
@@ -363,20 +622,21 @@ class TestExperimentConfig:
     def test_valid_experiment_config(self):
         """Test creating a valid ExperimentConfig."""
         fetcher_config = FetcherConfig(
+            fetcher=FetcherType.SHAREGPT,
             data_path="/path/to/data.json",
             min_messages=2,
             max_messages=10,
         )
-        analyzer_config = AnalyzerConfig(analyze_window=5)
+        analyzer_config = AnalyzerConfig(
+            analyzer=AnalyzerType.SIMILARITY, analyze_window=5
+        )
         agent_config = AgentConfig(
             provider=Provider.OPENAI,
             model=OpenAIModel.GPT4_1106_PREVIEW,
         )
 
         config = ExperimentConfig(
-            fetcher=FetcherType.SHAREGPT,
             fetcher_config=fetcher_config,
-            analyzer=AnalyzerType.SIMILARITY,
             analyzer_config=analyzer_config,
             agent_configs=[agent_config],
             agent_selection_method=AgentSelectionMethod.ROUND_ROBIN,
@@ -384,10 +644,10 @@ class TestExperimentConfig:
             max_total_characters=500000,
         )
 
-        assert config.fetcher == FetcherType.SHAREGPT
         assert config.fetcher_config == fetcher_config
-        assert config.analyzer == AnalyzerType.SIMILARITY
+        assert config.fetcher_config.fetcher == FetcherType.SHAREGPT
         assert config.analyzer_config == analyzer_config
+        assert config.analyzer_config.analyzer == AnalyzerType.SIMILARITY
         assert config.agent_configs == [agent_config]
         assert config.agent_selection_method == (
             AgentSelectionMethod.ROUND_ROBIN
@@ -398,20 +658,21 @@ class TestExperimentConfig:
     def test_experiment_config_defaults(self):
         """Test ExperimentConfig default values."""
         fetcher_config = FetcherConfig(
+            fetcher=FetcherType.SHAREGPT,
             data_path="/path/to/data.json",
             min_messages=2,
             max_messages=10,
         )
-        analyzer_config = AnalyzerConfig(analyze_window=5)
+        analyzer_config = AnalyzerConfig(
+            analyzer=AnalyzerType.SIMILARITY, analyze_window=5
+        )
         agent_config = AgentConfig(
             provider=Provider.OPENAI,
             model=OpenAIModel.GPT4_1106_PREVIEW,
         )
 
         config = ExperimentConfig(
-            fetcher=FetcherType.SHAREGPT,
             fetcher_config=fetcher_config,
-            analyzer=AnalyzerType.SIMILARITY,
             analyzer_config=analyzer_config,
             agent_configs=[agent_config],
             agent_selection_method=AgentSelectionMethod.ROUND_ROBIN,
@@ -423,11 +684,14 @@ class TestExperimentConfig:
     def test_invalid_max_iterations(self):
         """Test that max_iterations must be >= 1."""
         fetcher_config = FetcherConfig(
+            fetcher=FetcherType.SHAREGPT,
             data_path="/path/to/data.json",
             min_messages=2,
             max_messages=10,
         )
-        analyzer_config = AnalyzerConfig(analyze_window=5)
+        analyzer_config = AnalyzerConfig(
+            analyzer=AnalyzerType.SIMILARITY, analyze_window=5
+        )
         agent_config = AgentConfig(
             provider=Provider.OPENAI,
             model=OpenAIModel.GPT4_1106_PREVIEW,
@@ -435,9 +699,7 @@ class TestExperimentConfig:
 
         with pytest.raises(ValidationError):
             ExperimentConfig(
-                fetcher=FetcherType.SHAREGPT,
                 fetcher_config=fetcher_config,
-                analyzer=AnalyzerType.SIMILARITY,
                 analyzer_config=analyzer_config,
                 agent_configs=[agent_config],
                 agent_selection_method=AgentSelectionMethod.ROUND_ROBIN,
@@ -447,11 +709,14 @@ class TestExperimentConfig:
     def test_invalid_max_total_characters(self):
         """Test that max_total_characters must be >= 1."""
         fetcher_config = FetcherConfig(
+            fetcher=FetcherType.SHAREGPT,
             data_path="/path/to/data.json",
             min_messages=2,
             max_messages=10,
         )
-        analyzer_config = AnalyzerConfig(analyze_window=5)
+        analyzer_config = AnalyzerConfig(
+            analyzer=AnalyzerType.SIMILARITY, analyze_window=5
+        )
         agent_config = AgentConfig(
             provider=Provider.OPENAI,
             model=OpenAIModel.GPT4_1106_PREVIEW,
@@ -459,9 +724,7 @@ class TestExperimentConfig:
 
         with pytest.raises(ValidationError):
             ExperimentConfig(
-                fetcher=FetcherType.SHAREGPT,
                 fetcher_config=fetcher_config,
-                analyzer=AnalyzerType.SIMILARITY,
                 analyzer_config=analyzer_config,
                 agent_configs=[agent_config],
                 agent_selection_method=AgentSelectionMethod.ROUND_ROBIN,
@@ -574,6 +837,7 @@ class TestFetcherMetric:
     def test_valid_fetcher_metric(self):
         """Test creating a valid FetcherMetric."""
         fetcher_config = FetcherConfig(
+            fetcher=FetcherType.SHAREGPT,
             data_path="/path/to/data.json",
             min_messages=2,
             max_messages=10,
@@ -593,12 +857,12 @@ class TestFetcherMetric:
         assert metric.timestamp == timestamp
         assert metric.role == "user"
         assert metric.content == "This is a user message."
-        assert metric.fetcher_type == FetcherType.SHAREGPT
         assert metric.fetcher_config == fetcher_config
 
     def test_fetcher_metric_to_dict(self):
         """Test FetcherMetric to_dict method."""
         fetcher_config = FetcherConfig(
+            fetcher=FetcherType.SHAREGPT,
             data_path="/path/to/data.json",
             min_messages=2,
             max_messages=10,
@@ -610,7 +874,6 @@ class TestFetcherMetric:
             timestamp=timestamp,
             role="user",
             content="This is a user message.",
-            fetcher_type=FetcherType.SHAREGPT,
             fetcher_config=fetcher_config,
         )
 
@@ -620,9 +883,11 @@ class TestFetcherMetric:
         assert result["timestamp"] == timestamp
         assert result["role"] == "user"
         assert result["content"] == "This is a user message."
-        assert result["fetcher_type"] == FetcherType.SHAREGPT
         assert result["fetcher_config"] == {
+            "fetcher": FetcherType.SHAREGPT,
             "data_path": "/path/to/data.json",
+            "second_data_path": None,
+            "category": None,
             "min_messages": 2,
             "max_messages": 10,
         }
@@ -707,14 +972,15 @@ class TestExperimentMetadata:
     def mock_config(self):
         """Mock ExperimentConfig for testing."""
         return ExperimentConfig(
-            fetcher=FetcherType.SHAREGPT,
             fetcher_config=FetcherConfig(
+                fetcher=FetcherType.SHAREGPT,
                 data_path="/test/data.json",
                 min_messages=2,
                 max_messages=10,
             ),
-            analyzer=AnalyzerType.SIMILARITY,
-            analyzer_config=AnalyzerConfig(analyze_window=5),
+            analyzer_config=AnalyzerConfig(
+                analyzer=AnalyzerType.SIMILARITY, analyze_window=5
+            ),
             agent_configs=[
                 AgentConfig(
                     provider=Provider.OPENAI,

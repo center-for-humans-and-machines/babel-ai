@@ -67,6 +67,7 @@ def test_sharegpt_data():
 @pytest.fixture
 def fetcher_config(test_sharegpt_data):
     return FetcherConfig(
+        fetcher=FetcherType.SHAREGPT,
         data_path=test_sharegpt_data,
         min_messages=2,
         max_messages=4,
@@ -86,12 +87,12 @@ def agent_config():
 def integration_experiment_config(fetcher_config, agent_config):
     """Create a complete experiment config for integration testing."""
 
-    analyzer_config = AnalyzerConfig(analyze_window=3)
+    analyzer_config = AnalyzerConfig(
+        analyzer=AnalyzerType.SIMILARITY, analyze_window=3
+    )
 
     return ExperimentConfig(
-        fetcher=FetcherType.SHAREGPT,
         fetcher_config=fetcher_config,
-        analyzer=AnalyzerType.SIMILARITY,
         analyzer_config=analyzer_config,
         agent_configs=[agent_config],
         agent_selection_method=AgentSelectionMethod.ROUND_ROBIN,
@@ -166,7 +167,6 @@ class TestExperimentIntegration:
                 "That's okay, thanks anyway.",
                 "No problem! Is there anything else I can help?",
             ]
-            assert metric.fetcher_type == FetcherType.SHAREGPT
             assert metric.fetcher_config == fetcher_config
             # assert metric.analysis is not None
 

@@ -11,14 +11,19 @@ class TestRandomPromptFetcher:
     def test_init(self):
         """Test RandomPromptFetcher initialization."""
         fetcher = RandomPromptFetcher()
+        assert fetcher.category is None
         assert fetcher.headers == {
             "User-Agent": "Mozilla/5.0 (compatible; PromptFetcher/1.0)"
         }
 
+        # Test with category
+        fetcher_with_category = RandomPromptFetcher(category="creative")
+        assert fetcher_with_category.category == "creative"
+
     @patch("requests.get")
     def test_get_conversation_with_category(self, mock_get):
         """Test getting a conversation with specific category."""
-        fetcher = RandomPromptFetcher()
+        fetcher = RandomPromptFetcher(category="creative")
 
         # Test creative category
         mock_response = MagicMock()
@@ -27,7 +32,7 @@ class TestRandomPromptFetcher:
         }
         mock_get.return_value = mock_response
 
-        conversation = fetcher.get_conversation(category="creative")
+        conversation = fetcher.get_conversation()
 
         # Should return list of message dictionaries
         assert isinstance(conversation, list)

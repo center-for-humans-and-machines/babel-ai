@@ -53,6 +53,32 @@ class FetcherType(Enum):
         }
         return mapping[self]
 
+    def get_kwargs_mapping(self) -> List[str]:
+        """
+        Get the kwargs for the fetcher.
+        Depending on the fetcher type.
+        """
+        required_kwargs = {
+            FetcherType.RANDOM: ["category"],
+            FetcherType.SHAREGPT: [
+                "data_path",
+                "min_messages",
+                "max_messages",
+            ],
+            FetcherType.INFINITE_CONVERSATION: [
+                "data_path",
+                "min_messages",
+                "max_messages",
+            ],
+            FetcherType.TOPICAL_CHAT: [
+                "data_path",
+                "second_data_path",
+                "min_messages",
+                "max_messages",
+            ],
+        }
+        return required_kwargs[self]
+
 
 class AgentSelectionMethod(Enum):
     """Agent selection methods for choosing which agent responds next.

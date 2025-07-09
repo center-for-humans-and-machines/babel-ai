@@ -42,6 +42,7 @@ def sample_agent_config():
 def sample_fetcher_config():
     """Create a sample FetcherConfig for testing."""
     return FetcherConfig(
+        fetcher=FetcherType.SHAREGPT,
         data_path="/fake/path/data.json",
         min_messages=2,
         max_messages=10,
@@ -51,7 +52,7 @@ def sample_fetcher_config():
 @pytest.fixture
 def sample_analyzer_config():
     """Create a sample AnalyzerConfig for testing."""
-    return AnalyzerConfig(analyze_window=5)
+    return AnalyzerConfig(analyzer=AnalyzerType.SIMILARITY, analyze_window=5)
 
 
 @pytest.fixture
@@ -59,10 +60,10 @@ def sample_experiment_config(
     sample_agent_config, sample_fetcher_config, sample_analyzer_config
 ):
     """Create a sample ExperimentConfig for testing."""
+    # The fetcher and analyzer types are now already included in the fixtures
+
     return ExperimentConfig(
-        fetcher=FetcherType.SHAREGPT,
         fetcher_config=sample_fetcher_config,
-        analyzer=AnalyzerType.SIMILARITY,
         analyzer_config=sample_analyzer_config,
         agent_configs=[sample_agent_config],
         agent_selection_method=AgentSelectionMethod.ROUND_ROBIN,
@@ -269,7 +270,7 @@ class TestExperiment:
             assert metric.iteration == i
             assert metric.role == sample_messages[i]["role"]
             assert metric.content == sample_messages[i]["content"]
-            assert metric.fetcher_type == FetcherType.SHAREGPT
+            assert metric.fetcher_config.fetcher == FetcherType.SHAREGPT
 
         # Check AgentMetric result
         agent_metric = results[3]

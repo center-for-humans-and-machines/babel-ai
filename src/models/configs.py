@@ -2,7 +2,13 @@
 
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 from api.llm_interface import ModelType, Provider
 from babel_ai.enums import AgentSelectionMethod, AnalyzerType, FetcherType
@@ -16,15 +22,20 @@ class AnalyzerConfig(BaseModel):
     of the analysis performed on generated text.
 
     Attributes:
+        analyzer (AnalyzerType): Type of analyzer to use for measuring drift
         analyze_window (int): Number of previous responses to include when
             calculating similarity metrics. Larger windows provide more
             context but may dilute recent drift signals. Must be ≥1.
 
     Example:
-        >>> config = AnalyzerConfig(analyze_window=5)
+        >>> config = AnalyzerConfig(
+        ...     analyzer=AnalyzerType.SIMILARITY,
+        ...     analyze_window=5
+        ... )
         >>> # This will compare each response against the 5 most recent ones
     """
 
+    analyzer: AnalyzerType = Field(description="Type of analyzer to use")
     analyze_window: int = Field(
         description="Number of previous responses to analyze for drift",
         ge=1,
@@ -39,46 +50,117 @@ class FetcherConfig(BaseModel):
     and conversation filtering criteria.
 
     Attributes:
-        data_path (str): File path to the conversation dataset. Should point
-            to a valid data file in the expected format for the fetcher type
-        min_messages (int): Minimum number of messages required in a
+        fetcher (FetcherType): Type of fetcher to use for getting
+            conversation prompts
+        data_path (Optional[str]): File path to the conversation dataset.
+            Should point to a valid data file in the expected format for the
+            fetcher type. Required for SHAREGPT, INFINITE_CONVERSATION, and
+            TOPICAL_CHAT fetcher types.
+        second_data_path (Optional[str]): File path to the second conversation
+            dataset. Only used by TOPICAL_CHAT fetcher type.
+        category (Optional[str]): Category for random prompt generation.
+            Only used by RANDOM fetcher type. Options: 'creative',
+            'analytical', 'conversational'.
+        min_messages (Optional[int]): Minimum number of messages required in a
             conversation for it to be selected. Filters out very short
-            conversations
-        max_messages (int): Maximum number of messages to include from a
-            conversation. Longer conversations will be truncated
+            conversations. Required for SHAREGPT, INFINITE_CONVERSATION, and
+            TOPICAL_CHAT fetcher types.
+        max_messages (Optional[int]): Maximum number of messages to include
+            from a conversation. Longer conversations will be truncated.
+            Required for SHAREGPT, INFINITE_CONVERSATION, and TOPICAL_CHAT
+            fetcher types.
 
     Example:
+        >>> # For ShareGPT fetcher
         >>> config = FetcherConfig(
+        ...     fetcher=FetcherType.SHAREGPT,
         ...     data_path="/data/conversations.json",
         ...     min_messages=3,
         ...     max_messages=20
         ... )
-        >>> # Will load conversations with 3-20 messages from the JSON file
+        >>> # For random fetcher
+        >>> config = FetcherConfig(
+        ...     fetcher=FetcherType.RANDOM,
+        ...     category="creative"
+        ... )
+        >>> # For topical chat fetcher
+        >>> config = FetcherConfig(
+        ...     fetcher=FetcherType.TOPICAL_CHAT,
+        ...     data_path="/data/test_rare.jsonl",
+        ...     second_data_path="/data/test_freq.jsonl",
+        ...     min_messages=2,
+        ...     max_messages=10
+        ... )
     """
 
-    data_path: str = Field(description="Path to the data file")
-    min_messages: int = Field(
+    fetcher: FetcherType = Field(description="Type of fetcher to use")
+    data_path: Optional[str] = Field(
+        default=None, description="Path to the data file"
+    )
+    second_data_path: Optional[str] = Field(
+        default=None,
+        description="Path to the second data file (for TOPICAL_CHAT)",
+    )
+    category: Optional[str] = Field(
+        default=None,
+        description="Category for random prompts (for RANDOM fetcher)",
+    )
+    min_messages: Optional[int] = Field(
+        default=None,
         description="Minimum number of messages in a conversation",
         ge=1,
     )
-    max_messages: int = Field(
+    max_messages: Optional[int] = Field(
+        default=None,
         description="Maximum number of messages in a conversation",
         ge=1,
     )
 
     @field_validator("max_messages")
-    def validate_max_messages(cls, v: int, values: ValidationInfo) -> int:
+    def validate_max_messages(
+        cls, v: Optional[int], values: ValidationInfo
+    ) -> Optional[int]:
         """Validate that max_messages is >= min_messages."""
-        if "min_messages" not in values.data.keys():
-            raise ValueError(
-                "min_messages is required to validate max_messages"
-            )
-        min_messages = values.data["min_messages"]
-        if v < min_messages:
+        if v is None:
+            return v
+
+        min_messages = values.data.get("min_messages")
+        if min_messages is not None and v < min_messages:
             raise ValueError(
                 f"max_messages ({v}) must be >= min_messages ({min_messages})"
             )
         return v
+
+    @field_validator("category")
+    def validate_category(cls, v: Optional[str]) -> Optional[str]:
+        """Validate that category is one of the allowed values."""
+        if v is None:
+            return v
+
+        allowed_categories = ["creative", "analytical", "conversational"]
+        if v not in allowed_categories:
+            raise ValueError(
+                f"category must be one of {allowed_categories}, got: {v}"
+            )
+        return v
+
+    @model_validator(mode="after")
+    def validate_fetcher_parameters(self) -> "FetcherConfig":
+        """Validate that the parameters match the fetcher type requirements."""
+        fetcher_type = self.fetcher
+
+        required_kwargs = fetcher_type.get_kwargs_mapping()
+        for key, value in self.model_dump().items():
+            if key in required_kwargs and value is None:
+                raise ValueError(
+                    f"Parameter {key} is required for fetcher type {fetcher_type}"  # noqa: E501
+                )
+            if key not in required_kwargs + ["fetcher"] and value is not None:
+                raise ValueError(
+                    f"Parameter {key} is not allowed for fetcher type {fetcher_type}"  # noqa: E501
+                )
+
+        return self
 
 
 class AgentConfig(BaseModel):
@@ -154,10 +236,10 @@ class ExperimentConfig(BaseModel):
     configurations, and experiment parameters.
 
     Attributes:
-        fetcher: Type of fetcher to use for getting conversation prompts
-        fetcher_config: Dictionary of configuration parameters for the fetcher
-        analyzer: Type of analyzer to use for measuring drift
-        analyzer_config: Configuration parameters for the analyzer
+        fetcher_config: Configuration parameters for the fetcher, including
+            the fetcher type and its settings
+        analyzer_config: Configuration parameters for the analyzer, including
+            the analyzer type and its settings
         agent_configs: List of agent configurations to use in the experiment
         agent_selection_method: Method for selecting which agent responds next
         max_iterations: Maximum number of conversation turns to run
@@ -166,14 +248,16 @@ class ExperimentConfig(BaseModel):
 
     Example:
         >>> config = ExperimentConfig(
-        ...     fetcher=FetcherType.SHAREGPT,
-        ...     fetcher_config={
-        ...         "data_path": "/path/to/sharegpt.json",
-        ...         "min_messages": 2,
-        ...         "max_messages": 10
-        ...     },
-        ...     analyzer=AnalyzerType.SIMILARITY,
-        ...     analyzer_config=AnalyzerConfig(analyze_window=5),
+        ...     fetcher_config=FetcherConfig(
+        ...         fetcher=FetcherType.SHAREGPT,
+        ...         data_path="/path/to/sharegpt.json",
+        ...         min_messages=2,
+        ...         max_messages=10
+        ...     ),
+        ...     analyzer_config=AnalyzerConfig(
+        ...         analyzer=AnalyzerType.SIMILARITY,
+        ...         analyze_window=5
+        ...     ),
         ...     agent_configs=[
         ...         AgentConfig(
         ...             provider=Provider.OPENAI,
@@ -193,11 +277,9 @@ class ExperimentConfig(BaseModel):
         ... )
     """
 
-    fetcher: FetcherType = Field(description="Type of fetcher to use")
     fetcher_config: FetcherConfig = Field(
         description="Configuration for the fetcher"
     )
-    analyzer: AnalyzerType = Field(description="Type of analyzer to use")
     analyzer_config: AnalyzerConfig = Field(
         description="Configuration for the analyzer"
     )

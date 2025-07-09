@@ -5,7 +5,6 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
 
-from babel_ai.enums import FetcherType
 from models.configs import AgentConfig, ExperimentConfig, FetcherConfig
 
 
@@ -154,9 +153,6 @@ class Metric(BaseModel):
 class FetcherMetric(Metric):
     """A single data point collected during a drift experiment."""
 
-    fetcher_type: FetcherType = Field(
-        description="Type of fetcher that generated the response"
-    )
     fetcher_config: FetcherConfig = Field(
         description="Configuration of the fetcher that generated the response"
     )
@@ -166,7 +162,6 @@ class FetcherMetric(Metric):
         result = super().to_dict()
         result.update(
             {
-                "fetcher_type": self.fetcher_type,
                 "fetcher_config": self.fetcher_config.model_dump(),
             }
         )

@@ -176,30 +176,6 @@ class TestTopicalChatConversationFetcher(TestCase):
         # Should load 2 from rare + 1 from freq = 3 total
         self.assertEqual(len(fetcher.conversations), 3)
 
-    def test_initialization_rare_only(self):
-        """Test initialization with only rare file."""
-        fetcher = TopicalChatConversationFetcher(
-            self.rare_file_path,
-            self.freq_file_path,
-            min_messages=2,
-            use_rare=True,
-            use_freq=False,
-        )
-        # Should load only 2 from rare
-        self.assertEqual(len(fetcher.conversations), 2)
-
-    def test_initialization_freq_only(self):
-        """Test initialization with only freq file."""
-        fetcher = TopicalChatConversationFetcher(
-            self.rare_file_path,
-            self.freq_file_path,
-            min_messages=2,
-            use_rare=False,
-            use_freq=True,
-        )
-        # Should load only 1 from freq
-        self.assertEqual(len(fetcher.conversations), 1)
-
     def test_initialization_with_min_messages(self):
         """Test initialization with different min_messages values."""
         # Should include conversations with >= 2 messages

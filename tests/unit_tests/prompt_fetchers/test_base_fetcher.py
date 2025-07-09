@@ -39,7 +39,7 @@ class TestBasePromptFetcher:
         """Test creating an InfiniteConversationFetcher."""
         with patch("pathlib.Path.glob", return_value=[]):
             fetcher = BasePromptFetcher.create_fetcher(
-                FetcherType.INFINITE_CONVERSATION, data_dir="dummy_dir"
+                FetcherType.INFINITE_CONVERSATION, data_path="dummy_dir"
             )
             assert isinstance(fetcher, InfiniteConversationFetcher)
 
@@ -50,7 +50,7 @@ class TestBasePromptFetcher:
         ):
             fetcher = BasePromptFetcher.create_fetcher(
                 FetcherType.TOPICAL_CHAT,
-                rare_file_path="dummy_rare.jsonl",
-                freq_file_path="dummy_freq.jsonl",
+                data_path="dummy_rare.jsonl",
+                second_data_path="dummy_freq.jsonl",
             )
             assert isinstance(fetcher, TopicalChatConversationFetcher)

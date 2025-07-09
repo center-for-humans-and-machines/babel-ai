@@ -287,10 +287,8 @@ class SpecificPromptFetcher(PromptFetcher):
 class ExperimentConfig(BaseModel):
     """Configuration for the experiment."""
 
-    fetcher: str
-    fetcher_config: Dict[str, Any]
-    analyzer: str
-    analyzer_config: AnalyzerConfig
+    fetcher_config: FetcherConfig  # Contains fetcher type and config
+    analyzer_config: AnalyzerConfig  # Contains analyzer type and config
     agent_configs: List[AgentConfig]
     agent_selection_method: str
     max_iterations: int
@@ -306,7 +304,7 @@ class Experiment:
     ):
         """Initialize the Experiment."""
         self.config = config
-        self.prompt_fetcher = PromptFetcher(config.fetcher)
+        self.prompt_fetcher = PromptFetcher(config.fetcher_config["fetcher"])
         self.analyzer = Analyzer(config.analyzer_config)
         self.agents = [
             Agent(agent_config) for agent_config in config.agent_configs

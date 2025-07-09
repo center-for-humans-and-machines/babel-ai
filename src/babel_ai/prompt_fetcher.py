@@ -5,7 +5,7 @@ import logging
 import random
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import requests
 
@@ -53,20 +53,21 @@ class RandomPromptFetcher(BasePromptFetcher):
     REDDIT_WRITING_PROMPTS = "https://www.reddit.com/r/WritingPrompts/new.json"
     RANDOM_WORD_API = "https://random-word-api.herokuapp.com/word"
 
-    def __init__(self):
+    def __init__(self, category: Optional[str] = None):
+        """Initialize the RandomPromptFetcher.
+
+        Args:
+            category: Optional category
+                ('creative', 'analytical', 'conversational')
+        """
+        self.category = category
         self.headers = {
             "User-Agent": "Mozilla/5.0 (compatible; PromptFetcher/1.0)"
         }
 
-    def get_conversation(
-        self, category: Optional[str] = None
-    ) -> List[Dict[str, str]]:
+    def get_conversation(self) -> List[Dict[str, str]]:
         """Get a random prompt from available sources
         as single-message conversation.
-
-        Args:
-            category: Optional category
-            ('creative', 'analytical', 'conversational')
 
         Returns:
             A single-message conversation as List[Dict[str, str]]
@@ -77,8 +78,8 @@ class RandomPromptFetcher(BasePromptFetcher):
             "conversational": self._get_conversational_prompt,
         }
 
-        if category and category in methods:
-            method = methods[category]
+        if self.category and self.category in methods:
+            method = methods[self.category]
         else:
             method = random.choice(list(methods.values()))
 
@@ -216,7 +217,7 @@ class InfiniteConversationFetcher(BasePromptFetcher):
 
     def __init__(
         self,
-        data_dir: Union[str, Path],
+        data_path: str,
         min_messages: int = 2,
         max_messages: Optional[int] = None,
     ):
@@ -227,7 +228,7 @@ class InfiniteConversationFetcher(BasePromptFetcher):
             min_messages: Minimum number of messages in conversation
             max_messages: Maximum number of messages. If None, no upper limit.
         """
-        self.data_dir = Path(data_dir)
+        self.data_dir = Path(data_path)
         self.min_messages = min_messages
         self.max_messages = max_messages
         self.conversations = []
@@ -347,41 +348,40 @@ class TopicalChatConversationFetcher(BasePromptFetcher):
 
     def __init__(
         self,
-        rare_file_path: Union[str, Path],
-        freq_file_path: Union[str, Path],
+        data_path: str,
+        second_data_path: Optional[str] = None,
         min_messages: int = 2,
         max_messages: Optional[int] = None,
-        use_rare: bool = True,
-        use_freq: bool = True,
     ):
         """Initialize the Topical-Chat conversation fetcher.
 
         Args:
-            rare_file_path: Path to test_rare.jsonl file
-            freq_file_path: Path to test_freq.jsonl file
+            data_path: Path to first data file (e.g., test_rare.jsonl)
+            second_data_path: Path to second data file (e.g., test_freq.jsonl)
             min_messages: Minimum number of messages in conversation
             max_messages: Maximum number of messages. If None, no upper limit.
-            use_rare: Whether to include rare conversations
-            use_freq: Whether to include frequent conversations
         """
-        self.rare_file_path = Path(rare_file_path)
-        self.freq_file_path = Path(freq_file_path)
+        self.data_path = Path(data_path)
+        self.second_data_path = (
+            Path(second_data_path) if second_data_path is not None else None
+        )
         self.min_messages = min_messages
         self.max_messages = max_messages
-        self.use_rare = use_rare
-        self.use_freq = use_freq
         self.conversations = []
         self._load_data()
 
     def _load_data(self) -> None:
         """Load and preprocess the Topical-Chat dataset."""
-        files_to_load = []
-        if self.use_rare:
-            files_to_load.append(self.rare_file_path)
-        if self.use_freq:
-            files_to_load.append(self.freq_file_path)
+        files_to_load = [
+            path
+            for path in [self.data_path, self.second_data_path]
+            if path is not None
+        ]
 
         for file_path in files_to_load:
+            if not file_path.exists():
+                logger.warning(f"File not found: {file_path}")
+                continue
             try:
                 with open(file_path, "r") as f:
                     for line in f:
