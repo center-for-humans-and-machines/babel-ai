@@ -458,4 +458,7 @@ class TopicalChatConversationFetcher(BasePromptFetcher):
 
         # Select a random conversation
         conversation = random.choice(self.conversations)
-        return conversation["messages"]
+        # Remove the last two messages
+        # TODO: Make this configurable
+        messages = conversation["messages"][:-2]
+        return messages
