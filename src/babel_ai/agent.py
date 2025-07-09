@@ -23,6 +23,12 @@ class Agent:
         self.model = agent_config.model
         self.system_prompt = agent_config.system_prompt
         self.config: AgentConfig = agent_config
+        # TODO: Make this configurable
+        # Currently, we only support conversational agents
+        # If we change that, we need to think about
+        # how to handle the system prompt with alternalting
+        # agent types.
+        self.is_conversational_agent = True
 
     def generate_response(self, messages: List[Dict[str, str]]) -> str:
         """Generate a response from the agent.
@@ -44,7 +50,11 @@ class Agent:
             final_messages.append(
                 {"role": "system", "content": self.system_prompt}
             )
-        final_messages.extend(messages)
+
+        # TODO: Stub for later agent types
+        if self.is_conversational_agent:
+            message_tree = self._define_msg_tree(messages)
+            final_messages.extend(message_tree)
 
         return generate_response(
             messages=final_messages,
@@ -55,6 +65,31 @@ class Agent:
             frequency_penalty=self.config.frequency_penalty,
             presence_penalty=self.config.presence_penalty,
             top_p=self.config.top_p,
+        )
+
+    @staticmethod
+    def _define_msg_tree(
+        messages: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
+        """
+        Define a msg tree from the incoming messages,
+        fitting the agents model type.
+        """
+        new_messages = []
+        for i, message in enumerate(reversed(messages)):
+            role = "user" if i % 2 == 0 else "assistant"
+            new_messages.append({"role": role, "content": message["content"]})
+        return reversed(new_messages)
+
+    @staticmethod
+    def _define_prompt(messages: List[Dict[str, str]]) -> str:
+        """
+        Define a prompt from the incoming messages,
+        fitting the agents model type.
+        """
+        raise NotImplementedError(
+            """Not implemented we need to wait
+            for Bram to implement base models."""
         )
 
 

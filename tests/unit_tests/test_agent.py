@@ -169,3 +169,73 @@ class TestAgent:
             presence_penalty=0.0,
             top_p=1.0,
         )
+
+    def test_define_msg_tree_empty_list(self):
+        """Test _define_msg_tree with empty list input."""
+        result = Agent._define_msg_tree([])
+        result_list = list(result)  # Convert iterator to list
+
+        assert result_list == []
+
+    def test_define_msg_tree_single_message(self):
+        """Test _define_msg_tree with single message."""
+        messages = [{"content": "Hello world"}]
+        result = Agent._define_msg_tree(messages)
+        result_list = list(result)  # Convert iterator to list
+
+        expected = [{"role": "user", "content": "Hello world"}]
+        assert result_list == expected
+
+    def test_define_msg_tree_four_messages(self):
+        """Test _define_msg_tree with four messages."""
+        messages = [
+            {"content": "Message one"},
+            {"content": "Message two"},
+            {"content": "Message three"},
+            {"content": "Message four"},
+        ]
+        result = Agent._define_msg_tree(messages)
+        result_list = list(result)  # Convert iterator to list
+
+        expected = [
+            {"role": "assistant", "content": "Message one"},
+            {"role": "user", "content": "Message two"},
+            {"role": "assistant", "content": "Message three"},
+            {"role": "user", "content": "Message four"},
+        ]
+        assert result_list == expected
+
+    def test_define_msg_tree_ignores_original_roles(self):
+        """Test that _define_msg_tree ignores original role keys."""
+        messages = [
+            {"role": "user", "content": "First message"},
+            {"role": "assistant", "content": "Second message"},
+            {"role": "system", "content": "Third message"},
+        ]
+        result = Agent._define_msg_tree(messages)
+        result_list = list(result)  # Convert iterator to list
+
+        # Original roles should be ignored, new roles assigned based on
+        # position
+        expected = [
+            {"role": "user", "content": "First message"},
+            {"role": "assistant", "content": "Second message"},
+            {"role": "user", "content": "Third message"},
+        ]
+        assert result_list == expected
+
+    def test_define_msg_tree_with_extra_keys(self):
+        """Test _define_msg_tree with messages containing extra keys."""
+        messages = [
+            {"content": "First", "timestamp": "2023-01-01", "id": 1},
+            {"content": "Second", "metadata": {"key": "value"}},
+        ]
+        result = Agent._define_msg_tree(messages)
+        result_list = list(result)  # Convert iterator to list
+
+        # Should only have role and content keys
+        for msg in result_list:
+            assert set(msg.keys()) == {"role", "content"}
+
+        assert result_list[0]["content"] == "First"
+        assert result_list[1]["content"] == "Second"
