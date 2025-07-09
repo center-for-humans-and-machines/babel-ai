@@ -37,6 +37,7 @@ class Provider(Enum):
 
     def get_model_enum(self) -> Type[Enum]:
         """Get the corresponding model enum for this provider."""
+        logger.info(f"Getting model enum for provider: {self}")
         match self:
             case Provider.OPENAI:
                 return OpenAIModel
@@ -54,6 +55,7 @@ class Provider(Enum):
 
     def get_request_function(self) -> Callable:
         """Get the corresponding request function for this provider."""
+        logger.info(f"Getting request function for provider: {self}")
         match self:
             case Provider.OPENAI:
                 return openai_request
@@ -99,6 +101,9 @@ def generate_response(
     Returns:
         Generated text response
     """
+    logger.info(
+        f"Generating response for provider: {provider}, model: {model}"
+    )
     request_function = provider.get_request_function()
     return request_function(
         messages=messages,
