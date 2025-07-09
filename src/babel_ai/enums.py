@@ -1,19 +1,10 @@
-import logging
 from enum import Enum
 from typing import TYPE_CHECKING, Generator, List, Type
 
 if TYPE_CHECKING:
-    from babel_ai.agent import Agent, round_robin_agent_selection
-    from babel_ai.analyzer import Analyzer, SimilarityAnalyzer
-    from babel_ai.prompt_fetcher import (
-        BasePromptFetcher,
-        InfiniteConversationFetcher,
-        RandomPromptFetcher,
-        ShareGPTConversationFetcher,
-        TopicalChatConversationFetcher,
-    )
-
-logger = logging.getLogger(__name__)
+    from babel_ai.agent import Agent
+    from babel_ai.analyzer import Analyzer
+    from babel_ai.prompt_fetcher import BasePromptFetcher
 
 
 class FetcherType(Enum):
@@ -46,7 +37,13 @@ class FetcherType(Enum):
         Returns:
             The fetcher class corresponding to this enum value
         """
-        logger.info(f"Getting fetcher class for fetcher type: {self}")
+        # Import here to avoid circular imports
+        from babel_ai.prompt_fetcher import (
+            InfiniteConversationFetcher,
+            RandomPromptFetcher,
+            ShareGPTConversationFetcher,
+            TopicalChatConversationFetcher,
+        )
 
         mapping = {
             FetcherType.RANDOM: RandomPromptFetcher,
@@ -61,8 +58,6 @@ class FetcherType(Enum):
         Get the kwargs for the fetcher.
         Depending on the fetcher type.
         """
-        logger.info(f"Getting kwargs mapping for fetcher type: {self}")
-
         required_kwargs = {
             FetcherType.RANDOM: ["category"],
             FetcherType.SHAREGPT: [
@@ -113,12 +108,10 @@ class AgentSelectionMethod(Enum):
         self, agents: List[Type["Agent"]]
     ) -> Generator[Type["Agent"], None, None]:
         """Get the corresponding generator for this method."""
-        logger.info(f"Getting generator for agent selection method: {self}")
+        # Import here to avoid circular imports
+        from babel_ai.agent import round_robin_agent_selection
 
         if self == AgentSelectionMethod.ROUND_ROBIN:
-            logger.info(
-                "Using round robin agent selection with agents: {agents}"
-            )
             return round_robin_agent_selection(agents)
 
 
@@ -144,7 +137,8 @@ class AnalyzerType(Enum):
 
     def get_class(self) -> Type["Analyzer"]:
         """Get the corresponding analyzer class for this type."""
-        logger.info(f"Getting analyzer class for analyzer type: {self}")
+        # Import here to avoid circular imports
+        from babel_ai.analyzer import SimilarityAnalyzer
 
         mapping = {
             AnalyzerType.SIMILARITY: SimilarityAnalyzer,
