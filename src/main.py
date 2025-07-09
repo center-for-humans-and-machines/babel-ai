@@ -24,7 +24,7 @@ async def run_experiment(config: ExperimentConfig):
     await asyncio.to_thread(experiment.run)
 
 
-async def main(configs: List[ExperimentConfig]):
+async def run_experiment_batch(configs: List[ExperimentConfig]):
     """Run multiple experiments in parallel using asyncio."""
     # Ensure logs directory exists
     os.makedirs("logs", exist_ok=True)
@@ -55,4 +55,4 @@ if __name__ == "__main__":
     else:
         raise ValueError("No config files provided")
 
-    asyncio.run(main(example_configs))
+    asyncio.run(run_experiment_batch(example_configs))

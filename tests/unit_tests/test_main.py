@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from babel_ai.experiment import ExperimentConfig
-from main import main, run_experiment
+from main import run_experiment, run_experiment_batch
 
 
 @pytest.mark.asyncio
@@ -16,13 +16,13 @@ async def test_run_experiment():
 
 
 @pytest.mark.asyncio
-async def test_main():
+async def test_run_experiment_batch():
     mock_config1 = MagicMock(spec=ExperimentConfig)
     mock_config2 = MagicMock(spec=ExperimentConfig)
     with patch(
         "main.run_experiment", return_value=MagicMock()
     ) as mock_run_experiment:
-        await main([mock_config1, mock_config2])
+        await run_experiment_batch([mock_config1, mock_config2])
         assert mock_run_experiment.call_count == 2
         mock_run_experiment.assert_any_call(mock_config1)
         mock_run_experiment.assert_any_call(mock_config2)
