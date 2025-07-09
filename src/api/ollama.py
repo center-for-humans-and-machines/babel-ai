@@ -19,7 +19,24 @@ API_BASE = os.getenv("OLLAMA_API_BASE", "http://localhost:11434")
 
 
 class OllamaModel(Enum):
-    """Enum for available Ollama models."""
+    """Enum for available Ollama models.
+
+    This enum defines the different Ollama
+    models that can be used for generating
+    responses in drift experiments.
+
+    Available models:
+        MISTRAL_7B: Mistral 7B instruct model
+        MISTRAL_7B_TEXT: Mistral 7B text model
+        LLAMA3_70B: Llama 3 70B instruct model
+        LLAMA3_70B_TEXT: Llama 3 70B text model
+        DEEPSEEK_R1: DeepSeek 70B model
+        GPT_2_1_5B: GPT-2 1.5B model
+
+    Example:
+        >>> model = OllamaModel.MISTRAL_7B
+        >>> response = ollama_request(messages, model=model)
+    """
 
     MISTRAL_7B = "mistral:7b-instruct"
     MISTRAL_7B_TEXT = "mistral:7b-text"

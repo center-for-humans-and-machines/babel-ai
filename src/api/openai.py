@@ -20,7 +20,20 @@ CLIENT = OpenAI(api_key=api_key)
 
 
 class OpenAIModel(Enum):
-    """Enum for available OpenAI models."""
+    """Enum for available OpenAI models.
+
+    This enum defines the different OpenAI
+    models that can be used for generating
+    responses in drift experiments.
+
+    Available models:
+        GPT4_1106_PREVIEW: GPT-4 Turbo preview model (November 2023)
+        GPT4_0125_PREVIEW: GPT-4 Turbo preview model (January 2024)
+
+    Example:
+        >>> model = OpenAIModel.GPT4_1106_PREVIEW
+        >>> response = openai_request(messages, model=model)
+    """
 
     GPT4_1106_PREVIEW = "gpt-4-1106-preview"
     GPT4_0125_PREVIEW = "gpt-4-0125-preview"

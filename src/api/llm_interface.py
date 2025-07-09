@@ -12,7 +12,23 @@ logger = logging.getLogger(__name__)
 
 
 class Provider(Enum):
-    """Enum for available LLM providers."""
+    """Enum for available LLM providers.
+
+    This enum defines the different providers that can be used to access
+    language models for generating responses in drift experiments.
+
+    Available providers:
+        OPENAI: OpenAI API provider (GPT models)
+        OLLAMA: Local Ollama provider for open source models
+        RAVEN: Raven provider using Ollama models
+        AZURE: Azure OpenAI API provider
+
+    Example:
+        >>> provider = Provider.OPENAI
+        >>> model_enum = provider.get_model_enum()
+        >>> request_fn = provider.get_request_function()
+        >>> response = request_fn(messages, model_enum.GPT4)
+    """
 
     OPENAI = "openai"
     OLLAMA = "ollama"

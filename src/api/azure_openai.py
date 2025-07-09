@@ -25,7 +25,18 @@ CLIENT = AzureOpenAI(
 
 
 class AzureModel(Enum):
-    """Enum for available Azure OpenAI models."""
+    """Enum for available Azure OpenAI models.
+
+    This enum defines the different Azure OpenAI models that can be used for
+    generating responses in drift experiments.
+
+    Available models:
+        GPT4O_2024_08_06: GPT-4 Optimized model (August 2024)
+
+    Example:
+        >>> model = AzureModel.GPT4O_2024_08_06
+        >>> response = azure_openai_request(messages, model=model)
+    """
 
     GPT4O_2024_08_06 = "gpt-4o-2024-08-06"
 
