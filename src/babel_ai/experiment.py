@@ -87,7 +87,7 @@ class Experiment:
         ).get_generator(self.agents)
 
         # set up results list
-        self.results: List[Metric] = []
+        self.result_metrics: List[Metric] = []
 
         # keep track of message history for the experiment
         self.messages: List[
@@ -102,15 +102,23 @@ class Experiment:
         output_dir: Optional[Path] = None,
     ) -> List[Metric]:
         """Run the drift experiment."""
-        self.generate_conversation()
+        # Produces self.result_metrics from
+        # fetched starting point and with the
+        # agents.
+        self.run_interaction_loop()
+        # Analyzes the self.result_metrics and adds
+        # the analysis to the metrics.
+        self._analyze_response(self.result_metrics)
+        # Saves the results to a CSV file
+        # and metadata to a JSON file.
         self._save_results_to_csv(
-            metrics=self.results,
+            metrics=self.result_metrics,
             metadata=self.metadata,
             output_dir=output_dir,
         )
-        return self.results
+        return self.result_metrics
 
-    def generate_conversation(
+    def run_interaction_loop(
         self,
     ) -> List[Metric]:
         """Run the drift experiment with the given initial messages.
@@ -126,7 +134,7 @@ class Experiment:
         """
 
         for i, message in enumerate(self.messages):
-            self.results.append(
+            self.result_metrics.append(
                 FetcherMetric(
                     iteration=i,
                     timestamp=datetime.now(),
@@ -143,7 +151,9 @@ class Experiment:
         )
 
         # continue until max iterations or max total characters is reached
-        iteration = len(self.results)  # Start from after fetcher metrics
+        iteration = len(
+            self.result_metrics
+        )  # Start from after fetcher metrics
         while self._should_continue_generation():
 
             # select next agent
@@ -162,7 +172,7 @@ class Experiment:
             )
 
             # add response to results
-            self.results.append(
+            self.result_metrics.append(
                 AgentMetric(
                     iteration=iteration,
                     timestamp=datetime.now(),
@@ -179,7 +189,7 @@ class Experiment:
         self.metadata.total_characters = self.total_characters
         self.metadata.num_iterations_total = iteration
 
-        return self.results
+        return self.result_metrics
 
     def _analyze_response(self, metrics: List[Metric]) -> AnalysisResult:
         """Analyze the response of the last agent."""

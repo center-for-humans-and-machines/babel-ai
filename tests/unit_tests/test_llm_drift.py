@@ -162,7 +162,7 @@ class TestExperiment:
 
         # Verify messages and results initialization
         assert experiment.messages == sample_messages
-        assert experiment.results == []
+        assert experiment.result_metrics == []
 
     @patch("babel_ai.experiment.Analyzer.create_analyzer")
     @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
@@ -257,11 +257,11 @@ class TestExperiment:
 
         experiment.agent_selection_method = mock_agent_generator()
 
-        results = experiment.generate_conversation()
+        results = experiment.run_interaction_loop()
 
         # Should have 3 FetcherMetrics + 1 AgentMetric
         assert len(results) == 4
-        assert len(experiment.results) == 4
+        assert len(experiment.result_metrics) == 4
 
         # Check FetcherMetric results
         for i in range(3):
@@ -380,7 +380,7 @@ class TestExperiment:
             # Verify methods were called
             mock_generate.assert_called_once()
             mock_save.assert_called_once_with(
-                metrics=experiment.results,
+                metrics=experiment.result_metrics,
                 metadata=experiment.metadata,
                 output_dir=None,
             )
@@ -421,7 +421,7 @@ class TestExperiment:
 
             # Verify save was called with custom output dir
             mock_save.assert_called_once_with(
-                metrics=experiment.results,
+                metrics=experiment.result_metrics,
                 metadata=experiment.metadata,
                 output_dir=custom_output_dir,
             )
@@ -476,7 +476,7 @@ class TestExperiment:
 
         experiment.agent_selection_method = mock_round_robin()
 
-        results = experiment.generate_conversation()
+        results = experiment.run_interaction_loop()
 
         # Should have 3 FetcherMetrics + 2 AgentMetrics
         assert len(results) == 5
@@ -526,7 +526,7 @@ class TestExperiment:
 
         experiment.agent_selection_method = mock_agent_generator()
 
-        results = experiment.generate_conversation()
+        results = experiment.run_interaction_loop()
 
         # Should stop due to character limit, not iteration limit
         # 3 fetcher messages + some agent messages until character limit
@@ -562,7 +562,7 @@ class TestExperiment:
 
         experiment.agent_selection_method = mock_agent_generator()
 
-        results = experiment.generate_conversation()
+        results = experiment.run_interaction_loop()
 
         # Should only have agent metrics, no fetcher metrics
         agent_metrics = [r for r in results if isinstance(r, AgentMetric)]
@@ -633,7 +633,7 @@ class TestExperiment:
 
         experiment.agent_selection_method = mock_agent_generator()
 
-        experiment.generate_conversation()
+        experiment.run_interaction_loop()
 
         # Messages should have grown
         assert len(experiment.messages) > initial_message_count
