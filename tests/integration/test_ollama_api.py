@@ -52,12 +52,12 @@ def test_raven_server_api():
     ]
 
     start_time = time.time()
-    response = raven_ollama_request(
-        messages=messages,
-        api_base_url="https://hpc-llm-inference-fastapi.chm.mpib-berlin.mpg.de/v1",  # noqa: E501
-        model="llama3.3:70b",
-        endpoint="chat/completions",
-    )
+    response = raven_ollama_request(messages=messages)
+    try:
+        response = raven_ollama_request(messages=messages)
+    except Exception as e:
+        print(f"Error in Raven request: {str(e)}")
+        raise
     end_time = time.time()
     print(f"Response time: {end_time - start_time:.2f} seconds")
 

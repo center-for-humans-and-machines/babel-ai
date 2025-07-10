@@ -2,9 +2,12 @@
 
 import logging
 import os
-from typing import Literal
+from typing import Optional
+
 from dotenv import load_dotenv
 from openai import OpenAI
+
+from api.enums import OpenAIModels
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -19,23 +22,19 @@ CLIENT = OpenAI(api_key=api_key)
 
 def openai_request(
     messages: list,
-    model: Literal[
-        "gpt-4-1106-preview",
-        "gpt-4-0125-preview",
-        # add other gpt-4.x models as desired
-    ] = "gpt-4-1106-preview",
+    model: OpenAIModels = OpenAIModels.GPT4_1106_PREVIEW,
     temperature: float = 1.0,
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
     top_p: float = 1.0,
-    max_tokens: int = 1000,
+    max_tokens: Optional[int] = None,
 ) -> str:
     """
     Send a request to the OpenAI API using the specified GPT-4 model.
 
     Args:
         messages: List of message dicts (role/content etc.)
-        model: OpenAI model name (e.g. "gpt-4-1106-preview")
+        model: OpenAI model to use
         temperature: Sampling temperature
         frequency_penalty: Penalty for frequency
         presence_penalty: Penalty for presence
@@ -46,14 +45,22 @@ def openai_request(
         The generated text response.
     """
     logger.info(
-        f"Sending request to OpenAI API with model {model}, "
+        f"Sending request to OpenAI API with model {model.value}, "
         f"temperature {temperature}, max_tokens {max_tokens}"
     )
     logger.debug(f"Messages: {messages}")
+    logger.debug(
+        f"Generation parameters: "
+        f"temperature {temperature}, "
+        f"frequency_penalty {frequency_penalty}, "
+        f"presence_penalty {presence_penalty}, "
+        f"top_p {top_p}, "
+        f"max_tokens {max_tokens}"
+    )
 
     try:
         response = CLIENT.chat.completions.create(
-            model=model,
+            model=model.value,
             messages=messages,
             temperature=temperature,
             frequency_penalty=frequency_penalty,

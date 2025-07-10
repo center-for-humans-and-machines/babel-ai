@@ -3,10 +3,12 @@
 import json
 import logging
 import os
-from typing import Literal, Optional
+from typing import Optional
 
 import requests
 from dotenv import load_dotenv
+
+from api.enums import OllamaModels
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -14,32 +16,27 @@ logger = logging.getLogger(__name__)
 # Load .env variables
 load_dotenv()
 # Default behavior is running locally
-api_base = os.getenv("OLLAMA_API_BASE", "http://localhost:11434")
+API_BASE = os.getenv("OLLAMA_API_BASE", "http://localhost:11434")
 
 
 def ollama_request(
     messages: list,
-    model: Literal[
-        "llama3",
-        "llama3:8b",
-        "llama3:70b",
-        "mistral",
-        "mixtral",
-        # add other models as desired
-    ] = "llama3",
+    model: OllamaModels = OllamaModels.LLAMA3_70B,
     temperature: float = 1.0,
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
     top_p: float = 1.0,
-    max_tokens: int = 1000,
-    api_base_url: Optional[str] = None,
+    max_tokens: Optional[int] = None,
+    api_base_url: Optional[str] = API_BASE,
+    endpoint: str = "api/chat",
+    stream: bool = False,
 ) -> str:
     """
     Send a request to the Ollama API using the specified model.
 
     Args:
         messages: List of message dicts (role/content etc.)
-        model: Ollama model name (e.g. "llama3")
+        model: Ollama model to use
         temperature: Sampling temperature
         frequency_penalty: Penalty for frequency
         presence_penalty: Penalty for presence
@@ -47,33 +44,77 @@ def ollama_request(
         max_tokens: Max tokens in response
         api_base_url:
             Base URL for Ollama API (defaults to env variable or localhost)
+        endpoint: API endpoint to use (defaults to "api/chat")
+        stream: Whether to stream the response
 
     Returns:
         The generated text response.
     """
-    if api_base_url is None:
-        api_base_url = api_base
 
-    endpoint = f"{api_base_url}/api/chat"
+    def _handle_response(
+        response: requests.Response, is_streaming: bool = False
+    ) -> str:
+        """Handle the response from Ollama API."""
+        response.raise_for_status()
 
-    logger.info(
-        f"Sending request to Ollama API with model {model}, "
-        f"temperature {temperature}, max_tokens {max_tokens}"
-    )
-    logger.debug(f"Messages: {messages}")
+        match is_streaming:
+            case True:
+                full_response = ""
+                for line in response.iter_lines():
+                    if line:
+                        data = line.decode("utf-8")
+                        if data.startswith("data: "):
+                            json_data = json.loads(data[6:])
+                            match json_data:
+                                case {"message": {"content": content}}:
+                                    full_response += content
+                return full_response
 
-    # Convert OpenAI-style messages to Ollama format if needed
+            case False:
+                data = response.json()
+                match data:
+                    case {"choices": [{"message": {"content": content}}]}:
+                        # Raven format
+                        return content
+                    case {"message": {"content": content}}:
+                        # Standard Ollama format
+                        return content
+                    case _:
+                        logger.error(f"Unexpected response format: {data}")
+                        return ""
+
+    # Validate messages
     if (
         messages
         and isinstance(messages, list)
         and all(isinstance(m, dict) for m in messages)
     ):
-        # Ollama format is the same as OpenAI's for chat messages
-        ollama_messages = messages
+        messages = messages
+    else:
+        raise ValueError("Messages must be a list of dictionaries")
 
+    # Log request info
+    logger.info(
+        f"Sending {'streaming' if stream else 'standard'} request to Ollama API with "  # noqa: E501
+        f"model {model.value}, temperature {temperature}, max_tokens {max_tokens}"  # noqa: E501
+    )
+    logger.info(
+        f"API url endpoint for Ollama request: {api_base_url}/{endpoint}"
+    )
+    logger.debug(f"Messages: {messages}")
+    logger.debug(
+        f"Generation parameters: "
+        f"temperature {temperature}, "
+        f"frequency_penalty {frequency_penalty}, "
+        f"presence_penalty {presence_penalty}, "
+        f"top_p {top_p}, "
+        f"max_tokens {max_tokens}"
+    )
+
+    # Build payload
     payload = {
-        "model": model,
-        "messages": ollama_messages,
+        "model": model.value,
+        "messages": messages,
         "options": {
             "temperature": temperature,
             "frequency_penalty": frequency_penalty,
@@ -81,37 +122,27 @@ def ollama_request(
             "top_p": top_p,
             "num_predict": max_tokens,
         },
-        "stream": False,
+        "stream": stream,
     }
 
     try:
-        response = requests.post(endpoint, json=payload)
-        response.raise_for_status()
-
-        print(response)
-
-        data = response.json()
-        content = data.get("message", {}).get("content", "")
+        response = requests.post(
+            url=f"{api_base_url}/{endpoint}",
+            json=payload,
+            stream=stream,
+        )
+        response_content = _handle_response(response, is_streaming=stream)
 
         logger.info("Successfully received response from Ollama API")
-        logger.debug(f"Response: {content}")
-        return content
+        logger.debug(f"Response: {response_content}")
 
+        return response_content
     except requests.exceptions.RequestException as e:
         logger.error(f"Error in Ollama API request: {str(e)}")
         raise
 
 
-def ollama_request_stream(
-    messages: list,
-    model: str = "llama3",
-    temperature: float = 1.0,
-    frequency_penalty: float = 0.0,
-    presence_penalty: float = 0.0,
-    top_p: float = 1.0,
-    max_tokens: int = 1000,
-    api_base_url: Optional[str] = None,
-) -> str:
+def ollama_request_stream(*args, **kwargs) -> str:
     """
     Send a streaming request to the Ollama API and return the full response.
 
@@ -124,135 +155,31 @@ def ollama_request_stream(
     Returns:
         The complete generated text response.
     """
-    if api_base_url is None:
-        api_base_url = api_base
-
-    endpoint = f"{api_base_url}/api/chat"
-
-    logger.info(
-        f"Sending streaming request to Ollama API with model {model}, "
-        f"temperature {temperature}, max_tokens {max_tokens}"
-    )
-
-    payload = {
-        "model": model,
-        "messages": messages,
-        "options": {
-            "temperature": temperature,
-            "frequency_penalty": frequency_penalty,
-            "presence_penalty": presence_penalty,
-            "top_p": top_p,
-            "num_predict": max_tokens,
-        },
-        "stream": False,
-    }
-
-    try:
-        response = requests.post(endpoint, json=payload, stream=True)
-        response.raise_for_status()
-
-        full_response = ""
-        for line in response.iter_lines():
-            if line:
-                data = line.decode("utf-8")
-                if data.startswith("data: "):
-                    json_data = json.loads(data[6:])
-                    if (
-                        "message" in json_data
-                        and "content" in json_data["message"]
-                    ):
-                        chunk = json_data["message"]["content"]
-                        full_response += chunk
-
-        logger.info("Successfully received streamed response from Ollama API")
-        logger.debug(f"Complete response: {full_response}")
-        return full_response
-
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error in Ollama API streaming request: {str(e)}")
-        raise
+    logger.info("Sending streaming request to Ollama API")
+    return ollama_request(*args, stream=True, **kwargs)
 
 
-def raven_ollama_request(
-    messages: list,
-    model: Literal[
-        "llama3.3:70b",
-    ] = "llama3.3:70b",
-    temperature: float = 1.0,
-    frequency_penalty: float = 0.0,
-    presence_penalty: float = 0.0,
-    top_p: float = 1.0,
-    max_tokens: int = 1000,
-    api_base_url: Optional[
-        str
-    ] = "https://hpc-llm-inference-fastapi.chm.mpib-berlin.mpg.de/v1",
-    endpoint: Optional[str] = "chat/completions",
-) -> str:
+def raven_ollama_request(*args, **kwargs) -> str:
     """
     Send a request to the Ollama API using the specified model.
 
     Args:
-        messages: List of message dicts (role/content etc.)
-        model: Ollama model name (e.g. "llama3")
-        temperature: Sampling temperature
-        frequency_penalty: Penalty for frequency
-        presence_penalty: Penalty for presence
-        top_p: Top-p parameter
-        max_tokens: Max tokens in response
-        api_base_url:
-            Base URL for Ollama API (defaults to env variable or localhost)
+        Same as ollama_request, but with different defaults:
+        - model: OllamaModel.LLAMA33_70B
+        - api_base_url:
+            "https://hpc-llm-inference-fastapi.chm.mpib-berlin.mpg.de/v1"
+        - endpoint: "chat/completions"
 
     Returns:
         The generated text response.
     """
-    if api_base_url is None:
-        api_base_url = api_base
-
-    endpoint = f"{api_base_url}/{endpoint}"
-
-    logger.info(
-        f"Sending request to Ollama API with model {model}, "
-        f"temperature {temperature}, max_tokens {max_tokens}"
-    )
-    logger.debug(f"Messages: {messages}")
-
-    # Convert OpenAI-style messages to Ollama format if needed
-    if (
-        messages
-        and isinstance(messages, list)
-        and all(isinstance(m, dict) for m in messages)
-    ):
-        # Ollama format is the same as OpenAI's for chat messages
-        ollama_messages = messages
-
-    payload = {
-        "model": model,
-        "messages": ollama_messages,
-        "options": {
-            "temperature": temperature,
-            "frequency_penalty": frequency_penalty,
-            "presence_penalty": presence_penalty,
-            "top_p": top_p,
-            "num_predict": max_tokens,
-        },
-        "stream": False,
+    defaults = {
+        "model": OllamaModels.LLAMA3_70B,
+        "api_base_url": "https://hpc-llm-inference-fastapi.chm.mpib-berlin.mpg.de/v1",  # noqa: E501
+        "endpoint": "chat/completions",
     }
-
-    try:
-        response = requests.post(endpoint, json=payload)
-        response.raise_for_status()
-
-        print(response)
-
-        data = response.json()
-        content = (
-            data.get("choices", [{}])[0].get("message", {}).get("content", "")
-        )
-
-        logger.info("Successfully received response from Ollama API")
-        logger.debug(f"Response: {content}")
-        return content
-
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error in Ollama API request: {str(e)}")
-        raise
+    logger.debug(f"Raven defaults: {defaults}")
+    # Update kwargs with raven defaults
+    for key, value in defaults.items():
+        kwargs.setdefault(key, value)
+    return ollama_request(*args, **kwargs)

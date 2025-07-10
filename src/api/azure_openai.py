@@ -2,10 +2,12 @@
 
 import logging
 import os
-from typing import Literal
+from typing import Optional
 
 from dotenv import load_dotenv
 from openai import AzureOpenAI
+
+from api.enums import AzureModels
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -22,17 +24,17 @@ CLIENT = AzureOpenAI(
     api_key=api_key, azure_endpoint=endpoint, api_version=api_version
 )
 
+logger.info("Initialized Azure OpenAI client.")
+
 
 def azure_openai_request(
     messages: list,
-    model: Literal[
-        "gpt-4o-2024-08-06",
-    ] = "gpt-4o-2024-08-06",
+    model: AzureModels = AzureModels.GPT4O_2024_08_06,
     temperature: float = 1.0,  # 0.0 to 1.0 higher = more creative
     frequency_penalty: float = 0.0,  # -2.0 to 2.0 higher = less repetition
     presence_penalty: float = 0.0,  # -2.0 to 2.0 higher = more diverse
     top_p: float = 1.0,  # 0.0 to 1.0 higher = more creative
-    max_tokens: int = 1000,
+    max_tokens: Optional[int] = None,
 ) -> str:
     """Send a request to Azure OpenAI API.
 
@@ -49,7 +51,7 @@ def azure_openai_request(
         Generated text response
     """
     logger.info(
-        f"Sending request to Azure OpenAI API with model {model}, "
+        f"Sending request to Azure OpenAI API with model {model.value}, "
         f"temperature {temperature}, max_tokens {max_tokens}"
     )
     logger.debug(f"Messages: {messages}")
@@ -57,7 +59,7 @@ def azure_openai_request(
     try:
         # Send the prompt to AzureOpenAI
         response = CLIENT.chat.completions.create(
-            model=model,
+            model=model.value,
             messages=messages,
             temperature=temperature,
             frequency_penalty=frequency_penalty,
