@@ -84,8 +84,9 @@ def generate_response(
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
     top_p: float = 1.0,
+    # TODO: Configurability is missing here.
     max_retries: int = 3,
-    initial_delay: float = 1.0,
+    initial_delay: float = 3.0,
 ) -> str:
     """Generate text response using the specified provider and model.
 
@@ -149,7 +150,7 @@ def generate_response(
                 break
 
             # Wait for next attempt with exponential backoff
-            delay = initial_delay * (2**attempt)
+            delay = initial_delay**attempt
             logger.info(f"Retrying in {delay} seconds...")
             time.sleep(delay)
 
