@@ -182,17 +182,18 @@ class AgentConfig(BaseModel):
         model (ModelType): The specific model to use from the provider
         system_prompt (Optional[str]): System prompt to guide the agent's
             behavior and responses. Default: None
-        temperature (float): Controls randomness in generation (0.0-2.0).
-            Higher values make output more random. Default: 0.7
-        max_tokens (int): Maximum number of tokens to generate per response.
-            Default: 100
-        frequency_penalty (float): Penalty for frequently used tokens
-            (-2.0 to 2.0). Positive values discourage repetition. Default: 0.0
-        presence_penalty (float): Penalty for tokens that have already
-            appeared (-2.0 to 2.0). Positive values encourage new topics.
-            Default: 0.0
-        top_p (float): Nucleus sampling parameter (0.0-1.0). Only consider
-            tokens with cumulative probability up to top_p. Default: 1.0
+        temperature (Optional[float]): Controls randomness in generation
+            (0.0-2.0). Higher values make output more random. Default: None
+        max_tokens (Optional[int]): Maximum number of tokens to generate per
+            response. Default: None
+        frequency_penalty (Optional[float]): Penalty for frequently used tokens
+            (-2.0 to 2.0). Positive values discourage repetition. Default: None
+        presence_penalty (Optional[float]): Penalty for tokens that have
+            already appeared (-2.0 to 2.0). Positive values encourage new
+            topics. Default: None
+        top_p (Optional[float]): Nucleus sampling parameter (0.0-1.0). Only
+            consider tokens with cumulative probability up to top_p. Default:
+            None
 
     Example:
         >>> config = AgentConfig(
@@ -211,11 +212,11 @@ class AgentConfig(BaseModel):
     system_prompt: Optional[str] = Field(
         default=None, description="System prompt to guide agent behavior"
     )
-    temperature: float = Field(default=1.0, ge=0.0, le=2.0)
+    temperature: Optional[float] = Field(default=None, ge=0.0, le=2.0)
     max_tokens: Optional[int] = Field(default=None, ge=1)
-    frequency_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
-    presence_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
-    top_p: float = Field(default=1.0, ge=0.0, le=1.0)
+    frequency_penalty: Optional[float] = Field(default=None, ge=-2.0, le=2.0)
+    presence_penalty: Optional[float] = Field(default=None, ge=-2.0, le=2.0)
+    top_p: Optional[float] = Field(default=None, ge=0.0, le=1.0)
 
     @field_validator("model")
     def validate_model_provider_compatibility(
