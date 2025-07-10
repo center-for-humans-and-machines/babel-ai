@@ -104,10 +104,10 @@ def integration_experiment_config(fetcher_config, agent_config):
 class TestExperimentIntegration:
     """Integration tests for the Experiment class."""
 
-    @patch("api.llm_interface.openai_request")
-    @patch("api.llm_interface.azure_openai_request")
-    @patch("api.llm_interface.ollama_request")
-    @patch("api.llm_interface.raven_ollama_request")
+    @patch("api.openai.openai_request")
+    @patch("api.azure_openai.azure_openai_request")
+    @patch("api.ollama.ollama_request")
+    @patch("api.ollama.raven_ollama_request")
     def test_full_experiment_workflow(
         self,
         mock_raven_request,

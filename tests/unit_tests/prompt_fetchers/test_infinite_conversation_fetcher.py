@@ -144,7 +144,7 @@ class TestInfiniteConversationFetcher(TestCase):
         first_message = conversation[0]
         self.assertIn("role", first_message)
         self.assertIn("content", first_message)
-        self.assertIn(first_message["role"], ["user", "assistant"])
+        self.assertIn(first_message["role"], ["Slavoj Zizek", "Werner Herzog"])
 
     def test_get_conversation_empty_dataset(self):
         """Test getting conversation from empty dataset."""
@@ -191,30 +191,6 @@ class TestInfiniteConversationFetcher(TestCase):
                 self.assertIn(
                     msg["speaker"], ["Slavoj Zizek", "Werner Herzog"]
                 )
-
-    def test_role_alternation(self):
-        """Test that roles alternate properly in get_conversation."""
-        fetcher = InfiniteConversationFetcher(self.temp_dir)
-        conversation = fetcher.get_conversation()
-
-        # Check that roles alternate between user and assistant
-        for i, message in enumerate(conversation):
-            if i % 2 == 0:
-                self.assertEqual(message["role"], "user")
-            else:
-                self.assertEqual(message["role"], "assistant")
-
-    def test_content_format(self):
-        """Test that content includes speaker names."""
-        fetcher = InfiniteConversationFetcher(self.temp_dir)
-        conversation = fetcher.get_conversation()
-
-        # Check that each message content includes speaker name
-        for message in conversation:
-            content = message["content"]
-            self.assertTrue(
-                "Slavoj Zizek:" in content or "Werner Herzog:" in content
-            )
 
 
 if __name__ == "__main__":

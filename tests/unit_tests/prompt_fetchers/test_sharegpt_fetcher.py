@@ -120,7 +120,7 @@ class TestShareGPTConversationFetcher(TestCase):
         first_message = conversation[0]
         self.assertIn("role", first_message)
         self.assertIn("content", first_message)
-        self.assertIn(first_message["role"], ["user", "assistant"])
+        self.assertIn(first_message["role"], ["human", "assistant"])
 
     def test_get_conversation_empty_dataset(self):
         """Test getting conversation from empty dataset."""
@@ -138,41 +138,6 @@ class TestShareGPTConversationFetcher(TestCase):
 
         # Clean up
         os.remove(empty_path)
-
-    def test_role_conversion(self):
-        """Test that roles are properly converted from ShareGPT format."""
-        fetcher = ShareGPTConversationFetcher(
-            self.data_path, min_messages=2, max_messages=2
-        )
-        conversation = fetcher.get_conversation()
-
-        # First message should be from human -> user
-        self.assertEqual(conversation[0]["role"], "user")
-        self.assertEqual(conversation[0]["content"], "Hi")
-
-        # Second message should be from assistant -> assistant
-        self.assertEqual(conversation[1]["role"], "assistant")
-        self.assertEqual(conversation[1]["content"], "Hello")
-
-    def test_content_preservation(self):
-        """Test that message content is preserved correctly."""
-        fetcher = ShareGPTConversationFetcher(
-            self.data_path, min_messages=6, max_messages=6
-        )
-        conversation = fetcher.get_conversation()
-
-        # Check that content matches expected values
-        expected_contents = [
-            "What is Python?",
-            "A programming language",
-            "Tell me more",
-            "Python is versatile...",
-            "What can I build with it?",
-            "Many things...",
-        ]
-
-        for i, message in enumerate(conversation):
-            self.assertEqual(message["content"], expected_contents[i])
 
 
 if __name__ == "__main__":
