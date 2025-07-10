@@ -5,8 +5,7 @@ from datetime import datetime
 import pytest
 from pydantic import ValidationError
 
-from api.llm_interface import Provider
-from api.openai import OpenAIModel
+from api.enums import OpenAIModels, Provider
 from babel_ai.enums import AgentSelectionMethod, AnalyzerType, FetcherType
 from models import (
     AgentConfig,
@@ -493,10 +492,10 @@ class TestAgentConfig:
         """Test creating a valid AgentConfig with minimal fields."""
         config = AgentConfig(
             provider=Provider.OPENAI,
-            model=OpenAIModel.GPT4_1106_PREVIEW,
+            model=OpenAIModels.GPT4_1106_PREVIEW,
         )
         assert config.provider == Provider.OPENAI
-        assert config.model == OpenAIModel.GPT4_1106_PREVIEW
+        assert config.model == OpenAIModels.GPT4_1106_PREVIEW
         assert config.system_prompt is None
         assert config.temperature == 1.0
         assert config.max_tokens is None
@@ -508,7 +507,7 @@ class TestAgentConfig:
         """Test creating a valid AgentConfig with all fields."""
         config = AgentConfig(
             provider=Provider.OPENAI,
-            model=OpenAIModel.GPT4_1106_PREVIEW,
+            model=OpenAIModels.GPT4_1106_PREVIEW,
             system_prompt="You are a helpful assistant",
             temperature=0.8,
             max_tokens=150,
@@ -517,7 +516,7 @@ class TestAgentConfig:
             top_p=0.9,
         )
         assert config.provider == Provider.OPENAI
-        assert config.model == OpenAIModel.GPT4_1106_PREVIEW
+        assert config.model == OpenAIModels.GPT4_1106_PREVIEW
         assert config.system_prompt == "You are a helpful assistant"
         assert config.temperature == 0.8
         assert config.max_tokens == 150
@@ -527,14 +526,14 @@ class TestAgentConfig:
 
     def test_model_provider_compatibility_validation(self):
         """Test that model-provider compatibility validation works."""
-        from api.ollama import OllamaModel
+        from api.enums import OllamaModels
 
         # This should raise a ValidationError because OllamaModel is not
         # compatible with OpenAI provider
         with pytest.raises(ValidationError) as exc_info:
             AgentConfig(
                 provider=Provider.OPENAI,
-                model=OllamaModel.MISTRAL_7B,  # Incompatible model
+                model=OllamaModels.MISTRAL_7B,  # Incompatible model
             )
 
         # Check that the error message is informative
@@ -547,14 +546,14 @@ class TestAgentConfig:
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
-                model=OpenAIModel.GPT4_1106_PREVIEW,
+                model=OpenAIModels.GPT4_1106_PREVIEW,
                 temperature=2.5,  # Invalid: > 2.0
             )
 
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
-                model=OpenAIModel.GPT4_1106_PREVIEW,
+                model=OpenAIModels.GPT4_1106_PREVIEW,
                 temperature=-0.1,  # Invalid: < 0.0
             )
 
@@ -563,7 +562,7 @@ class TestAgentConfig:
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
-                model=OpenAIModel.GPT4_1106_PREVIEW,
+                model=OpenAIModels.GPT4_1106_PREVIEW,
                 max_tokens=0,  # Invalid: < 1
             )
 
@@ -572,14 +571,14 @@ class TestAgentConfig:
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
-                model=OpenAIModel.GPT4_1106_PREVIEW,
+                model=OpenAIModels.GPT4_1106_PREVIEW,
                 frequency_penalty=2.5,  # Invalid: > 2.0
             )
 
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
-                model=OpenAIModel.GPT4_1106_PREVIEW,
+                model=OpenAIModels.GPT4_1106_PREVIEW,
                 frequency_penalty=-2.5,  # Invalid: < -2.0
             )
 
@@ -588,14 +587,14 @@ class TestAgentConfig:
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
-                model=OpenAIModel.GPT4_1106_PREVIEW,
+                model=OpenAIModels.GPT4_1106_PREVIEW,
                 presence_penalty=2.5,  # Invalid: > 2.0
             )
 
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
-                model=OpenAIModel.GPT4_1106_PREVIEW,
+                model=OpenAIModels.GPT4_1106_PREVIEW,
                 presence_penalty=-2.5,  # Invalid: < -2.0
             )
 
@@ -604,14 +603,14 @@ class TestAgentConfig:
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
-                model=OpenAIModel.GPT4_1106_PREVIEW,
+                model=OpenAIModels.GPT4_1106_PREVIEW,
                 top_p=1.5,  # Invalid: > 1.0
             )
 
         with pytest.raises(ValidationError):
             AgentConfig(
                 provider=Provider.OPENAI,
-                model=OpenAIModel.GPT4_1106_PREVIEW,
+                model=OpenAIModels.GPT4_1106_PREVIEW,
                 top_p=-0.1,  # Invalid: < 0.0
             )
 
@@ -632,7 +631,7 @@ class TestExperimentConfig:
         )
         agent_config = AgentConfig(
             provider=Provider.OPENAI,
-            model=OpenAIModel.GPT4_1106_PREVIEW,
+            model=OpenAIModels.GPT4_1106_PREVIEW,
         )
 
         config = ExperimentConfig(
@@ -668,7 +667,7 @@ class TestExperimentConfig:
         )
         agent_config = AgentConfig(
             provider=Provider.OPENAI,
-            model=OpenAIModel.GPT4_1106_PREVIEW,
+            model=OpenAIModels.GPT4_1106_PREVIEW,
         )
 
         config = ExperimentConfig(
@@ -694,7 +693,7 @@ class TestExperimentConfig:
         )
         agent_config = AgentConfig(
             provider=Provider.OPENAI,
-            model=OpenAIModel.GPT4_1106_PREVIEW,
+            model=OpenAIModels.GPT4_1106_PREVIEW,
         )
 
         with pytest.raises(ValidationError):
@@ -719,7 +718,7 @@ class TestExperimentConfig:
         )
         agent_config = AgentConfig(
             provider=Provider.OPENAI,
-            model=OpenAIModel.GPT4_1106_PREVIEW,
+            model=OpenAIModels.GPT4_1106_PREVIEW,
         )
 
         with pytest.raises(ValidationError):
@@ -900,7 +899,7 @@ class TestAgentMetric:
         """Test creating a valid AgentMetric."""
         agent_config = AgentConfig(
             provider=Provider.OPENAI,
-            model=OpenAIModel.GPT4_1106_PREVIEW,
+            model=OpenAIModels.GPT4_1106_PREVIEW,
             temperature=0.8,
         )
         analysis = AnalysisResult(
@@ -932,7 +931,7 @@ class TestAgentMetric:
         """Test AgentMetric to_dict method."""
         agent_config = AgentConfig(
             provider=Provider.OPENAI,
-            model=OpenAIModel.GPT4_1106_PREVIEW,
+            model=OpenAIModels.GPT4_1106_PREVIEW,
             temperature=0.8,
         )
         timestamp = datetime.now()
@@ -955,7 +954,7 @@ class TestAgentMetric:
         assert result["agent_id"] == "agent_1"
         assert result["agent_config"] == {
             "provider": Provider.OPENAI,
-            "model": OpenAIModel.GPT4_1106_PREVIEW,
+            "model": OpenAIModels.GPT4_1106_PREVIEW,
             "system_prompt": None,
             "temperature": 0.8,
             "max_tokens": None,
@@ -984,7 +983,7 @@ class TestExperimentMetadata:
             agent_configs=[
                 AgentConfig(
                     provider=Provider.OPENAI,
-                    model=OpenAIModel.GPT4_1106_PREVIEW,
+                    model=OpenAIModels.GPT4_1106_PREVIEW,
                 )
             ],
             agent_selection_method=AgentSelectionMethod.ROUND_ROBIN,

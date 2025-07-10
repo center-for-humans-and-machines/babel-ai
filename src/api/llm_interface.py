@@ -2,83 +2,17 @@
 
 import logging
 import time
-from enum import Enum
-from typing import Callable, Dict, List, Optional, Type, Union
+from typing import Dict, List, Optional
 
-from api.azure_openai import AzureModel, azure_openai_request
-from api.ollama import OllamaModel, ollama_request, raven_ollama_request
-from api.openai import OpenAIModel, openai_request
+from api.enums import APIModels, Provider
 
 logger = logging.getLogger(__name__)
-
-
-class Provider(Enum):
-    """Enum for available LLM providers.
-
-    This enum defines the different providers that can be used to access
-    language models for generating responses in drift experiments.
-
-    Available providers:
-        OPENAI: OpenAI API provider (GPT models)
-        OLLAMA: Local Ollama provider for open source models
-        RAVEN: Raven provider using Ollama models
-        AZURE: Azure OpenAI API provider
-
-    Example:
-        >>> provider = Provider.OPENAI
-        >>> model_enum = provider.get_model_enum()
-        >>> request_fn = provider.get_request_function()
-        >>> response = request_fn(messages, model_enum.GPT4)
-    """
-
-    OPENAI = "openai"
-    OLLAMA = "ollama"
-    RAVEN = "raven"
-    AZURE = "azure"
-
-    def get_model_enum(self) -> Type[Enum]:
-        """Get the corresponding model enum for this provider."""
-        match self:
-            case Provider.OPENAI:
-                return OpenAIModel
-            case Provider.OLLAMA:
-                return OllamaModel
-            case Provider.RAVEN:
-                return OllamaModel  # Raven uses Ollama models
-            case Provider.AZURE:
-                return AzureModel
-            case _:
-                logger.error(
-                    f"Invalid provider: {self}, available providers: {Provider}"  # noqa: E501
-                )
-                raise ValueError(f"Invalid provider: {self}")
-
-    def get_request_function(self) -> Callable:
-        """Get the corresponding request function for this provider."""
-        match self:
-            case Provider.OPENAI:
-                return openai_request
-            case Provider.OLLAMA:
-                return ollama_request
-            case Provider.RAVEN:
-                return raven_ollama_request
-            case Provider.AZURE:
-                return azure_openai_request
-            case _:
-                logger.error(
-                    f"Invalid provider: {self}, available providers: {Provider}"  # noqa: E501
-                )
-                raise ValueError(f"Invalid provider: {self}")
-
-
-# Union type for all available models
-ModelType = Union[OpenAIModel, OllamaModel, AzureModel]
 
 
 def generate_response(
     messages: List[Dict[str, str]],
     provider: Provider,
-    model: ModelType,
+    model: APIModels,
     temperature: float = 1.0,
     max_tokens: Optional[int] = None,
     frequency_penalty: float = 0.0,

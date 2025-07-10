@@ -13,8 +13,7 @@ from unittest.mock import patch
 
 import pytest
 
-from api.llm_interface import Provider
-from api.openai import OpenAIModel
+from api.enums import OpenAIModels, Provider
 from babel_ai.enums import AgentSelectionMethod, AnalyzerType, FetcherType
 from babel_ai.experiment import Experiment
 from models import (
@@ -78,7 +77,7 @@ def fetcher_config(test_sharegpt_data):
 def agent_config():
     return AgentConfig(
         provider=Provider.OPENAI,
-        model=OpenAIModel.GPT4_0125_PREVIEW,
+        model=OpenAIModels.GPT4_0125_PREVIEW,
         temperature=0.7,
     )
 

@@ -4,30 +4,44 @@ from unittest.mock import patch
 
 import pytest
 
-from api.azure_openai import AzureModel
-from api.llm_interface import Provider, generate_response
-from api.ollama import OllamaModel
-from api.openai import OpenAIModel
+from api.enums import AzureModels, OllamaModels, OpenAIModels, Provider
+from api.llm_interface import generate_response
 
 
 @pytest.fixture
 def mock_request_functions():
     """Mock all request functions for testing."""
-    with patch("api.llm_interface.openai_request") as mock_openai:
-        with patch("api.llm_interface.ollama_request") as mock_ollama:
-            with patch("api.llm_interface.raven_ollama_request") as mock_raven:
-                with patch(
-                    "api.llm_interface.azure_openai_request"
-                ) as mock_azure:
-                    mock_openai.return_value = "Test response"
-                    mock_ollama.return_value = "Test response"
-                    mock_raven.return_value = "Test response"
-                    mock_azure.return_value = "Test response"
+    from unittest.mock import Mock
+
+    # Create mock functions that return test responses
+    mock_openai_func = Mock(return_value="Test response")
+    mock_ollama_func = Mock(return_value="Test response")
+    mock_raven_func = Mock(return_value="Test response")
+    mock_azure_func = Mock(return_value="Test response")
+
+    with patch.object(
+        Provider.OPENAI, "get_request_function", return_value=mock_openai_func
+    ) as openai_mock:
+        with patch.object(
+            Provider.OLLAMA,
+            "get_request_function",
+            return_value=mock_ollama_func,
+        ) as ollama_mock:
+            with patch.object(
+                Provider.RAVEN,
+                "get_request_function",
+                return_value=mock_raven_func,
+            ) as raven_mock:
+                with patch.object(
+                    Provider.AZURE,
+                    "get_request_function",
+                    return_value=mock_azure_func,
+                ) as azure_mock:
                     yield {
-                        Provider.OPENAI: mock_openai,
-                        Provider.OLLAMA: mock_ollama,
-                        Provider.RAVEN: mock_raven,
-                        Provider.AZURE: mock_azure,
+                        Provider.OPENAI: openai_mock,
+                        Provider.OLLAMA: ollama_mock,
+                        Provider.RAVEN: raven_mock,
+                        Provider.AZURE: azure_mock,
                     }
 
 
@@ -38,18 +52,22 @@ def test_generate_response_with_default_params(mock_request_functions):
     response = generate_response(
         messages=messages,
         provider=Provider.OPENAI,
-        model=OpenAIModel.GPT4_1106_PREVIEW,
+        model=OpenAIModels.GPT4_1106_PREVIEW,
     )
 
     # Verify response
     assert response == "Test response"
 
-    # Verify openai_request was called with correct parameters
-    mock_request = mock_request_functions[Provider.OPENAI]
-    mock_request.assert_called_once()
-    call_args = mock_request.call_args[1]
+    # Verify get_request_function was called and the returned function was used
+    mock_get_request = mock_request_functions[Provider.OPENAI]
+    mock_get_request.assert_called_once()
+
+    # The returned function should have been called with the correct parameters
+    mock_function = mock_get_request.return_value
+    mock_function.assert_called_once()
+    call_args = mock_function.call_args[1]
     assert call_args["messages"] == messages
-    assert call_args["model"] == OpenAIModel.GPT4_1106_PREVIEW
+    assert call_args["model"] == OpenAIModels.GPT4_1106_PREVIEW
     assert call_args["temperature"] == 1.0
     assert call_args["max_tokens"] is None
     assert call_args["frequency_penalty"] == 0.0
@@ -64,12 +82,15 @@ def test_generate_response_ollama_backend(mock_request_functions):
     response = generate_response(
         messages=messages,
         provider=Provider.OLLAMA,
-        model=OllamaModel.LLAMA3_70B,
+        model=OllamaModels.LLAMA3_70B,
     )
 
-    mock_ollama_request = mock_request_functions[Provider.OLLAMA]
-    mock_ollama_request.assert_called_once()
-    assert mock_ollama_request.call_args[1]["model"] == OllamaModel.LLAMA3_70B
+    mock_get_request = mock_request_functions[Provider.OLLAMA]
+    mock_get_request.assert_called_once()
+
+    mock_function = mock_get_request.return_value
+    mock_function.assert_called_once()
+    assert mock_function.call_args[1]["model"] == OllamaModels.LLAMA3_70B
 
     # Verify response
     assert response == "Test response"
@@ -82,12 +103,15 @@ def test_generate_response_raven_backend(mock_request_functions):
     response = generate_response(
         messages=messages,
         provider=Provider.RAVEN,
-        model=OllamaModel.LLAMA3_70B,
+        model=OllamaModels.LLAMA3_70B,
     )
 
-    mock_raven_request = mock_request_functions[Provider.RAVEN]
-    mock_raven_request.assert_called_once()
-    assert mock_raven_request.call_args[1]["model"] == OllamaModel.LLAMA3_70B
+    mock_get_request = mock_request_functions[Provider.RAVEN]
+    mock_get_request.assert_called_once()
+
+    mock_function = mock_get_request.return_value
+    mock_function.assert_called_once()
+    assert mock_function.call_args[1]["model"] == OllamaModels.LLAMA3_70B
 
     # Verify response
     assert response == "Test response"
@@ -100,14 +124,15 @@ def test_generate_response_azure_backend(mock_request_functions):
     response = generate_response(
         messages=messages,
         provider=Provider.AZURE,
-        model=AzureModel.GPT4O_2024_08_06,
+        model=AzureModels.GPT4O_2024_08_06,
     )
 
-    mock_azure_request = mock_request_functions[Provider.AZURE]
-    mock_azure_request.assert_called_once()
-    assert (
-        mock_azure_request.call_args[1]["model"] == AzureModel.GPT4O_2024_08_06
-    )
+    mock_get_request = mock_request_functions[Provider.AZURE]
+    mock_get_request.assert_called_once()
+
+    mock_function = mock_get_request.return_value
+    mock_function.assert_called_once()
+    assert mock_function.call_args[1]["model"] == AzureModels.GPT4O_2024_08_06
 
     # Verify response
     assert response == "Test response"
@@ -120,7 +145,7 @@ def test_generate_response_with_custom_params(mock_request_functions):
     response = generate_response(
         messages=messages,
         provider=Provider.OPENAI,
-        model=OpenAIModel.GPT4_0125_PREVIEW,
+        model=OpenAIModels.GPT4_0125_PREVIEW,
         temperature=0.5,
         max_tokens=200,
         frequency_penalty=0.1,
@@ -131,12 +156,15 @@ def test_generate_response_with_custom_params(mock_request_functions):
     # Verify response
     assert response == "Test response"
 
-    # Verify openai_request was called with correct parameters
-    mock_request = mock_request_functions[Provider.OPENAI]
-    mock_request.assert_called_once()
-    call_args = mock_request.call_args[1]
+    # Verify get_request_function was called and returned function was used
+    mock_get_request = mock_request_functions[Provider.OPENAI]
+    mock_get_request.assert_called_once()
+
+    mock_function = mock_get_request.return_value
+    mock_function.assert_called_once()
+    call_args = mock_function.call_args[1]
     assert call_args["messages"] == messages
-    assert call_args["model"] == OpenAIModel.GPT4_0125_PREVIEW
+    assert call_args["model"] == OpenAIModels.GPT4_0125_PREVIEW
     assert call_args["temperature"] == 0.5
     assert call_args["max_tokens"] == 200
     assert call_args["frequency_penalty"] == 0.1
@@ -155,14 +183,17 @@ def test_generate_response_multiple_messages(mock_request_functions):
     response = generate_response(
         messages=messages,
         provider=Provider.OPENAI,
-        model=OpenAIModel.GPT4_1106_PREVIEW,
+        model=OpenAIModels.GPT4_1106_PREVIEW,
     )
 
     # Verify response
     assert response == "Test response"
 
     # Verify all messages were passed correctly
-    mock_request = mock_request_functions[Provider.OPENAI]
-    mock_request.assert_called_once()
-    call_args = mock_request.call_args[1]
+    mock_get_request = mock_request_functions[Provider.OPENAI]
+    mock_get_request.assert_called_once()
+
+    mock_function = mock_get_request.return_value
+    mock_function.assert_called_once()
+    call_args = mock_function.call_args[1]
     assert call_args["messages"] == messages

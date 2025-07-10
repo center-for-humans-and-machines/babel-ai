@@ -4,8 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from api.llm_interface import Provider
-from api.openai import OpenAIModel
+from api.enums import OpenAIModels, Provider
 from babel_ai.agent import Agent
 from models import AgentConfig
 
@@ -15,7 +14,7 @@ def sample_agent_config():
     """Create a sample AgentConfig for testing."""
     return AgentConfig(
         provider=Provider.OPENAI,
-        model=OpenAIModel.GPT4_1106_PREVIEW,
+        model=OpenAIModels.GPT4_1106_PREVIEW,
         temperature=0.8,
         max_tokens=150,
         frequency_penalty=0.2,
@@ -44,7 +43,7 @@ class TestAgent:
         # Config attributes
         assert agent.config == sample_agent_config
         assert agent.config.provider == Provider.OPENAI
-        assert agent.config.model == OpenAIModel.GPT4_1106_PREVIEW
+        assert agent.config.model == OpenAIModels.GPT4_1106_PREVIEW
         assert agent.config.system_prompt is None
         assert agent.config.temperature == 0.8
         assert agent.config.max_tokens == 150
@@ -55,14 +54,14 @@ class TestAgent:
         # Explicite attributes
         assert agent.id is not None
         assert agent.provider == Provider.OPENAI
-        assert agent.model == OpenAIModel.GPT4_1106_PREVIEW
+        assert agent.model == OpenAIModels.GPT4_1106_PREVIEW
         assert agent.system_prompt is None
 
     def test_agent_initialization_with_system_prompt(self):
         """Test that Agent initializes correctly with system prompt."""
         config = AgentConfig(
             provider=Provider.OPENAI,
-            model=OpenAIModel.GPT4_1106_PREVIEW,
+            model=OpenAIModels.GPT4_1106_PREVIEW,
             system_prompt="You are a helpful assistant.",
             temperature=0.0,
         )
@@ -90,7 +89,7 @@ class TestAgent:
         mock_generate_response.assert_called_once_with(
             messages=sample_messages,
             provider=Provider.OPENAI,
-            model=OpenAIModel.GPT4_1106_PREVIEW,
+            model=OpenAIModels.GPT4_1106_PREVIEW,
             temperature=0.8,
             max_tokens=150,
             frequency_penalty=0.2,
@@ -107,7 +106,7 @@ class TestAgent:
 
         config = AgentConfig(
             provider=Provider.OPENAI,
-            model=OpenAIModel.GPT4_1106_PREVIEW,
+            model=OpenAIModels.GPT4_1106_PREVIEW,
             system_prompt="You are a helpful assistant.",
             temperature=0.5,
         )
@@ -129,7 +128,7 @@ class TestAgent:
         mock_generate_response.assert_called_once_with(
             messages=expected_messages,
             provider=Provider.OPENAI,
-            model=OpenAIModel.GPT4_1106_PREVIEW,
+            model=OpenAIModels.GPT4_1106_PREVIEW,
             temperature=0.5,
             max_tokens=None,
             frequency_penalty=0.0,
@@ -146,7 +145,7 @@ class TestAgent:
 
         config = AgentConfig(
             provider=Provider.OPENAI,
-            model=OpenAIModel.GPT4_1106_PREVIEW,
+            model=OpenAIModels.GPT4_1106_PREVIEW,
             temperature=0.5,
         )
 
@@ -162,7 +161,7 @@ class TestAgent:
         mock_generate_response.assert_called_once_with(
             messages=messages,
             provider=Provider.OPENAI,
-            model=OpenAIModel.GPT4_1106_PREVIEW,
+            model=OpenAIModels.GPT4_1106_PREVIEW,
             temperature=0.5,
             max_tokens=None,
             frequency_penalty=0.0,

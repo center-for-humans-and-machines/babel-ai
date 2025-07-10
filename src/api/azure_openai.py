@@ -2,11 +2,12 @@
 
 import logging
 import os
-from enum import Enum
 from typing import Optional
 
 from dotenv import load_dotenv
 from openai import AzureOpenAI
+
+from api.enums import AzureModels
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -24,26 +25,9 @@ CLIENT = AzureOpenAI(
 )
 
 
-class AzureModel(Enum):
-    """Enum for available Azure OpenAI models.
-
-    This enum defines the different Azure OpenAI models that can be used for
-    generating responses in drift experiments.
-
-    Available models:
-        GPT4O_2024_08_06: GPT-4 Optimized model (August 2024)
-
-    Example:
-        >>> model = AzureModel.GPT4O_2024_08_06
-        >>> response = azure_openai_request(messages, model=model)
-    """
-
-    GPT4O_2024_08_06 = "gpt-4o-2024-08-06"
-
-
 def azure_openai_request(
     messages: list,
-    model: AzureModel = AzureModel.GPT4O_2024_08_06,
+    model: AzureModels = AzureModels.GPT4O_2024_08_06,
     temperature: float = 1.0,  # 0.0 to 1.0 higher = more creative
     frequency_penalty: float = 0.0,  # -2.0 to 2.0 higher = less repetition
     presence_penalty: float = 0.0,  # -2.0 to 2.0 higher = more diverse

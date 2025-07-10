@@ -4,7 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from api.openai import OpenAIModel, openai_request
+from api.enums import OpenAIModels
+from api.openai import openai_request
 
 
 @pytest.fixture
@@ -38,7 +39,7 @@ def test_successful_api_call(mock_openai_response, sample_messages):
     ) as mock_create:
         response = openai_request(
             messages=sample_messages,
-            model=OpenAIModel.GPT4_1106_PREVIEW,
+            model=OpenAIModels.GPT4_1106_PREVIEW,
             temperature=0.7,
             max_tokens=100,
         )
@@ -49,7 +50,7 @@ def test_successful_api_call(mock_openai_response, sample_messages):
         # Verify the API was called with correct parameters
         mock_create.assert_called_once()
         call_args = mock_create.call_args[1]
-        assert call_args["model"] == OpenAIModel.GPT4_1106_PREVIEW.value
+        assert call_args["model"] == OpenAIModels.GPT4_1106_PREVIEW.value
         assert call_args["messages"] == sample_messages
         assert call_args["temperature"] == 0.7
         assert call_args["max_tokens"] == 100
@@ -78,7 +79,7 @@ def test_default_parameters(sample_messages):
 
         # Verify default parameters were used
         call_args = mock_create.call_args[1]
-        assert call_args["model"] == OpenAIModel.GPT4_1106_PREVIEW.value
+        assert call_args["model"] == OpenAIModels.GPT4_1106_PREVIEW.value
         assert call_args["temperature"] == 1.0
         assert call_args["max_tokens"] is None
         assert call_args["frequency_penalty"] == 0.0

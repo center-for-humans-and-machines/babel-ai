@@ -10,7 +10,7 @@ from pydantic import (
     model_validator,
 )
 
-from api.llm_interface import ModelType, Provider
+from api.enums import APIModels, Provider
 from babel_ai.enums import AgentSelectionMethod, AnalyzerType, FetcherType
 
 
@@ -201,7 +201,7 @@ class AgentConfig(BaseModel):
     """
 
     provider: Provider = Field(description="Name of the provider to use")
-    model: ModelType = Field(description="Name of the model to use")
+    model: APIModels = Field(description="Name of the model to use")
     system_prompt: Optional[str] = Field(
         default=None, description="System prompt to guide agent behavior"
     )
@@ -213,8 +213,8 @@ class AgentConfig(BaseModel):
 
     @field_validator("model")
     def validate_model_provider_compatibility(
-        cls, v: ModelType, values: ValidationInfo
-    ) -> ModelType:
+        cls, v: APIModels, values: ValidationInfo
+    ) -> APIModels:
         """Validate that the model is compatible with the provider."""
         provider = values.data["provider"]
         expected_model_enum = provider.get_model_enum()

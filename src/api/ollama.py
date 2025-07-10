@@ -3,11 +3,12 @@
 import json
 import logging
 import os
-from enum import Enum
 from typing import Optional
 
 import requests
 from dotenv import load_dotenv
+
+from api.enums import OllamaModels
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -18,37 +19,9 @@ load_dotenv()
 API_BASE = os.getenv("OLLAMA_API_BASE", "http://localhost:11434")
 
 
-class OllamaModel(Enum):
-    """Enum for available Ollama models.
-
-    This enum defines the different Ollama
-    models that can be used for generating
-    responses in drift experiments.
-
-    Available models:
-        MISTRAL_7B: Mistral 7B instruct model
-        MISTRAL_7B_TEXT: Mistral 7B text model
-        LLAMA3_70B: Llama 3 70B instruct model
-        LLAMA3_70B_TEXT: Llama 3 70B text model
-        DEEPSEEK_R1: DeepSeek 70B model
-        GPT_2_1_5B: GPT-2 1.5B model
-
-    Example:
-        >>> model = OllamaModel.MISTRAL_7B
-        >>> response = ollama_request(messages, model=model)
-    """
-
-    MISTRAL_7B = "mistral:7b-instruct"
-    MISTRAL_7B_TEXT = "mistral:7b-text"
-    LLAMA3_70B = "llama3:70b"
-    LLAMA3_70B_TEXT = "llama3:70b-text"
-    DEEPSEEK_R1 = "deepseek-r1:70b"
-    GPT_2_1_5B = "gpt2:1.5b"
-
-
 def ollama_request(
     messages: list,
-    model: OllamaModel = OllamaModel.LLAMA3_70B,
+    model: OllamaModels = OllamaModels.LLAMA3_70B,
     temperature: float = 1.0,
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
@@ -189,7 +162,7 @@ def raven_ollama_request(*args, **kwargs) -> str:
         The generated text response.
     """
     defaults = {
-        "model": OllamaModel.LLAMA3_70B,
+        "model": OllamaModels.LLAMA3_70B,
         "api_base_url": "https://hpc-llm-inference-fastapi.chm.mpib-berlin.mpg.de/v1",  # noqa: E501
         "endpoint": "chat/completions",
     }

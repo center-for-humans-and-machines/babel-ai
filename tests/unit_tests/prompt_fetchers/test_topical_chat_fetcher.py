@@ -280,17 +280,22 @@ class TestTopicalChatConversationFetcher(TestCase):
         fetcher = TopicalChatConversationFetcher(
             self.rare_file_path,
             self.freq_file_path,
-            min_messages=2,
-            max_messages=2,
+            min_messages=4,
+            max_messages=4,
         )
         conversation = fetcher.get_conversation()
 
-        # Should be the 2-message conversation
+        # Should be a 4-message conversation,
+        # but we remove the last two messages
         self.assertEqual(len(conversation), 2)
         self.assertEqual(conversation[0]["role"], "agent_1")
-        self.assertEqual(conversation[0]["content"], "Hello, how are you?")
+        self.assertEqual(
+            conversation[0]["content"], "What do you think about AI?"
+        )
         self.assertEqual(conversation[1]["role"], "agent_2")
-        self.assertEqual(conversation[1]["content"], "I'm doing well, thanks!")
+        self.assertEqual(
+            conversation[1]["content"], "AI is fascinating and powerful."
+        )
 
     def test_conversation_ratings_stored(self):
         """Test that conversation ratings are properly stored."""

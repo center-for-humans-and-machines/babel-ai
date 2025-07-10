@@ -2,11 +2,12 @@
 
 import logging
 import os
-from enum import Enum
 from typing import Optional
 
 from dotenv import load_dotenv
 from openai import OpenAI
+
+from api.enums import OpenAIModels
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -19,29 +20,9 @@ api_key = os.getenv("OPENAI_API_KEY")
 CLIENT = OpenAI(api_key=api_key)
 
 
-class OpenAIModel(Enum):
-    """Enum for available OpenAI models.
-
-    This enum defines the different OpenAI
-    models that can be used for generating
-    responses in drift experiments.
-
-    Available models:
-        GPT4_1106_PREVIEW: GPT-4 Turbo preview model (November 2023)
-        GPT4_0125_PREVIEW: GPT-4 Turbo preview model (January 2024)
-
-    Example:
-        >>> model = OpenAIModel.GPT4_1106_PREVIEW
-        >>> response = openai_request(messages, model=model)
-    """
-
-    GPT4_1106_PREVIEW = "gpt-4-1106-preview"
-    GPT4_0125_PREVIEW = "gpt-4-0125-preview"
-
-
 def openai_request(
     messages: list,
-    model: OpenAIModel = OpenAIModel.GPT4_1106_PREVIEW,
+    model: OpenAIModels = OpenAIModels.GPT4_1106_PREVIEW,
     temperature: float = 1.0,
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,

@@ -6,8 +6,7 @@ from unittest.mock import Mock, mock_open, patch
 
 import pytest
 
-from api.llm_interface import Provider
-from api.openai import OpenAIModel
+from api.enums import OpenAIModels, Provider
 from babel_ai.agent import Agent
 from babel_ai.analyzer import Analyzer
 from babel_ai.enums import AgentSelectionMethod, AnalyzerType, FetcherType
@@ -29,7 +28,7 @@ def sample_agent_config():
     """Create a sample AgentConfig for testing."""
     return AgentConfig(
         provider=Provider.OPENAI,
-        model=OpenAIModel.GPT4_1106_PREVIEW,
+        model=OpenAIModels.GPT4_1106_PREVIEW,
         temperature=0.8,
         max_tokens=150,
         frequency_penalty=0.2,
@@ -369,7 +368,7 @@ class TestExperiment:
 
         # Mock the methods called by run
         with patch.object(
-            experiment, "generate_conversation"
+            experiment, "run_interaction_loop"
         ) as mock_generate, patch.object(
             experiment, "_save_results_to_csv"
         ) as mock_save:
@@ -411,7 +410,7 @@ class TestExperiment:
 
         # Mock the methods called by run
         with patch.object(
-            experiment, "generate_conversation"
+            experiment, "run_interaction_loop"
         ) as mock_generate, patch.object(
             experiment, "_save_results_to_csv"
         ) as mock_save:
