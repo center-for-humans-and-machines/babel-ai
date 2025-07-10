@@ -67,7 +67,10 @@ def load_yaml_config(config_type: Type[T], config_path: str | Path) -> T:
     if not config_path.exists():
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
-    logger.info(f"Loading configuration from {config_path}")
+    logger.info(
+        f"Loading configuration of type {config_type.__name__} "
+        f"from {config_path}"
+    )
 
     with open(config_path, "r", encoding="utf-8") as file:
         yaml_data = yaml.safe_load(file)

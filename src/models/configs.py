@@ -1,5 +1,5 @@
 """Configuration models for drift experiments."""
-
+import logging
 from typing import List, Optional
 
 from pydantic import (
@@ -12,6 +12,8 @@ from pydantic import (
 
 from api.enums import APIModels, Provider
 from babel_ai.enums import AgentSelectionMethod, AnalyzerType, FetcherType
+
+logger = logging.getLogger(__name__)
 
 
 class AnalyzerConfig(BaseModel):
@@ -122,6 +124,7 @@ class FetcherConfig(BaseModel):
     ) -> Optional[int]:
         """Validate that max_messages is >= min_messages."""
         if v is None:
+            logger.debug("Initializing FetcherConfig with max_messages = None")
             return v
 
         min_messages = values.data.get("min_messages")
@@ -135,6 +138,7 @@ class FetcherConfig(BaseModel):
     def validate_category(cls, v: Optional[str]) -> Optional[str]:
         """Validate that category is one of the allowed values."""
         if v is None:
+            logger.debug("Initializing FetcherConfig with category = None")
             return v
 
         allowed_categories = ["creative", "analytical", "conversational"]
@@ -153,11 +157,13 @@ class FetcherConfig(BaseModel):
         for key, value in self.model_dump().items():
             if key in required_kwargs and value is None:
                 raise ValueError(
-                    f"Parameter {key} is required for fetcher type {fetcher_type}"  # noqa: E501
+                    f"Parameter {key} is required "
+                    f"for fetcher type {fetcher_type}"
                 )
             if key not in required_kwargs + ["fetcher"] and value is not None:
                 raise ValueError(
-                    f"Parameter {key} is not allowed for fetcher type {fetcher_type}"  # noqa: E501
+                    f"Parameter {key} is not allowed "
+                    f"for fetcher type {fetcher_type}"
                 )
 
         return self

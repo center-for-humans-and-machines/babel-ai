@@ -1,11 +1,14 @@
 """Metric models for analysis results and experiment tracking."""
 
+import logging
 from datetime import datetime
 from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
 
 from models.configs import AgentConfig, ExperimentConfig, FetcherConfig
+
+logger = logging.getLogger(__name__)
 
 
 class AnalysisResult(BaseModel):
@@ -139,6 +142,8 @@ class Metric(BaseModel):
         Returns:
             Dictionary with flattened structure for CSV export
         """
+        logger.info("Converting Metric to dictionary")
+        logger.debug(f"Metric: {self.model_dump()}")
         result = {
             "iteration": self.iteration,
             "timestamp": self.timestamp,
@@ -160,6 +165,10 @@ class FetcherMetric(Metric):
     def to_dict(self) -> Dict[str, Any]:
         """Convert metric to a dictionary format suitable for CSV export."""
         result = super().to_dict()
+        logger.info(
+            "Updating Metric with fetcher_config as it is a FetcherMetric."
+        )
+        logger.debug(f"Fetcher config: {self.fetcher_config.model_dump()}")
         result.update(
             {
                 "fetcher_config": self.fetcher_config.model_dump(),
