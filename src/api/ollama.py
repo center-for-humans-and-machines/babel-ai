@@ -98,7 +98,18 @@ def ollama_request(
         f"Sending {'streaming' if stream else 'standard'} request to Ollama API with "  # noqa: E501
         f"model {model.value}, temperature {temperature}, max_tokens {max_tokens}"  # noqa: E501
     )
+    logger.info(
+        f"API url endpoint for Ollama request: {api_base_url}/{endpoint}"
+    )
     logger.debug(f"Messages: {messages}")
+    logger.debug(
+        f"Generation parameters: "
+        f"temperature {temperature}, "
+        f"frequency_penalty {frequency_penalty}, "
+        f"presence_penalty {presence_penalty}, "
+        f"top_p {top_p}, "
+        f"max_tokens {max_tokens}"
+    )
 
     # Build payload
     payload = {
@@ -144,6 +155,7 @@ def ollama_request_stream(*args, **kwargs) -> str:
     Returns:
         The complete generated text response.
     """
+    logger.info("Sending streaming request to Ollama API")
     return ollama_request(*args, stream=True, **kwargs)
 
 
@@ -166,6 +178,7 @@ def raven_ollama_request(*args, **kwargs) -> str:
         "api_base_url": "https://hpc-llm-inference-fastapi.chm.mpib-berlin.mpg.de/v1",  # noqa: E501
         "endpoint": "chat/completions",
     }
+    logger.debug(f"Raven defaults: {defaults}")
     # Update kwargs with raven defaults
     for key, value in defaults.items():
         kwargs.setdefault(key, value)

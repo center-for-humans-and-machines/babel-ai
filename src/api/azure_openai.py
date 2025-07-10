@@ -24,6 +24,8 @@ CLIENT = AzureOpenAI(
     api_key=api_key, azure_endpoint=endpoint, api_version=api_version
 )
 
+logger.info("Initialized Azure OpenAI client.")
+
 
 def azure_openai_request(
     messages: list,

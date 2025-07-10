@@ -3,6 +3,7 @@
 import logging
 import time
 from typing import Dict, List, Optional
+from uuid import uuid4
 
 from api.enums import APIModels, Provider
 
@@ -42,6 +43,9 @@ def generate_response(
     Raises:
         Exception: If all retry attempts fail
     """
+    # Generate a unique request ID
+    request_id = str(uuid4())
+
     request_function = provider.get_request_function()
 
     # Collect errors for final exception message
@@ -52,8 +56,9 @@ def generate_response(
         try:
             # Log attempt number
             logger.info(
+                f"Request ID: {request_id}, "
                 f"Attempt {attempt + 1} of {max_retries} for "
-                f"provider: {provider}, model: {model}"
+                f"provider: {provider.value}, model: {model.value}"
             )
 
             # Make the request
@@ -69,13 +74,18 @@ def generate_response(
 
             # If successful, return response
             logger.info(
-                f"Successfully generated response on attempt " f"{attempt + 1}"
+                f"Request ID: {request_id}, "
+                f"Successfully generated response on attempt "
+                f"{attempt + 1}"
             )
             return response
 
         except Exception as e:
             # Log error and prepare for next attempt
-            error_msg = f"Attempt {attempt + 1} failed: {str(e)}"
+            error_msg = (
+                f"Request ID: {request_id}, "
+                f"Attempt {attempt + 1} failed: {str(e)}"
+            )
             logger.error(error_msg)
             errors.append(error_msg)
 
@@ -85,11 +95,14 @@ def generate_response(
 
             # Wait for next attempt with exponential backoff
             delay = initial_delay**attempt
-            logger.info(f"Retrying in {delay} seconds...")
+            logger.info(
+                f"Request ID: {request_id}, " f"Retrying in {delay} seconds..."
+            )
             time.sleep(delay)
 
     # If max retries reached, raise exception with all errors
     error_summary = (
+        f"Request ID: {request_id}, "
         f"Max retries ({max_retries}) reached for provider: "
         f"{provider}, model: {model}. Errors: " + " | ".join(errors)
     )

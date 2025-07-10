@@ -49,6 +49,14 @@ def openai_request(
         f"temperature {temperature}, max_tokens {max_tokens}"
     )
     logger.debug(f"Messages: {messages}")
+    logger.debug(
+        f"Generation parameters: "
+        f"temperature {temperature}, "
+        f"frequency_penalty {frequency_penalty}, "
+        f"presence_penalty {presence_penalty}, "
+        f"top_p {top_p}, "
+        f"max_tokens {max_tokens}"
+    )
 
     try:
         response = CLIENT.chat.completions.create(
