@@ -1,6 +1,7 @@
 """Tests for the analyzer module."""
 
 import logging
+from unittest.mock import patch
 
 import pytest
 
@@ -132,6 +133,67 @@ def test_analyze_semantic_similarity_window(analyzer):
     result = analyzer._analyze_semantic_similarity(outputs, window_size=10)
     assert result is not None
     assert -1.0 <= result <= 1.0
+
+
+def test_semantic_similarity_clamping(analyzer):
+    """Test that semantic similarity properly clamps faulty cos_sim values."""
+    outputs = ["The quick brown fox", "A fast brown dog"]
+
+    # Test clamping values above 1.0
+    with patch("babel_ai.analyzer.cos_sim") as mock_cos_sim:
+        # Mock cos_sim to return a value above 1.0
+        mock_cos_sim.return_value.item.return_value = 1.5
+
+        result = analyzer._analyze_semantic_similarity(outputs)
+
+        # Should be clamped to 1.0
+        assert result == 1.0
+        mock_cos_sim.assert_called_once()
+
+    # Test clamping values below -1.0
+    with patch("babel_ai.analyzer.cos_sim") as mock_cos_sim:
+        # Mock cos_sim to return a value below -1.0
+        mock_cos_sim.return_value.item.return_value = -1.8
+
+        result = analyzer._analyze_semantic_similarity(outputs)
+
+        # Should be clamped to -1.0
+        assert result == -1.0
+        mock_cos_sim.assert_called_once()
+
+    # Test multiple faulty values with different window sizes
+    outputs = ["First text", "Second text", "Third text", "Fourth text"]
+
+    with patch("babel_ai.analyzer.cos_sim") as mock_cos_sim:
+        # Mock cos_sim to return alternating faulty values
+        mock_cos_sim.return_value.item.side_effect = [2.5, -3.0, 0.5]
+
+        result = analyzer._analyze_semantic_similarity(outputs, window_size=3)
+
+        # Should average the clamped values: (1.0 + (-1.0) + 0.5) / 3 = 0.5/3
+        expected_avg = (1.0 + (-1.0) + 0.5) / 3
+        assert result == pytest.approx(expected_avg, rel=1e-6)
+        assert mock_cos_sim.call_count == 3
+
+
+def test_semantic_similarity_clamping_with_logging(analyzer, caplog):
+    """Test that clamping logs appropriate warning messages."""
+    outputs = ["The quick brown fox", "A fast brown dog"]
+
+    with patch("babel_ai.analyzer.cos_sim") as mock_cos_sim:
+        # Mock cos_sim to return a value above 1.0
+        mock_cos_sim.return_value.item.return_value = 2.3
+
+        with caplog.at_level(logging.DEBUG):
+            result = analyzer._analyze_semantic_similarity(outputs)
+
+            # Check that warning was logged
+            assert "Cosine similarity is 2.3" in caplog.text
+            assert "Similarity will be clamped to [-1, 1]" in caplog.text
+            assert "Clamped cosine similarity: 1.0" in caplog.text
+
+            # Should be clamped to 1.0
+            assert result == 1.0
 
 
 def test_analyze_full(analyzer):

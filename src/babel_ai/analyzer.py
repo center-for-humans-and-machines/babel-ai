@@ -222,7 +222,7 @@ class SimilarityAnalyzer(Analyzer):
             logger.debug("Calculating cosine similarity")
             similarity = cos_sim(current_embedding, compare_embedding).item()
             logger.debug(f"Cosine similarity: {similarity}")
-            if similarity not in [-1.0, 1.0]:
+            if similarity < -1.0 or similarity > 1.0:
                 logger.warning(
                     f"Cosine similarity is {similarity}, "
                     "which is not -1.0 or 1.0. "
