@@ -120,7 +120,7 @@ class SimilarityAnalyzer(Analyzer):
             Average Jaccard similarity score or None if no comparison possible
         """
         logger.info("Analyzing lexical similarity")
-        logger.info(f"Number of input texts: {len(outputs)}")
+        logger.debug(f"Number of input texts: {len(outputs)}")
         logger.debug(
             f"Lexical similarity analysis input: "
             f"{[o[:10] for o in outputs]}"
@@ -182,7 +182,7 @@ class SimilarityAnalyzer(Analyzer):
             Average cosine similarity score or None if no comparison possible
         """
         logger.info("Analyzing semantic similarity")
-        logger.info(f"Number of input texts: {len(outputs)}")
+        logger.debug(f"Number of input texts: {len(outputs)}")
         logger.debug(
             f"Semantic similarity analysis input: "
             f"{[o[:10] for o in outputs]}"
@@ -219,16 +219,19 @@ class SimilarityAnalyzer(Analyzer):
                 compare_text, convert_to_tensor=True
             )
 
-            logger.info("Calculating cosine similarity")
+            logger.debug("Calculating cosine similarity")
             similarity = cos_sim(current_embedding, compare_embedding).item()
             logger.debug(f"Cosine similarity: {similarity}")
             if similarity not in [-1.0, 1.0]:
                 logger.warning(
-                    "Cosine similarity is not -1.0 or 1.0. "
+                    f"Cosine similarity is {similarity}, "
+                    "which is not -1.0 or 1.0. "
                     "Similarity will be clamped to [-1, 1]."
                 )
-            similarity = max(-1.0, min(1.0, similarity))  # Clamp to [-1, 1]
-            logger.debug(f"Clamped cosine similarity: {similarity}.")
+                similarity = max(
+                    -1.0, min(1.0, similarity)
+                )  # Clamp to [-1, 1]
+                logger.debug(f"Clamped cosine similarity: {similarity}.")
             similarities.append(similarity)
 
             # Log warning for the direct comparison case (window_size=1)
@@ -236,8 +239,8 @@ class SimilarityAnalyzer(Analyzer):
                 logger.warning(
                     f"Semantic similarity is <= 0. "
                     f"Similarity: {similarity} "
-                    f"Current text: {current_text} "
-                    f"Previous text: {compare_text} "
+                    f"Current text: {current_text[:10]} "
+                    f"Previous text: {compare_text[:10]} "
                 )
 
         if similarities:
@@ -291,7 +294,7 @@ class SimilarityAnalyzer(Analyzer):
 
             perplexities = []
             for i, block in enumerate([first_block, second_block]):
-                logger.info(f"Analyzing block {i}")
+                logger.info(f"Analyzing split block {i}")
                 if block.strip():  # Only analyze non-empty blocks
                     result = self._analyze_token_perplexity(block)
 
