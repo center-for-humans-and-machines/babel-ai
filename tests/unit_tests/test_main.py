@@ -12,20 +12,14 @@ class TestSetupLogging:
 
     def test_setup_logging_debug_vs_info(self):
         """Test debug vs info logging levels."""
-        with patch("main.logging") as mock_logging:
-            mock_logging.getLogger.return_value.handlers = []
-
+        with patch("main.logging.basicConfig") as mock_basic_config:
             # Test debug mode
             setup_logging(debug=True)
-            assert (
-                mock_logging.basicConfig.call_args[1]["level"] == logging.DEBUG
-            )
+            assert mock_basic_config.call_args[1]["level"] == logging.DEBUG
 
             # Test info mode
             setup_logging(debug=False)
-            assert (
-                mock_logging.basicConfig.call_args[1]["level"] == logging.INFO
-            )
+            assert mock_basic_config.call_args[1]["level"] == logging.INFO
 
 
 class TestExperimentExecution:
