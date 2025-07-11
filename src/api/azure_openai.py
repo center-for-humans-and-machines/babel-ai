@@ -54,7 +54,8 @@ def azure_openai_request(
         f"Sending request to Azure OpenAI API with model {model.value}, "
         f"temperature {temperature}, max_tokens {max_tokens}"
     )
-    logger.debug(f"Messages: {messages}")
+    for msg in messages:
+        logger.debug(f"Message: {msg['role']}: {msg['content'][:50]}")
 
     try:
         # Send the prompt to AzureOpenAI
@@ -70,7 +71,7 @@ def azure_openai_request(
 
         # Log response
         logger.info("Successfully received response from Azure OpenAI API")
-        logger.debug(f"Response: {response.choices[0].message.content}")
+        logger.debug(f"Response: {response.choices[0].message.content[:50]}")
 
         # Return the response
         return response.choices[0].message.content

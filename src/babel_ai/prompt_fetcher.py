@@ -102,7 +102,7 @@ class RandomPromptFetcher(BasePromptFetcher):
 
         # Return as single-message conversation
         logger.info(
-            f"RandomPromptFetcher returning prompt: {prompt_text[:10]}"
+            f"RandomPromptFetcher returning prompt: {prompt_text[:50]}"
         )
         return [{"role": "user", "content": prompt_text}]
 
@@ -127,11 +127,11 @@ class RandomPromptFetcher(BasePromptFetcher):
             for post in posts
             if not post["data"]["title"].startswith("[WP]")
         ]
-        logger.debug(f"Possible prompts: {[p[:10] for p in prompts]}")
+        logger.debug(f"Possible prompts: {[p[:50] for p in prompts]}")
         prompt = (
             random.choice(prompts) if prompts else self._get_fallback_prompt()
         )
-        logger.debug(f"Returning writing prompt: {prompt[:10]}")
+        logger.debug(f"Returning writing prompt: {prompt[:50]}")
 
         return prompt
 
@@ -147,7 +147,7 @@ class RandomPromptFetcher(BasePromptFetcher):
             "What are the implications of {} on {}?",
         ]
         prompt = random.choice(templates).format(*words)
-        logger.debug(f"Returning analytical prompt: {prompt[:10]}")
+        logger.debug(f"Returning analytical prompt: {prompt[:50]}")
 
         return prompt
 
@@ -164,7 +164,7 @@ class RandomPromptFetcher(BasePromptFetcher):
             "Share your perspective on {}.",
         ]
         prompt = random.choice(templates).format(word)
-        logger.debug(f"Returning conversational prompt: {prompt[:10]}")
+        logger.debug(f"Returning conversational prompt: {prompt[:50]}")
 
         return prompt
 
@@ -191,7 +191,7 @@ class RandomPromptFetcher(BasePromptFetcher):
             "What's on your mind?",
         ]
         prompt = random.choice(fallback_prompts)
-        logger.debug(f"Returning fallback prompt: {prompt[:10]}")
+        logger.debug(f"Returning fallback prompt: {prompt[:50]}")
         return prompt
 
 
@@ -274,7 +274,7 @@ class ShareGPTConversationFetcher(BasePromptFetcher):
         logger.debug(
             "Conversation head:\n"
             + "\n".join(
-                [f"{m['role']}: {m['content'][:10]}" for m in messages[:5]]
+                [f"{m['role']}: {m['content'][:50]}" for m in messages[:5]]
             )
         )
         return messages
@@ -376,10 +376,10 @@ class InfiniteConversationFetcher(BasePromptFetcher):
                 speaker, text = value.split(":", 1)
             else:
                 speaker = "Unknown"
-                logger.warning(f"No speaker found in entry: {value[:10]}")
+                logger.warning(f"No speaker found in entry: {value[:50]}")
                 text = value
 
-            logger.debug(f"Extracted speaker: {speaker} and text: {text[:10]}")
+            logger.debug(f"Extracted speaker: {speaker} and text: {text[:50]}")
 
             logger.debug("Extracting timestamp from key.")
             logger.debug(f"Key: {key}")
@@ -448,7 +448,7 @@ class InfiniteConversationFetcher(BasePromptFetcher):
         logger.debug(
             "Conversation head:\n"
             + "\n".join(
-                [f"{m['role']}: {m['content'][:10]}" for m in messages[:5]]
+                [f"{m['role']}: {m['content'][:50]}" for m in messages[:5]]
             )
         )
 
@@ -623,7 +623,7 @@ class TopicalChatConversationFetcher(BasePromptFetcher):
         logger.debug(
             "Messages head:\n"
             + "\n".join(
-                [f"{m['role']}: {m['content'][:10]}" for m in messages[:5]]
+                [f"{m['role']}: {m['content'][:50]}" for m in messages[:5]]
             )
         )
 

@@ -106,7 +106,8 @@ def ollama_request(
     logger.debug(
         f"API url endpoint for Ollama request: {api_base_url}/{endpoint}"
     )
-    logger.debug(f"Messages: {messages}")
+    for msg in messages:
+        logger.debug(f"Message: {msg['role']}: {msg['content'][:50]}")
     logger.debug(
         f"Generation parameters: "
         f"temperature {temperature}, "
@@ -139,7 +140,7 @@ def ollama_request(
         response_content = _handle_response(response, is_streaming=stream)
 
         logger.info("Successfully received response from Ollama API")
-        logger.debug(f"Response: {response_content}")
+        logger.debug(f"Response: {response_content[:50]}")
 
         return response_content
     except requests.exceptions.RequestException as e:

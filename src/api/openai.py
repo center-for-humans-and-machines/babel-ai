@@ -50,7 +50,8 @@ def openai_request(
         f"Sending request to OpenAI API with model {model.value}, "
         f"temperature {temperature}, max_tokens {max_tokens}"
     )
-    logger.debug(f"Messages: {messages}")
+    for msg in messages:
+        logger.debug(f"Message: {msg['role']}: {msg['content'][:50]}")
     logger.debug(
         f"Generation parameters: "
         f"temperature {temperature}, "
@@ -72,7 +73,7 @@ def openai_request(
         )
         content = response.choices[0].message.content
         logger.info("Successfully received response from OpenAI API")
-        logger.debug(f"Response: {content}")
+        logger.debug(f"Response: {content[:50]}")
         return content
 
     except Exception as e:
