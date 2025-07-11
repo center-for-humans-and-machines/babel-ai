@@ -29,7 +29,10 @@ async def run_experiment(config: ExperimentConfig):
     await asyncio.to_thread(experiment.run)
 
 
-async def run_experiment_batch(configs: List[ExperimentConfig]):
+async def run_experiment_batch(
+    configs: List[ExperimentConfig],
+    parallel: bool = True,
+):
     """Run multiple experiments in parallel using asyncio."""
 
     # Ensure logs directory exists
@@ -42,14 +45,23 @@ async def run_experiment_batch(configs: List[ExperimentConfig]):
     )
     setup_logging(log_file)
 
-    logger.info(f"Running {len(configs)} experiments in parallel.")
-    for i, config in enumerate(configs):
-        logger.debug(
-            f"Running experiment {i} with config: {config.model_dump()}"
-        )
-
-    # Run experiments in parallel
-    await asyncio.gather(*(run_experiment(config) for config in configs))
+    if parallel:
+        # Run experiments in parallel
+        logger.info(f"Running {len(configs)} experiments in parallel.")
+        for i, config in enumerate(configs):
+            logger.debug(
+                f"Running experiment {i} with config: {config.model_dump()}"
+            )
+        await asyncio.gather(*(run_experiment(config) for config in configs))
+    else:
+        # Run experiments sequentially
+        logger.info(f"Running {len(configs)} experiments sequentially.")
+        for i, config in enumerate(configs):
+            logger.info(
+                f"Running experiment {i} with config: {config.model_dump()}"
+            )
+            await run_experiment(config)
+            logger.info(f"Experiment {i} completed")
 
     logging.info("All experiments completed.")
 
