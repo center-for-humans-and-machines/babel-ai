@@ -130,7 +130,7 @@ class AgentSelectionMethod(Enum):
         from babel_ai.agent import round_robin_agent_selection
 
         if self == AgentSelectionMethod.ROUND_ROBIN:
-            logger.info(
+            logger.debug(
                 f"Using round robin agent selection with {len(agents)} agents."
             )
             return round_robin_agent_selection(agents)

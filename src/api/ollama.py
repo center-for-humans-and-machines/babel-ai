@@ -18,6 +18,8 @@ load_dotenv()
 # Default behavior is running locally
 API_BASE = os.getenv("OLLAMA_API_BASE", "http://localhost:11434")
 
+logger.info("Initializing Ollama API.")
+
 
 def ollama_request(
     messages: list,
@@ -55,6 +57,9 @@ def ollama_request(
         response: requests.Response, is_streaming: bool = False
     ) -> str:
         """Handle the response from Ollama API."""
+        logger.debug("Handling response from Ollama API.")
+        logger.debug(f"Response: {response}")
+
         response.raise_for_status()
 
         match is_streaming:
@@ -98,7 +103,7 @@ def ollama_request(
         f"Sending {'streaming' if stream else 'standard'} request to Ollama API with "  # noqa: E501
         f"model {model.value}, temperature {temperature}, max_tokens {max_tokens}"  # noqa: E501
     )
-    logger.info(
+    logger.debug(
         f"API url endpoint for Ollama request: {api_base_url}/{endpoint}"
     )
     logger.debug(f"Messages: {messages}")
@@ -155,7 +160,6 @@ def ollama_request_stream(*args, **kwargs) -> str:
     Returns:
         The complete generated text response.
     """
-    logger.info("Sending streaming request to Ollama API")
     return ollama_request(*args, stream=True, **kwargs)
 
 

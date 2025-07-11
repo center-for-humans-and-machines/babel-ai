@@ -19,6 +19,8 @@ api_key = os.getenv("OPENAI_API_KEY")
 # Create OpenAI client
 CLIENT = OpenAI(api_key=api_key)
 
+logger.info("Initializing OpenAI API client.")
+
 
 def openai_request(
     messages: list,

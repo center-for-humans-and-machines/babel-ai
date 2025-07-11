@@ -131,7 +131,7 @@ class RandomPromptFetcher(BasePromptFetcher):
         prompt = (
             random.choice(prompts) if prompts else self._get_fallback_prompt()
         )
-        logger.info(f"Returning writing prompt: {prompt[:10]}")
+        logger.debug(f"Returning writing prompt: {prompt[:10]}")
 
         return prompt
 
@@ -147,7 +147,7 @@ class RandomPromptFetcher(BasePromptFetcher):
             "What are the implications of {} on {}?",
         ]
         prompt = random.choice(templates).format(*words)
-        logger.info(f"Returning analytical prompt: {prompt[:10]}")
+        logger.debug(f"Returning analytical prompt: {prompt[:10]}")
 
         return prompt
 
@@ -164,7 +164,7 @@ class RandomPromptFetcher(BasePromptFetcher):
             "Share your perspective on {}.",
         ]
         prompt = random.choice(templates).format(word)
-        logger.info(f"Returning conversational prompt: {prompt[:10]}")
+        logger.debug(f"Returning conversational prompt: {prompt[:10]}")
 
         return prompt
 
@@ -183,6 +183,7 @@ class RandomPromptFetcher(BasePromptFetcher):
 
     def _get_fallback_prompt(self) -> str:
         """Return a fallback prompt when online fetching fails."""
+        logger.warning("Returning fallback prompt")
         fallback_prompts = [
             "Share your thoughts on an interesting topic.",
             "Tell me about something you find fascinating.",
@@ -190,7 +191,7 @@ class RandomPromptFetcher(BasePromptFetcher):
             "What's on your mind?",
         ]
         prompt = random.choice(fallback_prompts)
-        logger.info(f"Returning fallback prompt: {prompt[:10]}")
+        logger.debug(f"Returning fallback prompt: {prompt[:10]}")
         return prompt
 
 
@@ -246,7 +247,7 @@ class ShareGPTConversationFetcher(BasePromptFetcher):
             if len(conv) >= self.min_messages
             and (self.max_messages is None or len(conv) <= self.max_messages)
         ]
-        logger.info(f"Loaded {len(self.conversations)} conversations")
+        logger.debug(f"Loaded {len(self.conversations)} conversations")
 
     def get_conversation(self) -> List[Dict[str, str]]:
         """Get a random conversation thread from ShareGPT conversations.
@@ -269,7 +270,7 @@ class ShareGPTConversationFetcher(BasePromptFetcher):
             messages.append({"role": msg["from"], "content": msg["value"]})
         logger.debug("Converted conversation to LLMProvider format.")
 
-        logger.info(f"Returning conversation with {len(messages)} messages")
+        logger.debug(f"Returning conversation with {len(messages)} messages")
         logger.debug(
             "Conversation head:\n"
             + "\n".join(
@@ -324,7 +325,7 @@ class InfiniteConversationFetcher(BasePromptFetcher):
 
         for file_path in json_files:
             try:
-                logger.info(f"Loading conversation from {file_path}")
+                logger.debug(f"Loading conversation from {file_path}")
 
                 with open(file_path, "r") as f:
                     data = json.load(f)
@@ -337,7 +338,7 @@ class InfiniteConversationFetcher(BasePromptFetcher):
                     self.max_messages is None
                     or len(messages) <= self.max_messages
                 ):
-                    logger.info(
+                    logger.debug(
                         f"Adding conversation with {len(messages)} messages"
                     )
                     logger.debug(
@@ -351,7 +352,7 @@ class InfiniteConversationFetcher(BasePromptFetcher):
                     f"Failed to load conversation from {file_path}: {e}"
                 )
 
-        logger.info(
+        logger.debug(
             f"Loaded {len(self.conversations)} "
             f"conversations from {self.data_path}"
         )
@@ -380,7 +381,7 @@ class InfiniteConversationFetcher(BasePromptFetcher):
 
             logger.debug(f"Extracted speaker: {speaker} and text: {text[:10]}")
 
-            logger.info("Extracting timestamp from key.")
+            logger.debug("Extracting timestamp from key.")
             logger.debug(f"Key: {key}")
             # Extract timestamp from the key (MP3 filename)
             # Format is like: /slavoj_1704311301.66552.mp3
@@ -408,7 +409,7 @@ class InfiniteConversationFetcher(BasePromptFetcher):
         # Sort messages by timestamp to ensure chronological order
         messages.sort(key=lambda x: x["timestamp"])
 
-        logger.info(f"Extracted {len(messages)} messages")
+        logger.debug(f"Extracted {len(messages)} messages")
         return messages
 
     def get_conversation(self) -> List[Dict[str, str]]:
@@ -443,7 +444,7 @@ class InfiniteConversationFetcher(BasePromptFetcher):
                 }
             )
 
-        logger.info(f"Returning conversation with {len(messages)} messages")
+        logger.debug(f"Returning conversation with {len(messages)} messages")
         logger.debug(
             "Conversation head:\n"
             + "\n".join(
@@ -482,7 +483,7 @@ class TopicalChatConversationFetcher(BasePromptFetcher):
                 f"from second data path: {second_data_path}"
             )
         else:
-            logger.info("No second data path provided.")
+            logger.debug("No second data path provided.")
         logger.debug(
             f"TopicalChatConversationFetcher min_messages: {min_messages}"
         )
@@ -512,7 +513,7 @@ class TopicalChatConversationFetcher(BasePromptFetcher):
         ]
 
         for file_path in files_to_load:
-            logger.info(f"Loading data from {file_path}")
+            logger.debug(f"Loading data from {file_path}")
             if not file_path.exists():
                 logger.warning(f"File not found: {file_path}")
                 continue
@@ -534,7 +535,7 @@ class TopicalChatConversationFetcher(BasePromptFetcher):
                             self.max_messages is None
                             or len(messages) <= self.max_messages
                         ):
-                            logger.info(
+                            logger.debug(
                                 "Adding conversation with "
                                 f"{len(messages)} messages"
                             )
@@ -559,7 +560,7 @@ class TopicalChatConversationFetcher(BasePromptFetcher):
                     f"Failed to load conversations from {file_path}: {e}"
                 )
 
-        logger.info(
+        logger.debug(
             f"Loaded {len(self.conversations)} "
             f"conversations from Topical-Chat dataset"
         )
@@ -574,8 +575,8 @@ class TopicalChatConversationFetcher(BasePromptFetcher):
 
         Returns:
             List of formatted message dictionaries
-        logger.info("Extracting messages from conversation data")
         """
+        logger.debug("Extracting messages from conversation data")
 
         messages = []
         for msg in conversation_data:
@@ -586,7 +587,7 @@ class TopicalChatConversationFetcher(BasePromptFetcher):
                 }
             )
 
-        logger.info(f"Extracted {len(messages)} messages")
+        logger.debug(f"Extracted {len(messages)} messages")
         return messages
 
     def get_conversation(self) -> List[Dict[str, str]]:
@@ -616,9 +617,9 @@ class TopicalChatConversationFetcher(BasePromptFetcher):
 
         # Remove the last two messages
         # TODO: Make this configurable
-        logger.info("Removing last two messages from conversation")
+        logger.debug("Removing last two messages from conversation")
         messages = conversation["messages"][:-2]
-        logger.info(f"Returning conversation with {len(messages)} messages")
+        logger.debug(f"Returning conversation with {len(messages)} messages")
         logger.debug(
             "Messages head:\n"
             + "\n".join(

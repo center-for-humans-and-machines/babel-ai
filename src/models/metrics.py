@@ -165,9 +165,7 @@ class FetcherMetric(Metric):
     def to_dict(self) -> Dict[str, Any]:
         """Convert metric to a dictionary format suitable for CSV export."""
         result = super().to_dict()
-        logger.info(
-            "Updating Metric with fetcher_config as it is a FetcherMetric."
-        )
+        logger.info("Updating Metric with fetcher_config.")
         logger.debug(f"Fetcher config: {self.fetcher_config.model_dump()}")
         result.update(
             {
@@ -191,6 +189,9 @@ class AgentMetric(Metric):
     def to_dict(self) -> Dict[str, Any]:
         """Convert metric to a dictionary format suitable for CSV export."""
         result = super().to_dict()
+        logger.info("Updating Metric with agent_id and agent_config.")
+        logger.debug(f"Agent id: {self.agent_id}")
+        logger.debug(f"Agent config: {self.agent_config.model_dump()}")
         result.update(
             {
                 "agent_id": self.agent_id,

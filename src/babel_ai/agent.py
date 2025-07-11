@@ -99,7 +99,7 @@ class Agent:
         Define a msg tree from the incoming messages,
         fitting the agents model type.
         """
-        logger.info("Defining message tree roles.")
+        logger.debug("Defining message tree roles.")
         new_messages = []
         for i, message in enumerate(reversed(messages)):
             role = "user" if i % 2 == 0 else "assistant"
@@ -112,7 +112,7 @@ class Agent:
         Define a prompt from the incoming messages,
         fitting the agents model type.
         """
-        logger.info("Defining prompt.")
+        logger.debug("Defining prompt.")
         raise NotImplementedError(
             """Not implemented we need to wait
             for Bram to implement base models."""
