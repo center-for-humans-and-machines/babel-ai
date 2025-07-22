@@ -5,7 +5,7 @@ import logging
 import uuid
 from typing import Dict, Generator, List
 
-from api.llm_interface import generate_response
+from api.llm_interface import LLMInterface
 from models import AgentConfig
 
 logger = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ class Agent:
 
         logger.debug(f"Agent {self.id} final messages: {final_messages}")
 
-        return generate_response(
+        return LLMInterface.generate_response(
             messages=final_messages,
             provider=self.provider,
             model=self.model,

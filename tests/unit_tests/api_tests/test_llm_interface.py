@@ -1,11 +1,39 @@
 """Tests for the generate_response function."""
 
+import threading
 from unittest.mock import patch
 
 import pytest
 
 from api.enums import AzureModels, OllamaModels, OpenAIModels, Provider
-from api.llm_interface import generate_response
+from api.llm_interface import LLMInterface
+
+
+def test_llm_interface_singleton():
+    """Test that LLMInterface implements singleton pattern correctly."""
+    # Create instances in parallel threads
+    results = []
+
+    def create_instance():
+        results.append(LLMInterface())
+
+    threads = [threading.Thread(target=create_instance) for _ in range(5)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    # All instances should be identical
+    first = results[0]
+    for instance in results[1:]:
+        assert first is instance
+        assert id(first) == id(instance)
+    instance1 = LLMInterface()
+    instance2 = LLMInterface()
+
+    # Both should be the same object
+    assert instance1 is instance2
+    assert id(instance1) == id(instance2)
 
 
 @pytest.fixture
@@ -49,7 +77,7 @@ def test_generate_response_with_default_params(mock_request_functions):
     """Test generate_response function with default parameters."""
     messages = [{"role": "user", "content": "Test prompt"}]
 
-    response = generate_response(
+    response = LLMInterface.generate_response(
         messages=messages,
         provider=Provider.OPENAI,
         model=OpenAIModels.GPT4_1106_PREVIEW,
@@ -79,7 +107,7 @@ def test_generate_response_ollama_backend(mock_request_functions):
     """Test that generate_response works with Ollama backend."""
     messages = [{"role": "user", "content": "test"}]
 
-    response = generate_response(
+    response = LLMInterface.generate_response(
         messages=messages,
         provider=Provider.OLLAMA,
         model=OllamaModels.LLAMA3_70B,
@@ -100,7 +128,7 @@ def test_generate_response_raven_backend(mock_request_functions):
     """Test that generate_response works with Raven backend."""
     messages = [{"role": "user", "content": "test"}]
 
-    response = generate_response(
+    response = LLMInterface.generate_response(
         messages=messages,
         provider=Provider.RAVEN,
         model=OllamaModels.LLAMA3_70B,
@@ -121,7 +149,7 @@ def test_generate_response_azure_backend(mock_request_functions):
     """Test that generate_response works with Azure backend."""
     messages = [{"role": "user", "content": "test"}]
 
-    response = generate_response(
+    response = LLMInterface.generate_response(
         messages=messages,
         provider=Provider.AZURE,
         model=AzureModels.GPT4O_2024_08_06,
@@ -142,7 +170,7 @@ def test_generate_response_with_custom_params(mock_request_functions):
     """Test generate_response function with custom parameters."""
     messages = [{"role": "user", "content": "Custom prompt"}]
 
-    response = generate_response(
+    response = LLMInterface.generate_response(
         messages=messages,
         provider=Provider.OPENAI,
         model=OpenAIModels.GPT4_0125_PREVIEW,
@@ -180,7 +208,7 @@ def test_generate_response_multiple_messages(mock_request_functions):
         {"role": "user", "content": "Second message"},
     ]
 
-    response = generate_response(
+    response = LLMInterface.generate_response(
         messages=messages,
         provider=Provider.OPENAI,
         model=OpenAIModels.GPT4_1106_PREVIEW,
