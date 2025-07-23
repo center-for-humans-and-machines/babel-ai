@@ -7,6 +7,7 @@ import pytest
 
 from api.enums import AzureModels, OllamaModels, OpenAIModels, Provider
 from api.llm_interface import LLMInterface
+from models.api import LLMResponse
 
 
 def test_llm_interface_singleton():
@@ -41,36 +42,31 @@ def mock_request_functions():
     """Mock all request functions for testing."""
     from unittest.mock import Mock
 
-    # Create mock functions that return test responses
-    mock_openai_func = Mock(return_value="Test response")
-    mock_ollama_func = Mock(return_value="Test response")
-    mock_raven_func = Mock(return_value="Test response")
-    mock_azure_func = Mock(return_value="Test response")
+    # Create mock functions that return LLMResponse objects
+    mock_response = LLMResponse(
+        content="Test response", input_token_count=10, output_token_count=5
+    )
+
+    mock_openai_func = Mock(return_value=mock_response)
+    mock_ollama_func = Mock(return_value=mock_response)
+    mock_raven_func = Mock(return_value=mock_response)
+    mock_azure_func = Mock(return_value=mock_response)
 
     with patch.object(
         Provider.OPENAI, "get_request_function", return_value=mock_openai_func
-    ) as openai_mock:
-        with patch.object(
-            Provider.OLLAMA,
-            "get_request_function",
-            return_value=mock_ollama_func,
-        ) as ollama_mock:
-            with patch.object(
-                Provider.RAVEN,
-                "get_request_function",
-                return_value=mock_raven_func,
-            ) as raven_mock:
-                with patch.object(
-                    Provider.AZURE,
-                    "get_request_function",
-                    return_value=mock_azure_func,
-                ) as azure_mock:
-                    yield {
-                        Provider.OPENAI: openai_mock,
-                        Provider.OLLAMA: ollama_mock,
-                        Provider.RAVEN: raven_mock,
-                        Provider.AZURE: azure_mock,
-                    }
+    ), patch.object(
+        Provider.OLLAMA, "get_request_function", return_value=mock_ollama_func
+    ), patch.object(
+        Provider.RAVEN, "get_request_function", return_value=mock_raven_func
+    ), patch.object(
+        Provider.AZURE, "get_request_function", return_value=mock_azure_func
+    ):
+        yield {
+            "openai": mock_openai_func,
+            "ollama": mock_ollama_func,
+            "raven": mock_raven_func,
+            "azure": mock_azure_func,
+        }
 
 
 def test_generate_response_with_default_params(mock_request_functions):
@@ -83,17 +79,14 @@ def test_generate_response_with_default_params(mock_request_functions):
         model=OpenAIModels.GPT4_1106_PREVIEW,
     )
 
-    # Verify response
+    # Verify response is a string (extracted from LLMResponse)
+    assert isinstance(response, str)
     assert response == "Test response"
 
-    # Verify get_request_function was called and the returned function was used
-    mock_get_request = mock_request_functions[Provider.OPENAI]
-    mock_get_request.assert_called_once()
-
-    # The returned function should have been called with the correct parameters
-    mock_function = mock_get_request.return_value
-    mock_function.assert_called_once()
-    call_args = mock_function.call_args[1]
+    # Verify the request function was called with correct parameters
+    mock_func = mock_request_functions["openai"]
+    mock_func.assert_called_once()
+    call_args = mock_func.call_args[1]
     assert call_args["messages"] == messages
     assert call_args["model"] == OpenAIModels.GPT4_1106_PREVIEW
     assert call_args["temperature"] == 1.0
@@ -168,35 +161,33 @@ def test_generate_response_azure_backend(mock_request_functions):
 
 def test_generate_response_with_custom_params(mock_request_functions):
     """Test generate_response function with custom parameters."""
-    messages = [{"role": "user", "content": "Custom prompt"}]
+    messages = [{"role": "user", "content": "Test prompt"}]
 
     response = LLMInterface.generate_response(
         messages=messages,
-        provider=Provider.OPENAI,
-        model=OpenAIModels.GPT4_0125_PREVIEW,
-        temperature=0.5,
-        max_tokens=200,
-        frequency_penalty=0.1,
-        presence_penalty=0.1,
+        provider=Provider.OLLAMA,
+        model=OllamaModels.LLAMA3_70B,
+        temperature=0.7,
+        max_tokens=100,
+        frequency_penalty=0.5,
+        presence_penalty=0.3,
         top_p=0.9,
     )
 
-    # Verify response
+    # Verify response is a string (extracted from LLMResponse)
+    assert isinstance(response, str)
     assert response == "Test response"
 
-    # Verify get_request_function was called and returned function was used
-    mock_get_request = mock_request_functions[Provider.OPENAI]
-    mock_get_request.assert_called_once()
-
-    mock_function = mock_get_request.return_value
-    mock_function.assert_called_once()
-    call_args = mock_function.call_args[1]
+    # Verify the request function was called with custom parameters
+    mock_func = mock_request_functions["ollama"]
+    mock_func.assert_called_once()
+    call_args = mock_func.call_args[1]
     assert call_args["messages"] == messages
-    assert call_args["model"] == OpenAIModels.GPT4_0125_PREVIEW
-    assert call_args["temperature"] == 0.5
-    assert call_args["max_tokens"] == 200
-    assert call_args["frequency_penalty"] == 0.1
-    assert call_args["presence_penalty"] == 0.1
+    assert call_args["model"] == OllamaModels.LLAMA3_70B
+    assert call_args["temperature"] == 0.7
+    assert call_args["max_tokens"] == 100
+    assert call_args["frequency_penalty"] == 0.5
+    assert call_args["presence_penalty"] == 0.3
     assert call_args["top_p"] == 0.9
 
 
@@ -225,3 +216,97 @@ def test_generate_response_multiple_messages(mock_request_functions):
     mock_function.assert_called_once()
     call_args = mock_function.call_args[1]
     assert call_args["messages"] == messages
+
+
+def test_generate_response_different_providers(mock_request_functions):
+    """Test generate_response works with different providers."""
+    messages = [{"role": "user", "content": "Test prompt"}]
+
+    # Test OpenAI
+    response_openai = LLMInterface.generate_response(
+        messages=messages,
+        provider=Provider.OPENAI,
+        model=OpenAIModels.GPT4_1106_PREVIEW,
+    )
+    assert isinstance(response_openai, str)
+    assert response_openai == "Test response"
+
+    # Test Ollama
+    response_ollama = LLMInterface.generate_response(
+        messages=messages,
+        provider=Provider.OLLAMA,
+        model=OllamaModels.LLAMA3_70B,
+    )
+    assert isinstance(response_ollama, str)
+    assert response_ollama == "Test response"
+
+    # Test Azure
+    response_azure = LLMInterface.generate_response(
+        messages=messages,
+        provider=Provider.AZURE,
+        model=AzureModels.GPT4O_2024_08_06,
+    )
+    assert isinstance(response_azure, str)
+    assert response_azure == "Test response"
+
+    # Verify each provider was called
+    mock_request_functions["openai"].assert_called_once()
+    mock_request_functions["ollama"].assert_called_once()
+    mock_request_functions["azure"].assert_called_once()
+
+
+def test_generate_response_retry_mechanism():
+    """Test retry mechanism on failures."""
+    messages = [{"role": "user", "content": "Test prompt"}]
+
+    # Mock a function that fails twice then succeeds
+    mock_response = LLMResponse(
+        content="Success response", input_token_count=10, output_token_count=5
+    )
+
+    with patch.object(
+        Provider.OPENAI, "get_request_function"
+    ) as mock_get_func:
+        mock_func = mock_get_func.return_value
+        mock_func.side_effect = [
+            Exception("First failure"),
+            Exception("Second failure"),
+            mock_response,  # Third attempt succeeds
+        ]
+
+        with patch("time.sleep"):  # Mock sleep to speed up test
+            response = LLMInterface.generate_response(
+                messages=messages,
+                provider=Provider.OPENAI,
+                model=OpenAIModels.GPT4_1106_PREVIEW,
+                max_retries=3,
+            )
+
+        # Should eventually succeed and return string content
+        assert isinstance(response, str)
+        assert response == "Success response"
+        assert mock_func.call_count == 3
+
+
+def test_generate_response_max_retries_exceeded():
+    """Test that exception is raised when max retries are exceeded."""
+    messages = [{"role": "user", "content": "Test prompt"}]
+
+    with patch.object(
+        Provider.OPENAI, "get_request_function"
+    ) as mock_get_func:
+        mock_func = mock_get_func.return_value
+        mock_func.side_effect = Exception("API Error")
+
+        with patch("time.sleep"):  # Mock sleep to speed up test
+            with pytest.raises(Exception) as exc_info:
+                LLMInterface.generate_response(
+                    messages=messages,
+                    provider=Provider.OPENAI,
+                    model=OpenAIModels.GPT4_1106_PREVIEW,
+                    max_retries=2,
+                )
+
+        # Should contain information about retries
+        assert "Max retries (2) reached" in str(exc_info.value)
+        assert mock_func.call_count == 2
