@@ -18,6 +18,7 @@ from models import (
     FetcherMetric,
     Metric,
 )
+from models.api import LLMResponse
 
 
 class TestAnalysisResult:
@@ -1019,3 +1020,31 @@ class TestExperimentMetadata:
         assert metadata.num_iterations_total == 50
         assert metadata.num_fetcher_messages == 3
         assert metadata.total_characters == 1000
+
+
+class TestLLMResponse:
+    """Test cases for LLMResponse model."""
+
+    def test_valid_llm_response(self):
+        """Test creating a valid LLMResponse with various valid inputs."""
+        response = LLMResponse(
+            content="Test response content",
+            input_token_count=25,
+            output_token_count=10,
+        )
+
+        assert response.content == "Test response content"
+        assert response.input_token_count == 25
+        assert response.output_token_count == 10
+
+    def test_llm_response_validation_errors(self):
+        """Test validation errors for invalid inputs."""
+        # Missing required fields
+        with pytest.raises(ValidationError):
+            LLMResponse(input_token_count=10, output_token_count=5)
+
+        # Negative token counts
+        with pytest.raises(ValidationError):
+            LLMResponse(
+                content="Test", input_token_count=-1, output_token_count=5
+            )
