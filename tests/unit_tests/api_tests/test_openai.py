@@ -6,6 +6,7 @@ import pytest
 
 from api.enums import OpenAIModels
 from api.openai import openai_request
+from models.api import LLMResponse
 
 
 @pytest.fixture
@@ -19,6 +20,11 @@ def mock_openai_response():
             )
         )
     ]
+    # Add usage information for token counts
+    mock_response.usage = MagicMock()
+    mock_response.usage.prompt_tokens = 25
+    mock_response.usage.completion_tokens = 10
+    mock_response.usage.total_tokens = 35
     return mock_response
 
 
@@ -31,7 +37,7 @@ def sample_messages():
     ]
 
 
-def test_successful_api_call(mock_openai_response, sample_messages):
+def test_openai_request_success(mock_openai_response, sample_messages):
     """Test successful API call to OpenAI."""
     with patch(
         "api.openai.CLIENT.chat.completions.create",
@@ -44,16 +50,22 @@ def test_successful_api_call(mock_openai_response, sample_messages):
             max_tokens=100,
         )
 
-        # Verify the response
-        assert response == "This is a test response from the model."
+        # Verify the response is an LLMResponse object
+        assert isinstance(response, LLMResponse)
+        assert response.content == "This is a test response from the model."
+        assert response.input_token_count == 25
+        assert response.output_token_count == 10
 
         # Verify the API was called with correct parameters
-        mock_create.assert_called_once()
-        call_args = mock_create.call_args[1]
-        assert call_args["model"] == OpenAIModels.GPT4_1106_PREVIEW.value
-        assert call_args["messages"] == sample_messages
-        assert call_args["temperature"] == 0.7
-        assert call_args["max_tokens"] == 100
+        mock_create.assert_called_once_with(
+            model="gpt-4-1106-preview",
+            messages=sample_messages,
+            temperature=0.7,
+            frequency_penalty=0.0,
+            presence_penalty=0.0,
+            top_p=1.0,
+            max_tokens=100,
+        )
 
 
 def test_api_error_handling(sample_messages):
@@ -69,19 +81,34 @@ def test_api_error_handling(sample_messages):
 
 def test_default_parameters(sample_messages):
     """Test that default parameters are used correctly."""
+    mock_response = MagicMock()
+    mock_response.choices = [
+        MagicMock(message=MagicMock(content="Test response"))
+    ]
+    mock_response.usage = MagicMock()
+    mock_response.usage.prompt_tokens = 20
+    mock_response.usage.completion_tokens = 5
+    mock_response.usage.total_tokens = 25
+
     with patch(
         "api.openai.CLIENT.chat.completions.create",
-        return_value=MagicMock(
-            choices=[MagicMock(message=MagicMock(content="Test response"))]
-        ),
+        return_value=mock_response,
     ) as mock_create:
-        openai_request(messages=sample_messages)
+        response = openai_request(messages=sample_messages)
 
-        # Verify default parameters were used
-        call_args = mock_create.call_args[1]
-        assert call_args["model"] == OpenAIModels.GPT4_1106_PREVIEW.value
-        assert call_args["temperature"] == 1.0
-        assert call_args["max_tokens"] is None
-        assert call_args["frequency_penalty"] == 0.0
-        assert call_args["presence_penalty"] == 0.0
-        assert call_args["top_p"] == 1.0
+        # Verify the response is an LLMResponse object
+        assert isinstance(response, LLMResponse)
+        assert response.content == "Test response"
+        assert response.input_token_count == 20
+        assert response.output_token_count == 5
+
+        # Verify default parameters are used
+        mock_create.assert_called_once_with(
+            model=OpenAIModels.GPT4_1106_PREVIEW.value,
+            messages=sample_messages,
+            temperature=1.0,
+            frequency_penalty=0.0,
+            presence_penalty=0.0,
+            top_p=1.0,
+            max_tokens=None,
+        )
