@@ -158,9 +158,9 @@ class SimilarityAnalyzer(Analyzer):
                 similarity = len(intersection) / len(union)
                 similarities.append(similarity)
 
-            logger.debug(f"Intersection: {intersection}")
-            logger.debug(f"Union: {union}")
-            logger.debug(f"Similarity: {similarity}")
+                logger.debug(f"Intersection: {intersection}")
+                logger.debug(f"Union: {union}")
+                logger.debug(f"Similarity: {similarity}")
 
         if similarities:
             logger.debug(f"Similarities: {similarities}")
