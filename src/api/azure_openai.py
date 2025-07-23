@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from openai import AzureOpenAI
 
 from api.enums import AzureModels
+from models.api import LLMResponse
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -35,7 +36,7 @@ def azure_openai_request(
     presence_penalty: float = 0.0,  # -2.0 to 2.0 higher = more diverse
     top_p: float = 1.0,  # 0.0 to 1.0 higher = more creative
     max_tokens: Optional[int] = None,
-) -> str:
+) -> LLMResponse:
     """Send a request to Azure OpenAI API.
 
     Args:
@@ -48,7 +49,7 @@ def azure_openai_request(
         max_tokens: Maximum tokens to generate
 
     Returns:
-        Generated text response
+        LLMResponse with content and token counts
     """
     logger.info(
         f"Sending request to Azure OpenAI API with model {model.value}, "
@@ -73,8 +74,17 @@ def azure_openai_request(
         logger.info("Successfully received response from Azure OpenAI API")
         logger.debug(f"Response: {response.choices[0].message.content[:50]}")
 
-        # Return the response
-        return response.choices[0].message.content
+        # Extract content and token counts
+        content = response.choices[0].message.content
+        input_tokens = response.usage.prompt_tokens
+        output_tokens = response.usage.completion_tokens
+
+        # Return LLMResponse object
+        return LLMResponse(
+            content=content,
+            input_token_count=input_tokens,
+            output_token_count=output_tokens,
+        )
 
     except Exception as e:
         logger.error(f"Error in Azure OpenAI API request: {str(e)}")

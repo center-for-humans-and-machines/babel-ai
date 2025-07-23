@@ -53,7 +53,7 @@ class LLMInterface:
             initial_delay: Initial delay in seconds before retrying
 
         Returns:
-            Generated text response
+            Generated text response string
 
         Raises:
             Exception: If all retry attempts fail
@@ -77,7 +77,7 @@ class LLMInterface:
                 )
 
                 # Make the request
-                response = request_function(
+                llm_response = request_function(
                     messages=messages,
                     model=model,
                     temperature=temperature,
@@ -87,13 +87,20 @@ class LLMInterface:
                     top_p=top_p,
                 )
 
-                # If successful, return response
+                # Log token usage
+                logger.debug(
+                    f"Request ID: {request_id}, "
+                    f"Token usage - Input: {llm_response.input_token_count}, "
+                    f"Output: {llm_response.output_token_count}"
+                )
+
+                # If successful, return the content string
                 logger.info(
                     f"Request ID: {request_id}, "
                     f"Successfully generated response on attempt "
                     f"{attempt + 1}"
                 )
-                return response
+                return llm_response.content
 
             except Exception as e:
                 # Log error and prepare for next attempt

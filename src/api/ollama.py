@@ -9,6 +9,7 @@ import requests
 from dotenv import load_dotenv
 
 from api.enums import OllamaModels
+from models.api import LLMResponse
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -19,6 +20,19 @@ load_dotenv()
 API_BASE = os.getenv("OLLAMA_API_BASE", "http://localhost:11434")
 
 logger.info("Initializing Ollama API.")
+
+
+def _estimate_token_count(text: str) -> int:
+    """Estimate token count using word count approximation.
+
+    This is a rough approximation since Ollama may
+    not provide exact token counts.
+    The ratio of ~0.75 words per token is commonly used as an estimate.
+    """
+    if not text:
+        return 0
+    words = len(text.split())
+    return int(words / 0.75)
 
 
 def ollama_request(
@@ -32,7 +46,7 @@ def ollama_request(
     api_base_url: Optional[str] = API_BASE,
     endpoint: str = "api/chat",
     stream: bool = False,
-) -> str:
+) -> LLMResponse:
     """
     Send a request to the Ollama API using the specified model.
 
@@ -50,7 +64,7 @@ def ollama_request(
         stream: Whether to stream the response
 
     Returns:
-        The generated text response.
+        LLMResponse with content and estimated token counts
     """
 
     def _handle_response(
@@ -142,13 +156,23 @@ def ollama_request(
         logger.info("Successfully received response from Ollama API")
         logger.debug(f"Response: {response_content[:50]}")
 
-        return response_content
+        # Estimate token counts
+        input_text = " ".join(msg.get("content", "") for msg in messages)
+        input_tokens = _estimate_token_count(input_text)
+        output_tokens = _estimate_token_count(response_content)
+
+        # Return LLMResponse object
+        return LLMResponse(
+            content=response_content,
+            input_token_count=input_tokens,
+            output_token_count=output_tokens,
+        )
     except requests.exceptions.RequestException as e:
         logger.error(f"Error in Ollama API request: {str(e)}")
         raise
 
 
-def ollama_request_stream(*args, **kwargs) -> str:
+def ollama_request_stream(*args, **kwargs) -> LLMResponse:
     """
     Send a streaming request to the Ollama API and return the full response.
 
@@ -159,12 +183,12 @@ def ollama_request_stream(*args, **kwargs) -> str:
         Same as ollama_request
 
     Returns:
-        The complete generated text response.
+        LLMResponse with content and estimated token counts
     """
     return ollama_request(*args, stream=True, **kwargs)
 
 
-def raven_ollama_request(*args, **kwargs) -> str:
+def raven_ollama_request(*args, **kwargs) -> LLMResponse:
     """
     Send a request to the Ollama API using the specified model.
 
@@ -176,7 +200,7 @@ def raven_ollama_request(*args, **kwargs) -> str:
         - endpoint: "chat/completions"
 
     Returns:
-        The generated text response.
+        LLMResponse with content and estimated token counts
     """
     defaults = {
         "model": OllamaModels.LLAMA3_70B,
