@@ -26,19 +26,49 @@ class BudgetTracker:
     PRICING = {
         Provider.OPENAI: {
             OpenAIModels.GPT4_1106_PREVIEW: {
-                "input": 0.01,  # $0.01 per 1K input tokens
-                "output": 0.03,  # $0.03 per 1K output tokens
+                # $0.001 per 1K/$10 per 1M input tokens
+                "input": 0.001,
+                # $0.003 per 1K/$30.00 per 1M output tokens
+                "output": 0.003,
             },
             OpenAIModels.GPT4_0125_PREVIEW: {
-                "input": 0.01,  # $0.01 per 1K input tokens
-                "output": 0.03,  # $0.03 per 1K output tokens
+                # $0.001 per 1K/$10 per 1M input tokens
+                "input": 0.001,
+                # $0.003 per 1K/$30.00 per 1M output tokens
+                "output": 0.003,
+            },
+            OpenAIModels.O3_2025_04_16: {
+                # $0.002 per 1K/$2.00 per 1M input tokens
+                "input": 0.002,
+                # $0.008 per 1K/$8.00 per 1M output tokens
+                "output": 0.008,
+            },
+            OpenAIModels.O4_MINI_2025_04_16: {
+                # $0.0011 per 1K/$1.10 per 1M input tokens
+                "input": 0.0011,
+                # $0.0044 per 1K/$4.40 per 1M output tokens
+                "output": 0.0044,
             },
         },
         Provider.AZURE: {
             AzureModels.GPT4O_2024_08_06: {
-                "input": 0.005,  # $0.005 per 1K input tokens
-                "output": 0.015,  # $0.015 per 1K output tokens
-            }
+                # €0.00234883 per 1K/€2.34883 per 1M input tokens
+                "input": 0.00234883,
+                # €0.0093953 per 1K/€9.3953 per 1M output tokens
+                "output": 0.0093953,
+            },
+            AzureModels.O3_2025_04_16: {
+                # $0.00171 per 1K/$1.71 per 1M input tokens
+                "input": 0.00171,
+                # $0.00684 per 1K/$6.84 per 1M output tokens
+                "output": 0.00684,
+            },
+            AzureModels.O4_MINI_2025_04_16: {
+                # $0.00094 per 1K/$0.94 per 1M input tokens
+                "input": 0.00094,
+                # $0.00376 per 1K/$3.76 per 1M output tokens
+                "output": 0.00376,
+            },
         },
         Provider.OLLAMA: {
             # Local models - no cost
