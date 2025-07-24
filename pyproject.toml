@@ -9,6 +9,7 @@ packages = [{include = "babel_ai", from = "src"}]
 [tool.poetry.dependencies]
 python = "^3.13"
 openai = "^1.59.7"
+anthropic = "^0.42.0"
 ipykernel = "^6.29.5"
 python-dotenv = "^1.0.1"
 torch = "^2.6.0"
