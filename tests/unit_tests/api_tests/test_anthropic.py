@@ -34,7 +34,7 @@ def test_anthropic_request_success(mock_anthropic_response, sample_messages):
     ) as mock_create:
         response = anthropic_request(
             messages=sample_messages,
-            model=AnthropicModels.CLAUDE_3_5_SONNET_20241022,
+            model=AnthropicModels.CLAUDE_SONNET_4_20250514,
             temperature=0.7,
             max_tokens=100,
         )
@@ -47,7 +47,7 @@ def test_anthropic_request_success(mock_anthropic_response, sample_messages):
 
         # Verify the API was called with correct parameters
         mock_create.assert_called_once_with(
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-4-20250514",
             messages=sample_messages,
             temperature=0.7,
             top_p=1.0,
@@ -88,7 +88,7 @@ def test_default_parameters(sample_messages):
 
         # Verify default parameters are used
         mock_create.assert_called_once_with(
-            model=AnthropicModels.CLAUDE_3_5_SONNET_20241022.value,
+            model=AnthropicModels.CLAUDE_SONNET_4_20250514.value,
             messages=sample_messages,
             temperature=1.0,
             top_p=1.0,

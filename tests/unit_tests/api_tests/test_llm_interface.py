@@ -164,7 +164,7 @@ def test_generate_response_anthropic_backend(mock_request_functions):
     response = LLMInterface.generate_response(
         messages=messages,
         provider=Provider.ANTHROPIC,
-        model=AnthropicModels.CLAUDE_3_5_SONNET_20241022,
+        model=AnthropicModels.CLAUDE_SONNET_4_20250514,
     )
 
     mock_get_request = mock_request_functions[Provider.ANTHROPIC]

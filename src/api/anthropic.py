@@ -25,7 +25,7 @@ logger.info("Initializing Anthropic API client.")
 
 def anthropic_request(
     messages: list,
-    model: AnthropicModels = AnthropicModels.CLAUDE_3_5_SONNET_20241022,
+    model: AnthropicModels = AnthropicModels.CLAUDE_SONNET_4_20250514,
     temperature: float = 1.0,
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,

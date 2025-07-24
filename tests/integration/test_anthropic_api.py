@@ -16,7 +16,7 @@ def test_real_api_call_with_different_models_and_default_parameters():
     messages = [{"role": "user", "content": "Say 'Hello, this is a test!'"}]
 
     models = [
-        AnthropicModels.CLAUDE_3_5_SONNET_20241022,
+        AnthropicModels.CLAUDE_SONNET_4_20250514,
         AnthropicModels.CLAUDE_3_5_HAIKU_20241022,
     ]
 

@@ -5,9 +5,15 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from threading import Lock
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from api.enums import AzureModels, OllamaModels, OpenAIModels, Provider
+from api.enums import (
+    AnthropicModels,
+    AzureModels,
+    OllamaModels,
+    OpenAIModels,
+    Provider,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +93,26 @@ class BudgetTracker:
             OllamaModels.LLAMA3_70B_TEXT: {"input": 0.0, "output": 0.0},
             OllamaModels.DEEPSEEK_R1: {"input": 0.0, "output": 0.0},
             OllamaModels.GPT_2_1_5B: {"input": 0.0, "output": 0.0},
+        },
+        Provider.ANTHROPIC: {
+            AnthropicModels.CLAUDE_SONNET_4_20250514: {
+                # $0.003 per 1K/$3.00 per 1M input tokens
+                "input": 0.003,
+                # $0.015 per 1K/$15.00 per 1M output tokens
+                "output": 0.015,
+            },
+            AnthropicModels.CLAUDE_OPUS_4_20250514: {
+                # $0.015 per 1K/$15.00 per 1M input tokens
+                "input": 0.015,
+                # $0.075 per 1K/$75.00 per 1M output tokens
+                "output": 0.075,
+            },
+            AnthropicModels.CLAUDE_3_5_HAIKU_20241022: {
+                # $0.0008 per 1K/$0.80 per 1M input tokens
+                "input": 0.04,
+                # $0.004 per 1K/$4.00 per 1M output tokens
+                "output": 0.004,
+            },
         },
     }
 
@@ -255,80 +281,3 @@ class BudgetTracker:
 
             logger.info(f"Added usage: {usage_summary}")
             return usage_summary
-
-    def get_budget_summary(self) -> Dict[str, Any]:
-        """Get complete budget summary.
-
-        Returns:
-            Dictionary with complete budget breakdown
-        """
-        return {
-            "total_cost": round(self.budget_data["total_cost"], 6),
-            "providers": {
-                provider: {
-                    "total_cost": round(data["total_cost"], 6),
-                    "total_input_tokens": data["total_input_tokens"],
-                    "total_output_tokens": data["total_output_tokens"],
-                    "models": {
-                        model: {
-                            "total_cost": round(model_data["total_cost"], 6),
-                            "total_input_tokens": model_data[
-                                "total_input_tokens"
-                            ],
-                            "total_output_tokens": model_data[
-                                "total_output_tokens"
-                            ],
-                            "usage_count": model_data["usage_count"],
-                        }
-                        for model, model_data in data["models"].items()
-                    },
-                }
-                for provider, data in self.budget_data["providers"].items()
-            },
-            "created_at": self.budget_data["created_at"],
-            "last_updated": self.budget_data["last_updated"],
-        }
-
-    def get_provider_summary(
-        self, provider: Provider
-    ) -> Optional[Dict[str, Any]]:
-        """Get budget summary for a specific provider.
-
-        Args:
-            provider: The provider to get summary for
-
-        Returns:
-            Provider budget summary or None if no data exists
-        """
-        provider_key = provider.value
-        if provider_key not in self.budget_data["providers"]:
-            return None
-
-        data = self.budget_data["providers"][provider_key]
-        return {
-            "provider": provider_key,
-            "total_cost": round(data["total_cost"], 6),
-            "total_input_tokens": data["total_input_tokens"],
-            "total_output_tokens": data["total_output_tokens"],
-            "models": {
-                model: {
-                    "total_cost": round(model_data["total_cost"], 6),
-                    "total_input_tokens": model_data["total_input_tokens"],
-                    "total_output_tokens": model_data["total_output_tokens"],
-                    "usage_count": model_data["usage_count"],
-                }
-                for model, model_data in data["models"].items()
-            },
-        }
-
-    def reset_budget(self) -> None:
-        """Reset all budget data (use with caution)."""
-        with self._lock:
-            self.budget_data = {
-                "total_cost": 0.0,
-                "providers": {},
-                "created_at": datetime.now().isoformat(),
-                "last_updated": datetime.now().isoformat(),
-            }
-            self._save_budget_data()
-            logger.info("Budget data has been reset")

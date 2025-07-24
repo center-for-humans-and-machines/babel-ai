@@ -158,7 +158,7 @@ class AnthropicModels(Enum):
 
     Available models:
         CLAUDE_OPUS_4_20250514: Claude Opus 4 model (May 2025)
-        CLAUDE_3_5_SONNET_20241022: Claude 3.5 Sonnet model (October 2024)
+        CLAUDE_SONNET_4_20250514: Claude Sonnet 4 model (May 2025)
         CLAUDE_3_5_HAIKU_20241022: Claude 3.5 Haiku model (October 2024)
 
     Example:
@@ -167,7 +167,7 @@ class AnthropicModels(Enum):
     """
 
     CLAUDE_OPUS_4_20250514 = "claude-opus-4-20250514"
-    CLAUDE_3_5_SONNET_20241022 = "claude-3-5-sonnet-20241022"
+    CLAUDE_SONNET_4_20250514 = "claude-sonnet-4-20250514"
     CLAUDE_3_5_HAIKU_20241022 = "claude-3-5-haiku-20241022"
 
 

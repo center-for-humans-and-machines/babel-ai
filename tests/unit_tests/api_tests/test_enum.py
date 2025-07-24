@@ -86,8 +86,8 @@ def test_anthropic_model_enum():
         == "claude-opus-4-20250514"
     )
     assert (
-        AnthropicModels.CLAUDE_3_5_SONNET_20241022.value
-        == "claude-3-5-sonnet-20241022"
+        AnthropicModels.CLAUDE_SONNET_4_20250514.value
+        == "claude-sonnet-4-20250514"
     )
     assert (
         AnthropicModels.CLAUDE_3_5_HAIKU_20241022.value
@@ -117,5 +117,5 @@ def test_model_instances_are_valid_model_types():
     assert isinstance(azure_model, AzureModels)
 
     # Test Anthropic model instance
-    anthropic_model = AnthropicModels.CLAUDE_3_5_SONNET_20241022
+    anthropic_model = AnthropicModels.CLAUDE_SONNET_4_20250514
     assert isinstance(anthropic_model, AnthropicModels)
