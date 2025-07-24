@@ -58,7 +58,7 @@ def test_azure_openai_request_success(mock_openai_response, sample_messages):
 
         # Verify the API was called with correct parameters
         mock_create.assert_called_once_with(
-            model="gpt-4o-2024-08-06",
+            model="azure-gpt-4o-2024-08-06",
             messages=sample_messages,
             temperature=0.7,
             frequency_penalty=0.0,

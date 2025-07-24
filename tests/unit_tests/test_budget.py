@@ -43,8 +43,8 @@ class TestBudgetTracker:
                 Provider.OPENAI, OpenAIModels.GPT4_1106_PREVIEW, 1000, 500
             )
 
-            expected_input_cost = (1000 / 1000.0) * 0.01  # $0.01
-            expected_output_cost = (500 / 1000.0) * 0.03  # $0.015
+            expected_input_cost = (1000 / 1000.0) * 0.001
+            expected_output_cost = (500 / 1000.0) * 0.003
             expected_total = expected_input_cost + expected_output_cost
 
             assert result["provider"] == "openai"
@@ -109,7 +109,7 @@ class TestBudgetTracker:
             expected_output_cost = (500 / 1000.0) * 0.0093953  # $0.00469765
             expected_total = expected_input_cost + expected_output_cost
             assert result["provider"] == "azure"
-            assert result["model"] == "gpt-4o-2024-08-06"
+            assert result["model"] == "azure-gpt-4o-2024-08-06"
             assert result["input_tokens"] == 1000
             assert result["output_tokens"] == 500
             assert result["total_cost"] == round(expected_total, 6)

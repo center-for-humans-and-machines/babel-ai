@@ -76,7 +76,7 @@ def test_ollama_model_enum():
 
 def test_azure_model_enum():
     """Test AzureModel enum values."""
-    assert AzureModels.GPT4O_2024_08_06.value == "gpt-4o-2024-08-06"
+    assert AzureModels.GPT4O_2024_08_06.value == "azure-gpt-4o-2024-08-06"
 
 
 def test_anthropic_model_enum():

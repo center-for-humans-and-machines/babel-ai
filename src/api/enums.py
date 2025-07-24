@@ -145,9 +145,9 @@ class AzureModels(Enum):
         >>> response = azure_openai_request(messages, model=model)
     """
 
-    GPT4O_2024_08_06 = "gpt-4o-2024-08-06"
-    O3_2025_04_16 = "o3-2025-04-16"
-    O4_MINI_2025_04_16 = "o4-mini-2025-04-16"
+    GPT4O_2024_08_06 = "azure-gpt-4o-2024-08-06"
+    O3_2025_04_16 = "azure-o3-2025-04-16"
+    O4_MINI_2025_04_16 = "azure-o4-mini-2025-04-16"
 
 
 class AnthropicModels(Enum):
