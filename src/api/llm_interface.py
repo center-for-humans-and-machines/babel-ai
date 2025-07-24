@@ -6,6 +6,7 @@ from threading import Lock
 from typing import Dict, List, Optional
 from uuid import uuid4
 
+from api.budget import BudgetTracker
 from api.enums import APIModels, Provider
 
 logger = logging.getLogger(__name__)
@@ -92,6 +93,22 @@ class LLMInterface:
                     f"Request ID: {request_id}, "
                     f"Token usage - Input: {llm_response.input_token_count}, "
                     f"Output: {llm_response.output_token_count}"
+                )
+
+                # Track budget usage
+                budget_tracker = BudgetTracker()
+                usage_summary = budget_tracker.add_usage(
+                    provider=provider,
+                    model=model,
+                    input_tokens=llm_response.input_token_count,
+                    output_tokens=llm_response.output_token_count,
+                )
+
+                # Log budget information
+                logger.info(
+                    f"Request ID: {request_id}, "
+                    f"Budget - Cost: ${usage_summary['total_cost']:.6f}, "
+                    f"Cumulative: ${usage_summary['cumulative_total_cost']:.6f}"  # noqa: E501
                 )
 
                 # If successful, return the content string

@@ -310,3 +310,38 @@ def test_generate_response_max_retries_exceeded():
         # Should contain information about retries
         assert "Max retries (2) reached" in str(exc_info.value)
         assert mock_func.call_count == 2
+
+
+def test_generate_response_budget_logging(mock_request_functions):
+    """Test that budget logging is called correctly."""
+    from unittest.mock import Mock, patch
+
+    messages = [{"role": "user", "content": "Test prompt"}]
+
+    # Create a mock budget tracker with a mock add_usage method
+    mock_budget_tracker = Mock()
+    mock_usage_summary = {
+        "total_cost": 0.000015,
+        "cumulative_total_cost": 0.000015,
+    }
+    mock_budget_tracker.add_usage.return_value = mock_usage_summary
+
+    with patch(
+        "api.llm_interface.BudgetTracker", return_value=mock_budget_tracker
+    ):
+        response = LLMInterface.generate_response(
+            messages=messages,
+            provider=Provider.OPENAI,
+            model=OpenAIModels.GPT4_1106_PREVIEW,
+        )
+
+    # Verify response
+    assert response == "Test response"
+
+    # Verify budget tracker was called with correct parameters
+    mock_budget_tracker.add_usage.assert_called_once_with(
+        provider=Provider.OPENAI,
+        model=OpenAIModels.GPT4_1106_PREVIEW,
+        input_tokens=10,
+        output_tokens=5,
+    )
