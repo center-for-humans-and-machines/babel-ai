@@ -302,3 +302,6 @@ data/
 # HPC file and log
 *.slurm
 *.out
+
+# logs
+logs/

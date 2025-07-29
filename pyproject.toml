@@ -9,6 +9,7 @@ packages = [{include = "babel_ai", from = "src"}]
 [tool.poetry.dependencies]
 python = "^3.13"
 openai = "^1.59.7"
+anthropic = "^0.42.0"
 ipykernel = "^6.29.5"
 python-dotenv = "^1.0.1"
 torch = "^2.6.0"
@@ -19,6 +20,8 @@ seaborn = "^0.13.2"
 bs4 = "^0.0.2"
 sentence-transformers = "^3.4.1"
 pytest-asyncio = "^1.0.0"
+reportlab = "^4.4.2"
+coverage = "^7.9.2"
 
 
 [tool.poetry.group.dev.dependencies]

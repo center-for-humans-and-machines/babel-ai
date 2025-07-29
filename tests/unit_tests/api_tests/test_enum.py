@@ -5,6 +5,7 @@ from typing import get_args
 import pytest
 
 from api.enums import (
+    AnthropicModels,
     APIModels,
     AzureModels,
     OllamaModels,
@@ -19,6 +20,7 @@ def test_provider_enum_values():
     assert Provider.OLLAMA.value == "ollama"
     assert Provider.RAVEN.value == "raven"
     assert Provider.AZURE.value == "azure"
+    assert Provider.ANTHROPIC.value == "anthropic"
 
 
 def test_provider_by_string():
@@ -27,6 +29,7 @@ def test_provider_by_string():
     assert Provider("ollama") == Provider.OLLAMA
     assert Provider("raven") == Provider.RAVEN
     assert Provider("azure") == Provider.AZURE
+    assert Provider("anthropic") == Provider.ANTHROPIC
 
 
 def test_get_model_enum_method():
@@ -35,10 +38,12 @@ def test_get_model_enum_method():
     assert Provider.OLLAMA.get_model_enum() == OllamaModels
     assert Provider.RAVEN.get_model_enum() == OllamaModels
     assert Provider.AZURE.get_model_enum() == AzureModels
+    assert Provider.ANTHROPIC.get_model_enum() == AnthropicModels
 
 
 def test_get_request_function_method():
     """Test get_request_function returns callable functions."""
+    from api.anthropic import anthropic_request
     from api.azure_openai import azure_openai_request
     from api.ollama import ollama_request, raven_ollama_request
     from api.openai import openai_request
@@ -47,6 +52,7 @@ def test_get_request_function_method():
     assert Provider.OLLAMA.get_request_function() == ollama_request
     assert Provider.RAVEN.get_request_function() == raven_ollama_request
     assert Provider.AZURE.get_request_function() == azure_openai_request
+    assert Provider.ANTHROPIC.get_request_function() == anthropic_request
 
 
 def test_invalid_provider_raises_error():
@@ -70,13 +76,29 @@ def test_ollama_model_enum():
 
 def test_azure_model_enum():
     """Test AzureModel enum values."""
-    assert AzureModels.GPT4O_2024_08_06.value == "gpt-4o-2024-08-06"
+    assert AzureModels.GPT4O_2024_08_06.value == "azure-gpt-4o-2024-08-06"
+
+
+def test_anthropic_model_enum():
+    """Test AnthropicModel enum values."""
+    assert (
+        AnthropicModels.CLAUDE_OPUS_4_20250514.value
+        == "claude-opus-4-20250514"
+    )
+    assert (
+        AnthropicModels.CLAUDE_SONNET_4_20250514.value
+        == "claude-sonnet-4-20250514"
+    )
+    assert (
+        AnthropicModels.CLAUDE_3_5_HAIKU_20241022.value
+        == "claude-3-5-haiku-20241022"
+    )
 
 
 def test_model_type_contains_all_model_enums():
     """Test ModelType union contains all expected model enum classes."""
     model_types = get_args(APIModels)
-    expected_types = {OpenAIModels, OllamaModels, AzureModels}
+    expected_types = {OpenAIModels, OllamaModels, AzureModels, AnthropicModels}
     assert set(model_types) == expected_types
 
 
@@ -93,3 +115,7 @@ def test_model_instances_are_valid_model_types():
     # Test Azure model instance
     azure_model = AzureModels.GPT4O_2024_08_06
     assert isinstance(azure_model, AzureModels)
+
+    # Test Anthropic model instance
+    anthropic_model = AnthropicModels.CLAUDE_SONNET_4_20250514
+    assert isinstance(anthropic_model, AnthropicModels)

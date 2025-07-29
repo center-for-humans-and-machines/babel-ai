@@ -10,6 +10,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
+from uuid import uuid4
 
 import pandas as pd
 
@@ -37,6 +38,17 @@ class Experiment:
         config: ExperimentConfig,
         use_notebook_tqdm: bool = False,
     ):
+
+        # set uuid
+        self.uuid = uuid4()
+        logger.info(
+            f"Initializing Experiment {self.uuid} with config: {config}"
+        )
+        if use_notebook_tqdm:
+            logger.info("Using notebook tqdm")
+        else:
+            logger.info("Using standard tqdm")
+
         # save configs
         self.config = config
         self.max_iterations = config.max_iterations
@@ -46,8 +58,16 @@ class Experiment:
         # create output directory
         if config.output_dir is None:
             self.output_dir = Path.cwd() / "results"
+            logger.warning(
+                f"Experiment {self.uuid} "
+                f"No output directory specified, using {self.output_dir}"
+            )
         else:
             self.output_dir = Path(config.output_dir)
+            logger.info(
+                f"Experiment {self.uuid} "
+                f"Using output directory {self.output_dir}"
+            )
 
         # create metadata
         self.metadata = ExperimentMetadata(
@@ -116,6 +136,10 @@ class Experiment:
             metadata=self.metadata,
             output_dir=output_dir,
         )
+        logger.info(
+            f"Experiment {self.uuid} completed with "
+            f"{len(self.result_metrics)} metrics"
+        )
         return self.result_metrics
 
     def run_interaction_loop(
@@ -133,6 +157,11 @@ class Experiment:
             ValueError: If messages are not properly formatted
         """
 
+        logger.info(
+            f"Experiment {self.uuid} "
+            f"Running interaction loop with {len(self.messages)} messages"
+        )
+
         for i, message in enumerate(self.messages):
             self.result_metrics.append(
                 FetcherMetric(
@@ -144,6 +173,14 @@ class Experiment:
                     fetcher_config=self.config.fetcher_config,
                 )
             )
+            logger.debug(
+                f"Experiment {self.uuid} " f"Added fetcher metric {i}"
+            )
+
+        logger.info(
+            f"Experiment {self.uuid} "
+            f"Added {len(self.result_metrics)} fetcher metrics"
+        )
 
         # keep track of total characters
         self.total_characters = sum(
@@ -156,14 +193,35 @@ class Experiment:
         )  # Start from after fetcher metrics
         while self._should_continue_generation():
 
+            # log iteration
+            logger.info(
+                f"Experiment {self.uuid} "
+                f"Iteration {iteration} of {self.max_iterations} "
+            )
+
             # select next agent
             agent = next(self.agent_selection_method)
+
+            # log iteration
+            logger.debug(
+                f"Experiment {self.uuid} "
+                f"Iteration {iteration} "
+                f"Generating response for agent {agent.id}"
+            )
 
             # generate response
             response = agent.generate_response(self.messages)
 
+            # log response
+            logger.debug(
+                f"Experiment {self.uuid} "
+                f"Iteration {iteration} "
+                f"Response: {response}"
+            )
+
             # add response to conversation history and update total characters
             self.total_characters += len(response)
+
             self.messages.append(
                 {
                     "role": str(agent.id),
@@ -183,6 +241,13 @@ class Experiment:
                 )
             )
 
+            # log agent metric
+            logger.debug(
+                f"Experiment {self.uuid} "
+                f"Iteration {iteration} "
+                f"Added agent metric {iteration}"
+            )
+
             iteration += 1
 
         # save total iterations/characters to metadata
@@ -194,20 +259,53 @@ class Experiment:
     def _analyze_response(self, metrics: List[Metric]) -> AnalysisResult:
         """Analyze the response of the last agent."""
 
+        logger.info(
+            f"Experiment {self.uuid} "
+            f"Analyzing response for {len(metrics)} metrics"
+        )
+
         content = [metric.content for metric in metrics]
 
         for i, metric in enumerate(metrics):
+
+            # log analysis
+            logger.info(
+                f"Experiment {self.uuid} "
+                f"Analyzing response for {i} of {len(metrics)} metrics"
+            )
+
             metric.analysis = self.analyzer.analyze(content[: i + 1])
 
         return metrics
 
     def _should_continue_generation(self) -> bool:
         """Check if generation should continue based on configured limits."""
+        logger.debug(
+            f"Experiment {self.uuid} "
+            f"Checking if generation should continue"
+        )
+        logger.debug(
+            f"Experiment {self.uuid} "
+            f"Max iterations: {self.max_iterations}"
+            f"Max total characters: {self.max_total_characters}"
+            f"Total characters: {self.total_characters}"
+            f"Number of iterations: {len(self.messages)}"
+        )
         # Check iteration limit
         if len(self.messages) >= self.max_iterations:
+            logger.info(
+                f"Experiment {self.uuid} "
+                "Max iterations reached: "
+                f"{len(self.messages)} >= {self.max_iterations}"
+            )
             return False
         # Check character limit
         if self.total_characters >= self.max_total_characters:
+            logger.info(
+                f"Experiment {self.uuid} "
+                "Max total characters reached: "
+                f"{self.total_characters} >= {self.max_total_characters}"
+            )
             return False
         return True
 
@@ -227,6 +325,9 @@ class Experiment:
             metrics: List of Metric objects from the experiment
             metadata: ExperimentMetadata object containing experiment info
         """
+        logger.info(
+            f"Experiment {self.uuid} " f"Saving results to {output_dir}"
+        )
 
         # Convert metrics to DataFrame
         df = pd.DataFrame([metric.to_dict() for metric in metrics])
@@ -243,6 +344,12 @@ class Experiment:
         meta_filename = f"{base_filename}_meta.json"
         csv_path = output_dir / csv_filename
         meta_path = output_dir / meta_filename
+
+        logger.debug(
+            f"Experiment {self.uuid} "
+            f"Saving csv to {csv_path}"
+            f"Saving metadata to {meta_path}"
+        )
 
         df.to_csv(csv_path, index=False)
 

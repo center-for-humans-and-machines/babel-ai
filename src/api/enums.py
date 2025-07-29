@@ -30,6 +30,7 @@ class Provider(Enum):
     OLLAMA = "ollama"
     RAVEN = "raven"
     AZURE = "azure"
+    ANTHROPIC = "anthropic"
 
     def get_model_enum(self) -> Type[Enum]:
         """Get the corresponding model enum for this provider."""
@@ -43,6 +44,8 @@ class Provider(Enum):
                 return OllamaModels  # Raven uses Ollama models
             case Provider.AZURE:
                 return AzureModels
+            case Provider.ANTHROPIC:
+                return AnthropicModels
             case _:
                 logger.error(
                     f"Invalid provider: {self}, available providers: "
@@ -54,6 +57,7 @@ class Provider(Enum):
         """Get the corresponding request function for this provider."""
         logger.info(f"Getting request function for provider: {self.value}")
         # Import here to avoid circular imports
+        from api.anthropic import anthropic_request
         from api.azure_openai import azure_openai_request
         from api.ollama import ollama_request, raven_ollama_request
         from api.openai import openai_request
@@ -67,6 +71,8 @@ class Provider(Enum):
                 return raven_ollama_request
             case Provider.AZURE:
                 return azure_openai_request
+            case Provider.ANTHROPIC:
+                return anthropic_request
             case _:
                 logger.error(
                     f"Invalid provider: {self}, available providers: "
@@ -138,7 +144,30 @@ class AzureModels(Enum):
     """
 
     GPT4O_2024_08_06 = "gpt-4o-2024-08-06"
+    O3_2025_04_16 = "o3-2025-04-16"
+    O4_MINI_2025_04_16 = "o4-mini"
+
+
+class AnthropicModels(Enum):
+    """Enum for available Anthropic models.
+
+    This enum defines the different Anthropic Claude models that can be used
+    for generating responses in drift experiments.
+
+    Available models:
+        CLAUDE_OPUS_4_20250514: Claude Opus 4 model (May 2025)
+        CLAUDE_SONNET_4_20250514: Claude Sonnet 4 model (May 2025)
+        CLAUDE_3_5_HAIKU_20241022: Claude 3.5 Haiku model (October 2024)
+
+    Example:
+        >>> model = AnthropicModels.CLAUDE_OPUS_4_20250514
+        >>> response = anthropic_request(messages, model=model)
+    """
+
+    CLAUDE_OPUS_4_20250514 = "claude-opus-4-20250514"
+    CLAUDE_SONNET_4_20250514 = "claude-sonnet-4-20250514"
+    CLAUDE_3_5_HAIKU_20241022 = "claude-3-5-haiku-20241022"
 
 
 # Union type for all available models
-APIModels = Union[OpenAIModels, OllamaModels, AzureModels]
+APIModels = Union[OpenAIModels, OllamaModels, AzureModels, AnthropicModels]

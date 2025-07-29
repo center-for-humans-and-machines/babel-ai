@@ -1,6 +1,7 @@
 """Tests for the analyzer module."""
 
 import logging
+from unittest.mock import patch
 
 import pytest
 
@@ -134,6 +135,67 @@ def test_analyze_semantic_similarity_window(analyzer):
     assert -1.0 <= result <= 1.0
 
 
+def test_semantic_similarity_clamping(analyzer):
+    """Test that semantic similarity properly clamps faulty cos_sim values."""
+    outputs = ["The quick brown fox", "A fast brown dog"]
+
+    # Test clamping values above 1.0
+    with patch("babel_ai.analyzer.cos_sim") as mock_cos_sim:
+        # Mock cos_sim to return a value above 1.0
+        mock_cos_sim.return_value.item.return_value = 1.5
+
+        result = analyzer._analyze_semantic_similarity(outputs)
+
+        # Should be clamped to 1.0
+        assert result == 1.0
+        mock_cos_sim.assert_called_once()
+
+    # Test clamping values below -1.0
+    with patch("babel_ai.analyzer.cos_sim") as mock_cos_sim:
+        # Mock cos_sim to return a value below -1.0
+        mock_cos_sim.return_value.item.return_value = -1.8
+
+        result = analyzer._analyze_semantic_similarity(outputs)
+
+        # Should be clamped to -1.0
+        assert result == -1.0
+        mock_cos_sim.assert_called_once()
+
+    # Test multiple faulty values with different window sizes
+    outputs = ["First text", "Second text", "Third text", "Fourth text"]
+
+    with patch("babel_ai.analyzer.cos_sim") as mock_cos_sim:
+        # Mock cos_sim to return alternating faulty values
+        mock_cos_sim.return_value.item.side_effect = [2.5, -3.0, 0.5]
+
+        result = analyzer._analyze_semantic_similarity(outputs, window_size=3)
+
+        # Should average the clamped values: (1.0 + (-1.0) + 0.5) / 3 = 0.5/3
+        expected_avg = (1.0 + (-1.0) + 0.5) / 3
+        assert result == pytest.approx(expected_avg, rel=1e-6)
+        assert mock_cos_sim.call_count == 3
+
+
+def test_semantic_similarity_clamping_with_logging(analyzer, caplog):
+    """Test that clamping logs appropriate warning messages."""
+    outputs = ["The quick brown fox", "A fast brown dog"]
+
+    with patch("babel_ai.analyzer.cos_sim") as mock_cos_sim:
+        # Mock cos_sim to return a value above 1.0
+        mock_cos_sim.return_value.item.return_value = 2.3
+
+        with caplog.at_level(logging.DEBUG):
+            result = analyzer._analyze_semantic_similarity(outputs)
+
+            # Check that warning was logged
+            assert "Cosine similarity is 2.3" in caplog.text
+            assert "Similarity will be clamped to [-1, 1]" in caplog.text
+            assert "Clamped cosine similarity: 1.0" in caplog.text
+
+            # Should be clamped to 1.0
+            assert result == 1.0
+
+
 def test_analyze_full(analyzer):
     """Test the full analysis pipeline."""
     outputs = ["The quick brown fox", "A fast brown fox", "A lazy dog"]
@@ -198,7 +260,7 @@ def test_token_perplexity_single_token(analyzer, caplog):
         result = analyzer._analyze_token_perplexity(text)
         assert (
             "Input text has only one token. Perplexity calculation "
-            "requires at least two tokens. Returning max perplexity."
+            "requires at least two tokens. Returning empty tensor list."
         ) in caplog.text
 
     assert result == float("inf")
@@ -295,3 +357,47 @@ def test_analyze_window_size_one_equivalent_to_direct():
     # When analyze_window=1, window similarity should equal direct similarity
     assert result.lexical_similarity == result.lexical_similarity_window
     assert result.semantic_similarity == result.semantic_similarity_window
+
+
+def test_text_to_tokenizer_encoding_normal_text(analyzer):
+    """Test _text_to_tokenizer_encoding with normal multi-token text."""
+    text = "The quick brown fox jumps over the lazy dog"
+    result = analyzer._text_to_tokenizer_encoding(text)
+
+    assert len(result) == 1
+    assert "input_ids" in result[0]
+    assert result[0]["input_ids"].shape[1] >= 2  # Multiple tokens
+
+
+def test_text_to_tokenizer_encoding_single_token(analyzer):
+    """Test _text_to_tokenizer_encoding with single token input."""
+    text = "hello"
+    result = analyzer._text_to_tokenizer_encoding(text)
+
+    assert len(result) == 0  # Should return empty list for single token
+
+
+def test_text_to_tokenizer_encoding_long_text_splitting(analyzer):
+    """Test _text_to_tokenizer_encoding splits long text appropriately."""
+    # Create a very long text that exceeds max context length
+    # GPT-2 typically has max_position_embeddings of 1024
+    long_text = " ".join(["word"] * 2000)  # Much longer than 1024 tokens
+
+    with patch.object(
+        analyzer,
+        "_text_to_tokenizer_encoding",
+        wraps=analyzer._text_to_tokenizer_encoding,
+    ) as mock_method:
+        result = analyzer._text_to_tokenizer_encoding(long_text)
+
+        # Should have called the method multiple
+        # times due to recursive splitting
+        assert mock_method.call_count > 1
+
+        # Should return multiple BatchEncoding objects
+        assert len(result) >= 2
+
+        # Each result should be a proper BatchEncoding with input_ids
+        for encoding in result:
+            assert "input_ids" in encoding
+            assert encoding["input_ids"].shape[1] >= 2  # Multi-token chunks

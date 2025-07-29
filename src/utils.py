@@ -80,7 +80,7 @@ def load_yaml_config(config_type: Type[T], config_path: str | Path) -> T:
     # Create and validate the configuration object
     config = config_type(**yaml_data)
 
-    logger.info(
+    logger.debug(
         f"Successfully loaded {config_type.__name__} from {config_path}"
     )
     return config

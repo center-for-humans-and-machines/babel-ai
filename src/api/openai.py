@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 from api.enums import OpenAIModels
+from models.api import LLMResponse
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -19,6 +20,8 @@ api_key = os.getenv("OPENAI_API_KEY")
 # Create OpenAI client
 CLIENT = OpenAI(api_key=api_key)
 
+logger.info("Initializing OpenAI API client.")
+
 
 def openai_request(
     messages: list,
@@ -28,7 +31,7 @@ def openai_request(
     presence_penalty: float = 0.0,
     top_p: float = 1.0,
     max_tokens: Optional[int] = None,
-) -> str:
+) -> LLMResponse:
     """
     Send a request to the OpenAI API using the specified GPT-4 model.
 
@@ -42,13 +45,14 @@ def openai_request(
         max_tokens: Max tokens in response
 
     Returns:
-        The generated text response.
+        LLMResponse with content and token counts
     """
     logger.info(
         f"Sending request to OpenAI API with model {model.value}, "
         f"temperature {temperature}, max_tokens {max_tokens}"
     )
-    logger.debug(f"Messages: {messages}")
+    for msg in messages:
+        logger.debug(f"Message: {msg['role']}: {msg['content'][:50]}")
     logger.debug(
         f"Generation parameters: "
         f"temperature {temperature}, "
@@ -70,8 +74,18 @@ def openai_request(
         )
         content = response.choices[0].message.content
         logger.info("Successfully received response from OpenAI API")
-        logger.debug(f"Response: {content}")
-        return content
+        logger.debug(f"Response: {content[:50]}")
+
+        # Extract content and token counts
+        input_tokens = response.usage.prompt_tokens
+        output_tokens = response.usage.completion_tokens
+
+        # Return LLMResponse object
+        return LLMResponse(
+            content=content,
+            input_token_count=input_tokens,
+            output_token_count=output_tokens,
+        )
 
     except Exception as e:
         logger.error(f"Error in OpenAI API request: {str(e)}")

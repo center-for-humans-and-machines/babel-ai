@@ -5,7 +5,7 @@ import logging
 import uuid
 from typing import Dict, Generator, List
 
-from api.llm_interface import generate_response
+from api.llm_interface import LLMInterface
 from models import AgentConfig
 
 logger = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ class Agent:
 
         logger.debug(f"Agent {self.id} final messages: {final_messages}")
 
-        return generate_response(
+        return LLMInterface.generate_response(
             messages=final_messages,
             provider=self.provider,
             model=self.model,
@@ -99,7 +99,7 @@ class Agent:
         Define a msg tree from the incoming messages,
         fitting the agents model type.
         """
-        logger.info("Defining message tree roles.")
+        logger.debug("Defining message tree roles.")
         new_messages = []
         for i, message in enumerate(reversed(messages)):
             role = "user" if i % 2 == 0 else "assistant"
@@ -112,7 +112,7 @@ class Agent:
         Define a prompt from the incoming messages,
         fitting the agents model type.
         """
-        logger.info("Defining prompt.")
+        logger.debug("Defining prompt.")
         raise NotImplementedError(
             """Not implemented we need to wait
             for Bram to implement base models."""

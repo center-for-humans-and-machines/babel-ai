@@ -9,7 +9,7 @@ import torch
 import torch.nn.functional as F
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import cos_sim
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, BatchEncoding
 
 from babel_ai.enums import AnalyzerType
 from models import AnalysisResult
@@ -49,6 +49,9 @@ class SimilarityAnalyzer(Analyzer):
     token_model = AutoModelForCausalLM.from_pretrained(token_model_name)
     tokenizer = AutoTokenizer.from_pretrained(token_model_name)
 
+    # Configure tokenizer padding token (GPT-2 doesn't have one by default)
+    tokenizer.pad_token = tokenizer.eos_token
+
     max_context_length = token_model.config.max_position_embeddings
 
     token_model.eval()
@@ -87,7 +90,7 @@ class SimilarityAnalyzer(Analyzer):
             Tuple of (word_count, unique_word_count, coherence_score)
         """
         logger.info("Analyzing word stats")
-        logger.debug(f"Word stats analysis text: {text[:10]}")
+        logger.debug(f"Word stats analysis text: {text[:50]}")
 
         if not text:
             logger.warning("Input text is empty.")
@@ -120,10 +123,10 @@ class SimilarityAnalyzer(Analyzer):
             Average Jaccard similarity score or None if no comparison possible
         """
         logger.info("Analyzing lexical similarity")
-        logger.info(f"Number of input texts: {len(outputs)}")
+        logger.debug(f"Number of input texts: {len(outputs)}")
         logger.debug(
             f"Lexical similarity analysis input: "
-            f"{[o[:10] for o in outputs]}"
+            f"{[o[:50] for o in outputs]}"
         )
         logger.debug(f"Lexical similarity analysis window_size: {window_size}")
 
@@ -136,7 +139,7 @@ class SimilarityAnalyzer(Analyzer):
             return None
 
         current_text = outputs[-1]
-        logger.debug(f"Current text: {current_text[:10]}")
+        logger.debug(f"Current text: {current_text[:50]}")
         current_words = set(current_text.lower().split())
 
         # Calculate similarities within the specified window
@@ -147,7 +150,7 @@ class SimilarityAnalyzer(Analyzer):
         for i in range(start_idx, len(outputs) - 1):
             compare_text = outputs[i]
             compare_words = set(compare_text.lower().split())
-            logger.debug(f"Comparing with {compare_text[:10]}")
+            logger.debug(f"Comparing with {compare_text[:50]}")
 
             if compare_words and current_words:
                 intersection = current_words.intersection(compare_words)
@@ -155,9 +158,9 @@ class SimilarityAnalyzer(Analyzer):
                 similarity = len(intersection) / len(union)
                 similarities.append(similarity)
 
-            logger.debug(f"Intersection: {intersection}")
-            logger.debug(f"Union: {union}")
-            logger.debug(f"Similarity: {similarity}")
+                logger.debug(f"Intersection: {intersection}")
+                logger.debug(f"Union: {union}")
+                logger.debug(f"Similarity: {similarity}")
 
         if similarities:
             logger.debug(f"Similarities: {similarities}")
@@ -182,10 +185,10 @@ class SimilarityAnalyzer(Analyzer):
             Average cosine similarity score or None if no comparison possible
         """
         logger.info("Analyzing semantic similarity")
-        logger.info(f"Number of input texts: {len(outputs)}")
+        logger.debug(f"Number of input texts: {len(outputs)}")
         logger.debug(
             f"Semantic similarity analysis input: "
-            f"{[o[:10] for o in outputs]}"
+            f"{[o[:50] for o in outputs]}"
         )
         logger.debug(
             f"Semantic similarity analysis window_size: {window_size}"
@@ -201,7 +204,7 @@ class SimilarityAnalyzer(Analyzer):
             return None
 
         current_text = outputs[-1]
-        logger.debug(f"Current text: {current_text[:10]}")
+        logger.debug(f"Current text: {current_text[:50]}")
         current_embedding = self.semantic_model.encode(
             current_text, convert_to_tensor=True
         )
@@ -213,22 +216,25 @@ class SimilarityAnalyzer(Analyzer):
 
         for i in range(start_idx, len(outputs) - 1):
             compare_text = outputs[i]
-            logger.debug(f"Comparing with {compare_text[:10]}")
+            logger.debug(f"Comparing with {compare_text[:50]}")
 
             compare_embedding = self.semantic_model.encode(
                 compare_text, convert_to_tensor=True
             )
 
-            logger.info("Calculating cosine similarity")
+            logger.debug("Calculating cosine similarity")
             similarity = cos_sim(current_embedding, compare_embedding).item()
             logger.debug(f"Cosine similarity: {similarity}")
-            if similarity not in [-1.0, 1.0]:
+            if similarity < -1.0 or similarity > 1.0:
                 logger.warning(
-                    "Cosine similarity is not -1.0 or 1.0. "
+                    f"Cosine similarity is {similarity}, "
+                    "which is not -1.0 or 1.0. "
                     "Similarity will be clamped to [-1, 1]."
                 )
-            similarity = max(-1.0, min(1.0, similarity))  # Clamp to [-1, 1]
-            logger.debug(f"Clamped cosine similarity: {similarity}.")
+                similarity = max(
+                    -1.0, min(1.0, similarity)
+                )  # Clamp to [-1, 1]
+                logger.debug(f"Clamped cosine similarity: {similarity}.")
             similarities.append(similarity)
 
             # Log warning for the direct comparison case (window_size=1)
@@ -236,8 +242,8 @@ class SimilarityAnalyzer(Analyzer):
                 logger.warning(
                     f"Semantic similarity is <= 0. "
                     f"Similarity: {similarity} "
-                    f"Current text: {current_text} "
-                    f"Previous text: {compare_text} "
+                    f"Current text: {current_text[:50]} "
+                    f"Previous text: {compare_text[:50]} "
                 )
 
         if similarities:
@@ -260,83 +266,128 @@ class SimilarityAnalyzer(Analyzer):
             Average token perplexity or None if calculation not possible
         """
         logger.info("Analyzing token perplexity")
-        logger.debug(f"Token perplexity analysis text: {text[:10]}")
+        logger.debug(f"Token perplexity analysis text: {text[:50]}")
 
         # Ensure input text is not empty
         if not text:
             logger.warning("Input text is empty. Returning max perplexity.")
             return float("inf")
 
-        # Tokenize the text
-        inputs = self.tokenizer(text, return_tensors="pt")
-        input_ids = inputs["input_ids"]
+        tokenized_inputs = self._text_to_tokenizer_encoding(text)
 
-        # Check if we have enough tokens for perplexity calculation
-        if input_ids.shape[1] < 2:
-            logger.warning(
-                "Input text has only one token. Perplexity calculation "
-                "requires at least two tokens. Returning max perplexity."
-            )
+        perplexities = []
+
+        for inputs in tokenized_inputs:
+            logger.debug(f"Tokenized input: {inputs}")
+
+            input_ids = inputs["input_ids"]
+
+            # Validate token IDs are within vocabulary range
+            vocab_size = self.token_model.config.vocab_size
+
+            if torch.any(input_ids >= vocab_size):
+                logger.warning(
+                    f"Token IDs exceed vocabulary size: {vocab_size}"
+                )
+                continue
+
+            # Get model predictions
+            with torch.no_grad():
+                outputs_model = self.token_model(**inputs)
+
+                logger.debug("Computing logits")
+                logits = outputs_model.logits[
+                    0, :-1, :
+                ]  # Shape: [seq_len-1, vocab_size]
+
+                logger.debug("Getting target tokens")
+                # Get target tokens (shifted by 1)
+                target_ids = input_ids[0, 1:]
+
+                logger.debug("Calculating log probabilities")
+                # Calculate log probabilities
+                log_probs = F.log_softmax(logits, dim=-1)
+                token_log_probs = log_probs[
+                    torch.arange(len(target_ids)), target_ids
+                ]
+
+                logger.debug("Calculating average log probability")
+                # Calculate perplexity: exp(-mean(log_probs))
+                avg_log_prob = token_log_probs.mean().item()
+
+                logger.debug("Calculating perplexity by exp(-avg_log_prob)")
+                perplexity = np.exp(-avg_log_prob)
+
+                logger.debug(f"Perplexity: {perplexity}")
+                perplexities.append(perplexity)
+
+        if perplexities:
+            return np.mean(perplexities)
+        else:
+            logger.warning("No valid perplexities from tokenized inputs")
             return float("inf")
 
-        if len(text) > self.max_context_length:
+    def _text_to_tokenizer_encoding(self, text: str) -> List[BatchEncoding]:
+        """
+        Convert text to a list of BatchEncoding objects
+        within model context length.
+
+        Recursively splits long text into smaller chunks that fit within the
+        model's maximum context length. Each chunk is tokenized and returned
+        as a BatchEncoding.
+
+        Args:
+            text: Input text to tokenize and split if needed
+
+        Returns:
+            List[BatchEncoding]: List of tokenized
+                text chunks, each within the model's
+                context length limit
+        """
+        logger.info("Converting text to tokenizer encoding")
+        logger.debug(f"Text: {text[:50]}")
+
+        encoding_list = []
+
+        # Tokenize the text with proper truncation
+        inputs = self.tokenizer(
+            text,
+            return_tensors="pt",
+            truncation=True,
+            max_length=self.max_context_length,
+            padding=False,
+        )
+        input_ids = inputs["input_ids"]
+        logger.debug(f"Input IDs: {input_ids.tolist()}")
+
+        # Return the tensor if the length is fitting
+        if input_ids.shape[1] >= self.max_context_length:
+            # Split text by character length approximation
             logger.warning(
-                f"Input text exceeds maximum context length of "
-                f"{self.max_context_length} tokens. Splitting into chunks."
+                f"Input text has {input_ids.shape[1]} tokens, "
+                "which exceeds the maximum context length of "
+                f"{self.max_context_length}. "
+                f"Splitting into two halves."
             )
-            first_block = text[: self.max_context_length]
-            second_block = text[self.max_context_length :]
-            logger.debug(f"First block length: {len(first_block)}")
-            logger.debug(f"Second block length: {len(second_block)}")
+            mid_point = len(text) // 2
+            first_half = text[:mid_point]
+            second_half = text[mid_point:]
 
-            perplexities = []
-            for i, block in enumerate([first_block, second_block]):
-                logger.info(f"Analyzing block {i}")
-                if block.strip():  # Only analyze non-empty blocks
-                    result = self._analyze_token_perplexity(block)
+            encoding_list.extend(self._text_to_tokenizer_encoding(first_half))
+            encoding_list.extend(self._text_to_tokenizer_encoding(second_half))
 
-                    logger.debug(f"Perplexity for block {i}: {result}")
-                    if result is not None:
-                        perplexities.append(result)
-                    else:
-                        logger.warning(
-                            "Token perplexity analysis "
-                            "failed for empty block."
-                        )
-            logger.debug(f"Perplexities: {perplexities}")
-            logger.debug(f"Average perplexity: {np.mean(perplexities)}")
-            return np.mean(perplexities) if perplexities else None
+        elif input_ids.shape[1] < 2:
+            logger.warning(
+                "Input text has only one token. Perplexity calculation "
+                "requires at least two tokens. Returning empty tensor list."
+            )
+        else:
+            encoding_list.append(inputs)
 
-        # Get model predictions
-        with torch.no_grad():
-            outputs_model = self.token_model(**inputs)
-
-            logger.debug("Computing logits")
-            logits = outputs_model.logits[
-                0, :-1, :
-            ]  # Shape: [seq_len-1, vocab_size]
-
-            logger.debug("Getting target tokens")
-            # Get target tokens (shifted by 1)
-            target_ids = input_ids[0, 1:]
-
-            logger.debug("Calculating log probabilities")
-            # Calculate log probabilities
-            log_probs = F.log_softmax(logits, dim=-1)
-            token_log_probs = log_probs[
-                torch.arange(len(target_ids)), target_ids
-            ]
-
-            logger.debug("Calculating average log probability")
-            # Calculate perplexity: exp(-mean(log_probs))
-            avg_log_prob = token_log_probs.mean().item()
-
-            logger.debug("Calculating perplexity by exp(-avg_log_prob)")
-            perplexity = np.exp(-avg_log_prob)
-
-            logger.debug(f"Perplexity: {perplexity}")
-
-        return perplexity
+        logger.debug(
+            f"Returning encoding list with {len(encoding_list)} elements."
+        )
+        return encoding_list
 
     def analyze(self, outputs: List[str]) -> AnalysisResult:
         """Orchestrate different analysis methods on the outputs.
