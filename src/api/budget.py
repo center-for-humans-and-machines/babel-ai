@@ -43,18 +43,6 @@ class BudgetTracker:
                 # $0.003 per 1K/$30.00 per 1M output tokens
                 "output": 0.003,
             },
-            OpenAIModels.O3_2025_04_16: {
-                # $0.002 per 1K/$2.00 per 1M input tokens
-                "input": 0.002,
-                # $0.008 per 1K/$8.00 per 1M output tokens
-                "output": 0.008,
-            },
-            OpenAIModels.O4_MINI_2025_04_16: {
-                # $0.0011 per 1K/$1.10 per 1M input tokens
-                "input": 0.0011,
-                # $0.0044 per 1K/$4.40 per 1M output tokens
-                "output": 0.0044,
-            },
         },
         Provider.AZURE: {
             AzureModels.GPT4O_2024_08_06: {
