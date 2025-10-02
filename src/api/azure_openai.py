@@ -61,7 +61,7 @@ def azure_openai_request(
         "max_tokens": max_tokens,
     }
 
-    if model == AzureModels.O4_MINI_2025_04_16:
+    if model in [AzureModels.O4_MINI_2025_04_16, AzureModels.O3_2025_04_16]:
         # O4-mini model does not support the same parameters
         # as older models. Make adjustments
         request_params["temperature"] = 1.0
@@ -70,7 +70,7 @@ def azure_openai_request(
         )
         request_params.pop("top_p")
         logger.warning(
-            "O4-mini model does not support "
+            "O4-mini or O3 model does not support "
             "temperature, top_p, or max_tokens. "
             "The only allowed value for temperature is 1.0. "
             "Removing top_p and max_tokens. "

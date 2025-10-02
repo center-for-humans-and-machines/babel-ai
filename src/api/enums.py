@@ -137,6 +137,9 @@ class AzureModels(Enum):
 
     Available models:
         GPT4O_2024_08_06: GPT-4 Optimized model (August 2024)
+        O3_2025_04_16: O3 model (April 2025)
+        O3: O3 model (April 2025)
+        O4_MINI_2025_04_16: O4 Mini model (April 2025)
 
     Example:
         >>> model = AzureModel.GPT4O_2024_08_06
@@ -144,7 +147,7 @@ class AzureModels(Enum):
     """
 
     GPT4O_2024_08_06 = "gpt-4o-2024-08-06"
-    O3_2025_04_16 = "o3-2025-04-16"
+    O3_2025_04_16 = "o3"
     O4_MINI_2025_04_16 = "o4-mini"
 
 
