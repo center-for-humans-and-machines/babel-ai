@@ -2,11 +2,13 @@
 
 from .data_utils import (
     ANALYSIS_METRICS,
+    aggregate_metric_across_experiments,
+    compute_normalized_metrics,
+    compute_relative_iteration_from_first_llm,
     list_experiment_csvs,
     load_experiment_rows,
     merge_metric_across_experiments,
-    aggregate_metric_across_experiments,
-    compute_normalized_metrics,
+    merge_metric_aligned_from_first_llm,
 )
 
 __all__ = [
@@ -16,5 +18,6 @@ __all__ = [
     "merge_metric_across_experiments",
     "aggregate_metric_across_experiments",
     "compute_normalized_metrics",
+    "compute_relative_iteration_from_first_llm",
+    "merge_metric_aligned_from_first_llm",
 ]
-

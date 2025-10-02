@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -134,9 +134,7 @@ def load_experiment_rows(csv_path: str) -> List[ExperimentRow]:
     required = {"iteration", "timestamp", "role", "content", "analysis"}
     missing = sorted(required - set(df.columns))
     if missing:
-        raise ValueError(
-            f"CSV missing required columns {missing}: {csv_path}"
-        )
+        raise ValueError(f"CSV missing required columns {missing}: {csv_path}")
 
     experiment_dir = os.path.dirname(csv_path)
     rows: List[ExperimentRow] = []
@@ -147,7 +145,9 @@ def load_experiment_rows(csv_path: str) -> List[ExperimentRow]:
             continue
 
         metrics = _safe_parse_analysis(str(r.get("analysis", "")))
-        values = {m: _to_optional_float(metrics.get(m)) for m in ANALYSIS_METRICS}
+        values = {
+            m: _to_optional_float(metrics.get(m)) for m in ANALYSIS_METRICS
+        }
 
         rows.append(
             ExperimentRow(
@@ -254,9 +254,7 @@ def aggregate_metric_across_experiments(
     # Optional rolling by iteration per experiment before aggregating
     df = merged.copy()
     if window and window > 1:
-        df = df.sort_values(["experiment", "iteration"]).reset_index(
-            drop=True
-        )
+        df = df.sort_values(["experiment", "iteration"]).reset_index(drop=True)
         df["value"] = (
             df.groupby("experiment", group_keys=False)["value"]
             .apply(lambda s: s.rolling(window, min_periods=1).mean())
@@ -264,8 +262,7 @@ def aggregate_metric_across_experiments(
         )
 
     agg = (
-        df.groupby(["metric", "iteration"])  # type: ignore[arg-type]
-        ["value"]
+        df.groupby(["metric", "iteration"])["value"]  # type: ignore[arg-type]
         .apply(_compute_ci)
         .reset_index()
     )
@@ -282,9 +279,103 @@ def aggregate_metric_across_experiments(
     return agg
 
 
-def compute_normalized_metrics(
-    df: pd.DataFrame, metric: str
+# ---- Alignment from first LLM-only generation (uuid4 agent_id) ----
+
+
+def _is_uuid4_like(text: Optional[str]) -> bool:
+    if text is None:
+        return False
+    s = str(text).strip()
+    if len(s) < 36:
+        return False
+    # very light-weight check for uuid4 pattern 8-4-4-4-12 hex
+    import re
+
+    return bool(
+        re.fullmatch(
+            r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",  # noqa: E501
+            s,
+        )
+    )
+
+
+def compute_relative_iteration_from_first_llm(
+    rows: Sequence[ExperimentRow],
 ) -> pd.DataFrame:
+    """Return a DataFrame with columns of
+    `_rows_to_dataframe` plus `rel_iter_from_llm`.
+
+    The `rel_iter_from_llm` is 0 at the first row
+    whose `agent_id` looks like a uuid4
+    (assumed to be LLM-only generation), negative before, positive after.
+    If no such row exists, the column will be NaN.
+    """
+
+    df = _rows_to_dataframe(rows)
+    if df.empty:
+        df["rel_iter_from_llm"] = np.nan
+        return df
+
+    # Locate first uuid4-like agent_id
+    first_idx: Optional[int] = None
+    for i, val in enumerate(df.get("agent_id", [])):
+        if _is_uuid4_like(val):
+            first_idx = i
+            break
+
+    if first_idx is None:
+        df["rel_iter_from_llm"] = np.nan
+        return df
+
+    first_iter = int(df.iloc[first_idx]["iteration"])  # type: ignore[index]
+    df["rel_iter_from_llm"] = df["iteration"].astype(int) - first_iter
+    return df
+
+
+def merge_metric_aligned_from_first_llm(
+    csv_paths: Sequence[str], metric: str
+) -> pd.DataFrame:
+    """Create long DataFrame using relative iteration from first LLM-only gen.
+
+    Columns: ["experiment", "rel_iter_from_llm", "metric", "value"].
+    """
+
+    if metric not in ANALYSIS_METRICS:
+        raise ValueError(f"Unknown metric: {metric}")
+
+    frames: List[pd.DataFrame] = []
+    for p in csv_paths:
+        rows = load_experiment_rows(p)
+        df = compute_relative_iteration_from_first_llm(rows)
+        if metric not in df.columns:
+            continue
+        if df["rel_iter_from_llm"].isna().all():
+            continue
+        exp_name = os.path.basename(os.path.dirname(p))
+        frames.append(
+            pd.DataFrame(
+                {
+                    "experiment": exp_name,
+                    "rel_iter_from_llm": df["rel_iter_from_llm"].to_numpy(),
+                    "metric": metric,
+                    "value": df[metric].to_numpy(dtype=float),
+                }
+            )
+        )
+
+    if not frames:
+        return pd.DataFrame(
+            columns=["experiment", "rel_iter_from_llm", "metric", "value"]
+        )
+
+    merged = pd.concat(frames, ignore_index=True)
+    merged.sort_values(
+        ["metric", "experiment", "rel_iter_from_llm"], inplace=True
+    )
+    return merged
+
+
+def compute_normalized_metrics(df: pd.DataFrame, metric: str) -> pd.DataFrame:
     """Add a z-normalized version of the metric per experiment.
 
     Returns a copy with extra column f"{metric}_z".
@@ -296,9 +387,7 @@ def compute_normalized_metrics(
     result = df.copy()
     col = metric
     zcol = f"{metric}_z"
-    result[zcol] = (
-        result.groupby("experiment")[col]
-        .transform(lambda s: (s - s.mean()) / (s.std(ddof=1) or np.nan))
+    result[zcol] = result.groupby("experiment")[col].transform(
+        lambda s: (s - s.mean()) / (s.std(ddof=1) or np.nan)
     )
     return result
-
