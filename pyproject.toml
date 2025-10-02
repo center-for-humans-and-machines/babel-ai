@@ -22,6 +22,7 @@ sentence-transformers = "^3.4.1"
 pytest-asyncio = "^1.0.0"
 reportlab = "^4.4.2"
 coverage = "^7.9.2"
+pandas = "^2.2.3"
 
 
 [tool.poetry.group.dev.dependencies]
