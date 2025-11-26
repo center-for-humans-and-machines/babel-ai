@@ -194,6 +194,9 @@ class AgentConfig(BaseModel):
         top_p (Optional[float]): Nucleus sampling parameter (0.0-1.0). Only
             consider tokens with cumulative probability up to top_p. Default:
             None
+        forgetting (Optional[int]): Number of past messages to use when
+            generating responses. If None, uses all messages. If set, only
+            the last N messages will be considered. Default: None
 
     Example:
         >>> config = AgentConfig(
@@ -217,6 +220,11 @@ class AgentConfig(BaseModel):
     frequency_penalty: Optional[float] = Field(default=0.0, ge=-2.0, le=2.0)
     presence_penalty: Optional[float] = Field(default=0.0, ge=-2.0, le=2.0)
     top_p: Optional[float] = Field(default=1.0, ge=0.0, le=1.0)
+    forgetting: Optional[int] = Field(
+        default=None,
+        description="Number of past messages to use (None = all)",
+        ge=1,
+    )
 
     @field_validator("model", mode="after")
     def validate_model_provider_compatibility(

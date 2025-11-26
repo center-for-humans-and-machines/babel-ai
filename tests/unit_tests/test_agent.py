@@ -167,32 +167,32 @@ class TestAgent:
             top_p=1.0,
         )
 
-    def test_define_msg_tree_empty_list(self):
+    def test_define_msg_tree_empty_list(self, sample_agent_config):
         """Test _define_msg_tree with empty list input."""
-        result = Agent._define_msg_tree([])
-        result_list = list(result)  # Convert iterator to list
+        agent = Agent(sample_agent_config)
+        result = agent._define_msg_tree([])
 
-        assert result_list == []
+        assert result == []
 
-    def test_define_msg_tree_single_message(self):
+    def test_define_msg_tree_single_message(self, sample_agent_config):
         """Test _define_msg_tree with single message."""
+        agent = Agent(sample_agent_config)
         messages = [{"content": "Hello world"}]
-        result = Agent._define_msg_tree(messages)
-        result_list = list(result)  # Convert iterator to list
+        result = agent._define_msg_tree(messages)
 
         expected = [{"role": "user", "content": "Hello world"}]
-        assert result_list == expected
+        assert result == expected
 
-    def test_define_msg_tree_four_messages(self):
+    def test_define_msg_tree_four_messages(self, sample_agent_config):
         """Test _define_msg_tree with four messages."""
+        agent = Agent(sample_agent_config)
         messages = [
             {"content": "Message one"},
             {"content": "Message two"},
             {"content": "Message three"},
             {"content": "Message four"},
         ]
-        result = Agent._define_msg_tree(messages)
-        result_list = list(result)  # Convert iterator to list
+        result = agent._define_msg_tree(messages)
 
         expected = [
             {"role": "assistant", "content": "Message one"},
@@ -200,17 +200,17 @@ class TestAgent:
             {"role": "assistant", "content": "Message three"},
             {"role": "user", "content": "Message four"},
         ]
-        assert result_list == expected
+        assert result == expected
 
-    def test_define_msg_tree_ignores_original_roles(self):
+    def test_define_msg_tree_ignores_original_roles(self, sample_agent_config):
         """Test that _define_msg_tree ignores original role keys."""
+        agent = Agent(sample_agent_config)
         messages = [
             {"role": "user", "content": "First message"},
             {"role": "assistant", "content": "Second message"},
             {"role": "system", "content": "Third message"},
         ]
-        result = Agent._define_msg_tree(messages)
-        result_list = list(result)  # Convert iterator to list
+        result = agent._define_msg_tree(messages)
 
         # Original roles should be ignored, new roles assigned based on
         # position
@@ -219,20 +219,61 @@ class TestAgent:
             {"role": "assistant", "content": "Second message"},
             {"role": "user", "content": "Third message"},
         ]
-        assert result_list == expected
+        assert result == expected
 
-    def test_define_msg_tree_with_extra_keys(self):
+    def test_define_msg_tree_with_extra_keys(self, sample_agent_config):
         """Test _define_msg_tree with messages containing extra keys."""
+        agent = Agent(sample_agent_config)
         messages = [
             {"content": "First", "timestamp": "2023-01-01", "id": 1},
             {"content": "Second", "metadata": {"key": "value"}},
         ]
-        result = Agent._define_msg_tree(messages)
-        result_list = list(result)  # Convert iterator to list
+        result = agent._define_msg_tree(messages)
 
         # Should only have role and content keys
-        for msg in result_list:
+        for msg in result:
             assert set(msg.keys()) == {"role", "content"}
 
-        assert result_list[0]["content"] == "First"
-        assert result_list[1]["content"] == "Second"
+        assert result[0]["content"] == "First"
+        assert result[1]["content"] == "Second"
+
+    def test_define_msg_tree_with_forgetting(self):
+        """Test _define_msg_tree with forgetting configured."""
+        config = AgentConfig(
+            provider=Provider.OPENAI,
+            model=OpenAIModels.GPT4_1106_PREVIEW,
+            forgetting=2,
+        )
+        agent = Agent(config)
+        messages = [
+            {"content": "Message one"},
+            {"content": "Message two"},
+            {"content": "Message three"},
+            {"content": "Message four"},
+        ]
+        result = agent._define_msg_tree(messages)
+
+        # Should only use last 2 messages
+        expected = [
+            {"role": "assistant", "content": "Message three"},
+            {"role": "user", "content": "Message four"},
+        ]
+        assert result == expected
+
+    def test_define_msg_tree_with_forgetting_none(self, sample_agent_config):
+        """Test _define_msg_tree with forgetting=None uses all messages."""
+        agent = Agent(sample_agent_config)
+        messages = [
+            {"content": "Message one"},
+            {"content": "Message two"},
+            {"content": "Message three"},
+        ]
+        result = agent._define_msg_tree(messages)
+
+        # Should use all messages when forgetting is None
+        expected = [
+            {"role": "user", "content": "Message one"},
+            {"role": "assistant", "content": "Message two"},
+            {"role": "user", "content": "Message three"},
+        ]
+        assert result == expected

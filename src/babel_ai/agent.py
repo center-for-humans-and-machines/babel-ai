@@ -91,20 +91,32 @@ class Agent:
             top_p=self.config.top_p,
         )
 
-    @staticmethod
     def _define_msg_tree(
-        messages: List[Dict[str, str]]
+        self, messages: List[Dict[str, str]]
     ) -> List[Dict[str, str]]:
         """
         Define a msg tree from the incoming messages,
         fitting the agents model type.
+
+        Applies forgetting logic if configured, limiting to the last N
+        messages before processing.
         """
+        # Apply forgetting logic if configured
+        if self.config.forgetting is not None:
+            original_count = len(messages)
+            messages = messages[-self.config.forgetting :]
+            logger.debug(
+                f"Agent {self.id} applying forgetting: "
+                f"using last {self.config.forgetting} of "
+                f"{original_count} messages"
+            )
+
         logger.debug("Defining message tree roles.")
         new_messages = []
         for i, message in enumerate(reversed(messages)):
             role = "user" if i % 2 == 0 else "assistant"
             new_messages.append({"role": role, "content": message["content"]})
-        return reversed(new_messages)
+        return list(reversed(new_messages))
 
     @staticmethod
     def _define_prompt(messages: List[Dict[str, str]]) -> str:
