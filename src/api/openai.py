@@ -47,31 +47,46 @@ def openai_request(
     Returns:
         LLMResponse with content and token counts
     """
+    request_params = {
+        "model": model.value,
+        "messages": messages,
+        "temperature": temperature,
+        "frequency_penalty": frequency_penalty,
+        "presence_penalty": presence_penalty,
+        "top_p": top_p,
+        "max_tokens": max_tokens,
+    }
+    if model.uses_new_parameters():
+        # O4-mini model does not support the same parameters
+        # as older models. Make adjustments
+        request_params["temperature"] = 1.0
+        request_params["max_completion_tokens"] = request_params.pop(
+            "max_tokens"
+        )
+        request_params.pop("top_p")
+        logger.warning(
+            f"{model.value} model does not support "
+            "temperature, top_p, or max_tokens. "
+            "The only allowed value for temperature is 1.0. "
+            "Removing top_p and max_tokens. "
+            "Setting temperature to 1.0."
+        )
+
     logger.info(
-        f"Sending request to OpenAI API with model {model.value}, "
-        f"temperature {temperature}, max_tokens {max_tokens}"
+        "Sending request to OpenAI API "
+        f"with model {request_params['model']}, "
+        f"temperature {request_params['temperature']}, "
     )
+    if "max_completion_tokens" in request_params:
+        logger.info(f"max_tokens {request_params['max_completion_tokens']}")
+    elif "max_tokens" in request_params:
+        logger.info(f"max_tokens {request_params['max_tokens']}")
+
     for msg in messages:
         logger.debug(f"Message: {msg['role']}: {msg['content'][:50]}")
-    logger.debug(
-        f"Generation parameters: "
-        f"temperature {temperature}, "
-        f"frequency_penalty {frequency_penalty}, "
-        f"presence_penalty {presence_penalty}, "
-        f"top_p {top_p}, "
-        f"max_tokens {max_tokens}"
-    )
 
     try:
-        response = CLIENT.chat.completions.create(
-            model=model.value,
-            messages=messages,
-            temperature=temperature,
-            frequency_penalty=frequency_penalty,
-            presence_penalty=presence_penalty,
-            top_p=top_p,
-            max_tokens=max_tokens,
-        )
+        response = CLIENT.chat.completions.create(**request_params)
         content = response.choices[0].message.content
         logger.info("Successfully received response from OpenAI API")
         logger.debug(f"Response: {content[:50]}")
