@@ -99,13 +99,10 @@ class OpenAIModels(Enum):
 
     GPT4_1106_PREVIEW = "gpt-4-1106-preview"
     GPT4_0125_PREVIEW = "gpt-4-0125-preview"
-    GPT5_MINI_2025_08_07 = "gpt-5-mini-2025-08-07"
 
     def uses_new_parameters(self) -> bool:
         """Check if the model uses new parameters."""
-        return self in [
-            OpenAIModels.GPT5_MINI_2025_08_07,
-        ]
+        return self in []
 
 
 class OllamaModels(Enum):
