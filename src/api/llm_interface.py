@@ -91,6 +91,7 @@ class LLMInterface:
                 # Log token usage
                 logger.debug(
                     f"Request ID: {request_id}, "
+                    f"Response content: {llm_response.content[:50]}..."
                     f"Token usage - Input: {llm_response.input_token_count}, "
                     f"Output: {llm_response.output_token_count}"
                 )
@@ -117,6 +118,7 @@ class LLMInterface:
                     f"Successfully generated response on attempt "
                     f"{attempt + 1}"
                 )
+                logger.debug(f"Response: {llm_response.content}")
                 return llm_response.content
 
             except Exception as e:

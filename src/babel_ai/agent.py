@@ -3,6 +3,7 @@
 import itertools
 import logging
 import uuid
+from copy import deepcopy
 from typing import Dict, Generator, List
 
 from api.llm_interface import LLMInterface
@@ -55,6 +56,7 @@ class Agent:
             If a system_prompt is configured, it will be prepended as the
             first message with role 'system' to guide the agent's behavior.
         """
+        messages = deepcopy(messages)
         # Prepare messages with system prompt if configured
         logger.info(f"Generating response for agent {self.id}")
         logger.debug(f"Agent {self.id} messages: {messages}")

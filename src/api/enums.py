@@ -156,12 +156,14 @@ class AzureModels(Enum):
     GPT4O_2024_08_06 = "gpt-4o-2024-08-06"
     O3_2025_04_16 = "o3"
     O4_MINI_2025_04_16 = "o4-mini"
+    GPT5_MINI_2025_08_07 = "gpt-5-mini-2025-08-07"
 
     def uses_new_parameters(self) -> bool:
         """Check if the model uses new parameters."""
         return self in [
             AzureModels.O3_2025_04_16,
             AzureModels.O4_MINI_2025_04_16,
+            AzureModels.GPT5_MINI_2025_08_07,
         ]
 
 

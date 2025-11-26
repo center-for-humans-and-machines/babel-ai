@@ -962,6 +962,7 @@ class TestAgentMetric:
             "frequency_penalty": 0.0,
             "presence_penalty": 0.0,
             "top_p": 1.0,
+            "forgetting": None,
         }
 
 

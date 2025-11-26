@@ -87,7 +87,11 @@ def openai_request(
 
     try:
         response = CLIENT.chat.completions.create(**request_params)
-        content = response.choices[0].message.content
+
+        if model.uses_new_parameters():
+            content = response.choices[0].message.content.content[0].text
+        else:
+            content = response.choices[0].message.content
         logger.info("Successfully received response from OpenAI API")
         logger.debug(f"Response: {content[:50]}")
 

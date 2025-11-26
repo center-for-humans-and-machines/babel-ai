@@ -109,7 +109,7 @@ class TestBudgetTracker:
             expected_output_cost = (500 / 1000.0) * 0.0093953  # $0.00469765
             expected_total = expected_input_cost + expected_output_cost
             assert result["provider"] == "azure"
-            assert result["model"] == "azure-gpt-4o-2024-08-06"
+            assert result["model"] == "gpt-4o-2024-08-06"
             assert result["input_tokens"] == 1000
             assert result["output_tokens"] == 500
             assert result["total_cost"] == round(expected_total, 6)

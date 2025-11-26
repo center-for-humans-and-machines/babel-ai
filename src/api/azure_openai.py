@@ -99,7 +99,10 @@ def azure_openai_request(
         logger.debug(f"Response: {response.choices[0].message.content[:50]}")
 
         # Extract content and token counts
-        content = response.choices[0].message.content
+        if model.uses_new_parameters():
+            content = response.choices[0].message.content.content[0].text
+        else:
+            content = response.choices[0].message.content
         input_tokens = response.usage.prompt_tokens
         output_tokens = response.usage.completion_tokens
 
