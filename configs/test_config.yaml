@@ -4,9 +4,9 @@
 # Configuration for the fetcher
 fetcher_config:
   fetcher: "sharegpt"
-  data_path: "data/sharegpt_sample.json"
+  data_path: "data/human-ai_datasets/sharegpt_clean.json"
   min_messages: 2
-  max_messages: 10
+  max_messages: 4
 
 # Configuration for the analyzer
 analyzer_config:
@@ -16,7 +16,7 @@ analyzer_config:
 # List of agent configurations to use in the experiment
 agent_configs:
   - provider: "openai"
-    model: "gpt-4-1106-preview"
+    model: "gpt-4-0125-preview"
     system_prompt: "You are a helpful assistant participating in a
       conversation."
     temperature: 0.7
@@ -29,10 +29,10 @@ agent_configs:
 agent_selection_method: "round_robin"
 
 # Maximum number of conversation turns to run
-max_iterations: 50
+max_iterations: 10
 
 # Maximum total characters across all responses
 max_total_characters: 100000
 
 # Directory to save results (optional)
-output_dir: "results"
+output_dir: "data/test_results"

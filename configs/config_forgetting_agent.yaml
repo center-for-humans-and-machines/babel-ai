@@ -15,15 +15,14 @@ analyzer_config:
 
 # List of agent configurations to use in the experiment
 agent_configs:
-  - provider: "openai"
+  - provider: "azure"
     model: "gpt-5-mini-2025-08-07"
     system_prompt: "Continue the conversation in a coherent and interesting way."
     temperature: 0.7
-    max_tokens: 200
     frequency_penalty: 0.0
     presence_penalty: 0.0
     top_p: 1.0
-    forgetting: 4
+    forgetting: 2
 
 # Method for selecting which agent responds next
 agent_selection_method: "round_robin"
