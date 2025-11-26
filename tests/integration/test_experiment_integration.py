@@ -24,6 +24,7 @@ from models import (
     FetcherConfig,
     FetcherMetric,
 )
+from models.api import LLMResponse
 
 
 @pytest.fixture
@@ -121,18 +122,28 @@ class TestExperimentIntegration:
     ):
         """Test the complete experiment workflow end-to-end."""
         # Setup API mocks to return realistic responses
-        mock_openai_request.return_value = (
-            "This is a test response from the OpenAI API. "
-            "It contains some realistic content for testing purposes."
+        mock_openai_request.return_value = LLMResponse(
+            content=(
+                "This is a test response from the OpenAI API. "
+                "It contains some realistic content for testing purposes."
+            ),
+            input_token_count=10,
+            output_token_count=15,
         )
-        mock_azure_request.return_value = (
-            "Azure response for testing integration."
+        mock_azure_request.return_value = LLMResponse(
+            content="Azure response for testing integration.",
+            input_token_count=8,
+            output_token_count=12,
         )
-        mock_ollama_request.return_value = (
-            "Ollama response for integration testing."
+        mock_ollama_request.return_value = LLMResponse(
+            content="Ollama response for integration testing.",
+            input_token_count=7,
+            output_token_count=10,
         )
-        mock_raven_request.return_value = (
-            "Raven response for integration testing."
+        mock_raven_request.return_value = LLMResponse(
+            content="Raven response for integration testing.",
+            input_token_count=6,
+            output_token_count=9,
         )
 
         # Set output directory to temp path
@@ -174,7 +185,7 @@ class TestExperimentIntegration:
             assert metric.iteration >= len(fetcher_metrics)
             assert isinstance(metric.timestamp, datetime)
             assert metric.agent_id is not None
-            assert metric.content == mock_openai_request.return_value
+            assert metric.content == mock_openai_request.return_value.content
             assert len(metric.content) > 0
             assert metric.agent_config == agent_config
             # assert metric.analysis is not None
