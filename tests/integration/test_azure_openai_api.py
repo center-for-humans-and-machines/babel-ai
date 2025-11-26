@@ -8,6 +8,7 @@ import os
 
 from api.azure_openai import azure_openai_request
 from api.enums import AzureModels
+from models.api import LLMResponse
 
 
 def test_real_api_call_with_different_models_and_default_parameters():
@@ -26,9 +27,11 @@ def test_real_api_call_with_different_models_and_default_parameters():
         )
 
         assert response is not None
-        assert isinstance(response, str)
-        assert len(response) > 0
-        assert "test" in response.lower()
+        assert isinstance(response, LLMResponse)
+        assert len(response.content) > 0
+        assert "test" in response.content.lower()
+        assert response.input_token_count > 0
+        assert response.output_token_count > 0
 
 
 def test_environment_variables():
