@@ -1,0 +1,38 @@
+# Test configuration for LLM Drift Experiment
+# This file defines a complete ExperimentConfig in YAML format
+
+# Configuration for the fetcher
+fetcher_config:
+  fetcher: "sharegpt"
+  data_path: "data/human-ai_datasets/sharegpt_clean.json"
+  min_messages: 5
+  max_messages: 10
+
+# Configuration for the analyzer
+analyzer_config:
+  analyzer: "similarity"
+  analyze_window: 5
+
+# List of agent configurations to use in the experiment
+agent_configs:
+  - provider: "openai"
+    model: "gpt-5-mini-2025-08-07"
+    system_prompt: "Continue the conversation in a coherent and interesting way."
+    temperature: 0.7
+    max_tokens: 200
+    frequency_penalty: 0.0
+    presence_penalty: 0.0
+    top_p: 1.0
+    forgetting: 4
+
+# Method for selecting which agent responds next
+agent_selection_method: "round_robin"
+
+# Maximum number of conversation turns to run
+max_iterations: 50
+
+# Maximum total characters across all responses
+max_total_characters: 100000
+
+# Directory to save results (optional)
+output_dir: "data/forgetting_agent_results"
