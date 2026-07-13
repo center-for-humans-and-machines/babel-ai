@@ -15,6 +15,7 @@
       {% if run.meta.get("run_slug") %}
       <br><small>{{ run.meta.run_slug }}</small>
       {% endif %}
+      <br><small>{{ run.eliza_status }}</small>
       ({{ run.turns|length }} turns)
     </li>
     {% endfor %}

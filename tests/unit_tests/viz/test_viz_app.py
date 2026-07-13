@@ -25,18 +25,20 @@ def test_runs_lists_completed_run(tmp_path):
     assert response.status_code == 200
     assert "run-1" in response.text
     assert "2 turns" in response.text
+    assert "Tracked" in response.text
 
 
 def test_run_detail_shows_eliza_branch_columns(tmp_path):
-    _save_run(tmp_path, "run-1", eliza_branch="keyword:alike")
+    _save_run(tmp_path, "run-1", eliza_branch="keyword:like")
     client = TestClient(create_app(tmp_path))
 
     response = client.get("/runs/run-1")
 
     assert response.status_code == 200
-    assert "ELIZA branch" in response.text
-    assert "keyword:alike" in response.text
-    assert "ELIZA branch counts" in response.text
+    assert "ELIZA setup" in response.text
+    assert "ELIZA decision paths" in response.text
+    assert "keyword:like" in response.text
+    assert "Branch counts" in response.text
 
 
 def test_run_detail_shows_similarity_trajectory_and_transcript(tmp_path):
@@ -128,6 +130,16 @@ def _save_run(
         {
             "run_id": run_id,
             "run_slug": "eliza_sharegpt_2turns",
-            "config": {"max_iterations": index},
+            "config": {
+                "max_iterations": index,
+                "agents": [
+                    {"type": "llm", "provider": "azure", "model": "gpt-4o"},
+                    {
+                        "type": "rule_based",
+                        "partner": "eliza",
+                        "generic_intervention": "passthrough",
+                    },
+                ],
+            },
         },
     )

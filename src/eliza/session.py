@@ -1,5 +1,6 @@
 """Stateful partner session backed by vendored ELIZA rules."""
 
+import re
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import lru_cache
@@ -11,6 +12,9 @@ from .response_trace import generate_traced_response
 from .vendor.utils.startup import setup
 
 _SCRIPTS_DIR = Path(__file__).parent / "vendor" / "scripts"
+_TOPIC_REDIRECT_MARKER = "LAST_TOPIC_REDIRECT"
+_PEER_ROLES = frozenset({"user", "human"})
+_MAX_TOPIC_LEN = 80
 
 
 @lru_cache
@@ -86,24 +90,100 @@ class PartnerSession:
             intervention=intervene,
             session=True,
         )
+        text = self.strip_prefixes(response)
+        text, trace_reassembly = self._apply_topic_redirect(
+            messages,
+            text,
+            trace.reassembly,
+        )
+        text, trace_reassembly = self._apply_self_reference_redirect(
+            messages,
+            user_turn,
+            text,
+            trace_reassembly,
+        )
         return PartnerTurn(
-            text=self.strip_prefixes(response),
+            text=text,
             used_generic_fallback=used_generic_fallback,
             eliza_branch=trace.label(),
             eliza_keyword=trace.keyword,
-            eliza_reassembly=trace.reassembly,
+            eliza_reassembly=trace_reassembly,
         )
 
     @staticmethod
     def _last_user_turn(messages: list[dict[str, Any]]) -> str:
-        """Return the newest non-empty user message."""
+        """Return the newest non-empty peer message."""
         for message in reversed(messages):
-            if message.get("role") != "user":
+            role = str(message.get("role", "")).lower()
+            if role not in _PEER_ROLES:
                 continue
             content = message.get("content")
             if isinstance(content, str) and content.strip():
                 return content
         raise ValueError("messages must include a non-empty user message")
+
+    @classmethod
+    def _apply_self_reference_redirect(
+        cls,
+        messages: list[dict[str, Any]],
+        user_turn: str,
+        text: str,
+        reassembly: str | None,
+    ) -> tuple[str, str | None]:
+        """Redirect self-focused peer turns back to the prior subject."""
+        if not cls._is_self_referential(user_turn):
+            return text, reassembly
+        topic = cls._prior_peer_topic(messages)
+        if not topic:
+            return text, reassembly
+        return (
+            f"We are talking about {topic} - not me.",
+            "self_reference_redirect",
+        )
+
+    @staticmethod
+    def _is_self_referential(user_turn: str) -> bool:
+        """Return True when the peer turn uses first-person phrasing."""
+        return bool(re.search(r"\bI\b", user_turn))
+
+    @classmethod
+    def _apply_topic_redirect(
+        cls,
+        messages: list[dict[str, Any]],
+        text: str,
+        reassembly: str | None,
+    ) -> tuple[str, str | None]:
+        """Replace topic redirect markers with the prior peer subject."""
+        if text != _TOPIC_REDIRECT_MARKER:
+            return text, reassembly
+        topic = cls._prior_peer_topic(messages)
+        if topic:
+            return f"We are talking about {topic} - not me.", reassembly
+        return "Let's stay with the earlier subject - not me.", reassembly
+
+    @staticmethod
+    def _prior_peer_topic(messages: list[dict[str, Any]]) -> str | None:
+        """Return the peer turn immediately before the latest one."""
+        peers = PartnerSession._peer_contents(messages)
+        if len(peers) < 2:
+            return None
+        topic = peers[-2]
+        if len(topic) > _MAX_TOPIC_LEN:
+            topic = topic[: _MAX_TOPIC_LEN - 3] + "..."
+        return topic
+
+    @staticmethod
+    def _peer_contents(messages: list[dict[str, Any]]) -> list[str]:
+        """Collect peer/user message contents in conversation order."""
+        contents: list[str] = []
+        for message in messages:
+            role = str(message.get("role", "")).lower()
+            if role not in _PEER_ROLES:
+                continue
+            content = message.get("content")
+            if isinstance(content, str) and content.strip():
+                contents.append(content.strip())
+        return contents
 
     @staticmethod
     def strip_prefixes(text: str) -> str:

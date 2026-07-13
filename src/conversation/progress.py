@@ -60,10 +60,7 @@ class TurnProgress:
         filled = int(bar_width * ratio)
         bar = "#" * filled + "-" * (bar_width - filled)
         percent = int(ratio * 100)
-        return (
-            f"{self.label} {clamped}/{self.total} "
-            f"[{bar}] {percent:3d}%"
-        )
+        return f"{self.label} {clamped}/{self.total} " f"[{bar}] {percent:3d}%"
 
     def _preview_line(self, speaker: str, content: str) -> str:
         """Build a single-line preview of the latest output."""

@@ -19,6 +19,12 @@ from viz.charts import (
     metric_label,
     overlay_chart,
 )
+from viz.eliza_display import (
+    eliza_branch_status,
+    eliza_turn_rows,
+    extract_eliza_agent_config,
+    has_eliza_branch_data,
+)
 
 _TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
 _DEFAULT_RESULTS_ROOT = Path(__file__).resolve().parents[2] / "results"
@@ -39,6 +45,8 @@ def create_app(results_root: Path | None = None) -> FastAPI:
     def runs(request: Request) -> HTMLResponse:
         """Render the completed-run list."""
         records = list_runs(app.state.results_root)
+        for record in records:
+            record.eliza_status = eliza_branch_status(record.turns)
         return templates.TemplateResponse(
             request=request,
             name="runs.html",
@@ -61,6 +69,10 @@ def create_app(results_root: Path | None = None) -> FastAPI:
             context={
                 "run": record,
                 "run_slug": run_slug,
+                "eliza_config": extract_eliza_agent_config(record.meta),
+                "eliza_status": eliza_branch_status(record.turns),
+                "has_eliza_branches": has_eliza_branch_data(record.turns),
+                "eliza_turns": eliza_turn_rows(record.turns),
                 "chart": chart,
                 "eliza_chart": eliza_chart,
                 "eliza_counts": eliza_counts,

@@ -3,6 +3,14 @@
 <head>
   <meta charset="utf-8">
   <title>{{ run.run_id }} trajectory</title>
+  <style>
+    table { border-collapse: collapse; width: 100%; margin-bottom: 1.5rem; }
+    th, td { border: 1px solid #ccc; padding: 0.4rem 0.6rem; text-align: left; }
+    th { background: #f5f5f5; }
+    .meta-box { background: #f8f8f8; padding: 0.8rem 1rem; margin: 1rem 0; }
+    .warn { color: #8a4b00; }
+    .eliza-row { background: #f3f8ff; }
+  </style>
 </head>
 <body>
   <p><a href="/runs">All runs</a></p>
@@ -10,43 +18,91 @@
   {% if run_slug %}
   <p><strong>Config slug:</strong> {{ run_slug }}</p>
   {% endif %}
+
+  <div class="meta-box">
+    <h2>ELIZA setup</h2>
+    {% if eliza_config %}
+    <p>
+      <strong>Partner:</strong> {{ eliza_config.partner }}
+      &nbsp;|&nbsp;
+      <strong>Intervention:</strong> {{ eliza_config.generic_intervention }}
+    </p>
+    {% else %}
+    <p>No rule-based ELIZA agent found in run config.</p>
+    {% endif %}
+    <p class="{% if not has_eliza_branches %}warn{% endif %}">
+      {{ eliza_status }}
+    </p>
+  </div>
+
   <h2>{{ metric_title }}</h2>
   {{ chart | safe }}
+
+  {% if has_eliza_branches %}
+  <h2>ELIZA decision paths</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Turn</th>
+        <th>Branch</th>
+        <th>Keyword</th>
+        <th>Reassembly</th>
+        <th>Generic $</th>
+        <th>Reply</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for turn in eliza_turns %}
+      <tr class="eliza-row">
+        <td>{{ turn.turn_index }}</td>
+        <td>{{ turn.eliza_branch }}</td>
+        <td>{{ turn.eliza_keyword }}</td>
+        <td>{{ turn.eliza_reassembly }}</td>
+        <td>{{ turn.used_generic_fallback }}</td>
+        <td>{{ turn.content }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
   {% if eliza_chart %}
-  <h2>ELIZA branches</h2>
+  <h3>Branch timeline</h3>
   {{ eliza_chart | safe }}
   {% endif %}
   {% if eliza_counts %}
+  <h3>Branch counts</h3>
   {{ eliza_counts | safe }}
   {% endif %}
   {% if eliza_summary %}
-  <h3>Branch summary</h3>
   <ul>
     {% for row in eliza_summary %}
     <li>{{ row.branch }}: {{ row.count }}</li>
     {% endfor %}
   </ul>
   {% endif %}
-  <h2>Transcript</h2>
+  {% endif %}
+
+  <h2>Full transcript</h2>
   <table>
     <thead>
       <tr>
         <th>Turn</th>
         <th>Role</th>
         <th>Speaker</th>
+        {% if has_eliza_branches %}
         <th>ELIZA branch</th>
-        <th>Reassembly</th>
+        {% endif %}
         <th>Content</th>
       </tr>
     </thead>
     <tbody>
       {% for turn in transcript %}
-      <tr>
+      <tr{% if turn.speaker == "eliza" %} class="eliza-row"{% endif %}>
         <td>{{ turn.turn_index }}</td>
         <td>{{ turn.role }}</td>
         <td>{{ turn.speaker }}</td>
+        {% if has_eliza_branches %}
         <td>{{ turn.eliza_branch }}</td>
-        <td>{{ turn.eliza_reassembly }}</td>
+        {% endif %}
         <td>{{ turn.content }}</td>
       </tr>
       {% endfor %}

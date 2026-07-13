@@ -97,6 +97,32 @@ def test_intervention_factory_and_empty_nudge():
         PartnerSession().respond([])
 
 
+def test_i_redirect_uses_prior_topic():
+    session = PartnerSession()
+    turn = session.respond(
+        [
+            {"role": "user", "content": "Men are all alike."},
+            {"role": "assistant", "content": "In what way?"},
+            {"role": "user", "content": "They are always bugging us."},
+            {
+                "role": "assistant",
+                "content": "Can you think of a specific example?",
+            },
+            {"role": "user", "content": "I prefer not to say."},
+        ]
+    )
+    assert "We are talking about They are always bugging us." in turn.text
+    assert "not me" in turn.text
+
+
+def test_generic_responses_avoid_feeling_prompts():
+    session = PartnerSession()
+    for _ in range(6):
+        turn = session.respond([{"role": "user", "content": "xyzzy"}])
+        assert "bother" not in turn.text.lower()
+        assert "feel" not in turn.text.lower()
+
+
 def test_live_feed_stubs_warn_and_passthrough(caplog):
     caplog.set_level(logging.WARNING)
     context = GenericContext("x", "Default.", [], 0)

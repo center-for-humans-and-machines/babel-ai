@@ -13,7 +13,7 @@
                     "What does that suggest to you?",
                     "That is interesting. Please continue.",
                     "Tell me more about that.",
-                    "Does talking about this bother you?"
+                    "I don't know what I think about that."
                 ],
                 "last_used_reassembly_rule": 0
             }
@@ -213,7 +213,7 @@
                     "Don't you really 4 ?",
                     "Why don't you 4 ?",
                     "Do you wish to be able to 4 ?",
-                    "Does that trouble you?"
+                    "I don't know what I think about that."
                 ],
                 "last_used_reassembly_rule": 0
             },
@@ -221,10 +221,10 @@
                 "decomp": "(0 YOU FEEL 0)",
                 "reassembly":
                 [
-                    "Tell me more about such feelings.",
-                    "Do you often feel 4 ?",
-                    "Do you enjoy feeling 4 ?",
-                    "What does feeling 4 remind you of?"
+                    "Tell me more about that.",
+                    "You mention 4 . What else comes to mind?",
+                    "Can you say more about 4 ?",
+                    "What else is there to say about 4 ?"
                 ],
                 "last_used_reassembly_rule": 0
             },
@@ -286,10 +286,10 @@
                 "decomp": "(0 I 0)",
                 "reassembly":
                 [
-                    "We were discussing you - not me.",
+                    "LAST_TOPIC_REDIRECT",
                     "Oh, I 3 ?",
-                    "You're not really talking about me - are you?",
-                    "What are your feelings now?"
+                    "LAST_TOPIC_REDIRECT",
+                    "I don't know what I think about that."
                 ],
                 "last_used_reassembly_rule": 0
             }
@@ -527,7 +527,7 @@
                 [
                     "Please don't apologize.",
                     "Apologies are not necessary.",
-                    "What feelings do you have when you apologize?",
+                    "I don't know what I think about that.",
                     "I've told you that apologies are not required."
                 ],
                 "last_used_reassembly_rule": 0
@@ -587,7 +587,7 @@
                     "Can you think of why you might forget 4 ?",
                     "Why can't you remember 4 ?",
                     "How often do you think of 4 ?",
-                    "Does it bother you to forget that?",
+                    "I don't know what I think about that.",
                     "Could it be a mental block?",
                     "Are you generally forgetful?",
                     "Do you think you are suppressing 4 ?"
@@ -601,7 +601,7 @@
                 [
                     "Why do you ask?",
                     "Are you sure you told me?",
-                    "Would it bother you if I forgot 5 ?",
+                    "What if I forgot 5 ?",
                     "Why should I recall 5 just now?",
                     "Tell me more about 5 ."
                 ],

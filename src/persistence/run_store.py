@@ -145,6 +145,8 @@ def _flatten_turn(
     if record_run_id is not None and record_run_id != run_id:
         raise ValueError("turn run_id must match the run directory name")
     row["run_id"] = run_id
+    for column in _CORE_COLUMNS:
+        row.setdefault(column, None)
     return {key: _serialize_nested(value) for key, value in row.items()}
 
 
