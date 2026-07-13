@@ -66,8 +66,13 @@ derived from parity.
 `CheckpointWriter` writes `checkpoint.json.tmp` and then renames it to
 `checkpoint.json`. The payload contains messages, metrics, scheduling
 state, pending nudge, settings, and save time. The reader can rebuild
-the stack and state, but `ConversationManager.resume_from()` remains
-unimplemented (E4).
+`ConversationManager.resume_from()` restores stack, metrics, turn-taking,
+and ELIZA session state from `results/{run_id}/checkpoint.json`. Continue
+with `continue_run()` or:
+
+```bash
+poetry run python scripts/resume_conversation.py results/{run_id}/checkpoint.json
+```
 
 ## Integration boundary
 

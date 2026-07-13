@@ -97,6 +97,7 @@ def test_checkpoint_save_and_restore_stack(tmp_path):
         metrics=[],
         turn_taking_data={"next_agent_index": 0},
         settings={"max_iterations": 10},
+        agents=[],
     )
     data = CheckpointWriter.load(tmp_path / "checkpoint.json")
     restored = CheckpointWriter.restore_stack(data)

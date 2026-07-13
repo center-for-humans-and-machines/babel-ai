@@ -8,6 +8,7 @@ from typing import Any, Callable, List, Optional
 from uuid import uuid4
 
 from analyzer import Analyzer
+from conversation.agent_state import restore_agents
 from conversation.agents import ConversationAgent
 from conversation.checkpoint import CheckpointWriter, ConversationState
 from conversation.messages import (
@@ -65,7 +66,17 @@ class ConversationManager:
         """Run conversation from seed messages until stop condition."""
         self.state.status = ConversationStatus.RUNNING
         self._ingest_seed(seed_messages)
+        return self._run_loop()
 
+    def continue_run(self) -> List[Metric]:
+        """Resume the loop from a restored checkpoint without new seed."""
+        if self.state.status == ConversationStatus.COMPLETED:
+            return self.metrics
+        self.state.status = ConversationStatus.RUNNING
+        return self._run_loop()
+
+    def _run_loop(self) -> List[Metric]:
+        """Execute turns until a stop condition is reached."""
         while self._should_continue():
             agent = self._select_agent()
             turn = agent.generate(self.stack)
@@ -85,9 +96,43 @@ class ConversationManager:
         checkpoint_path: Path,
         agents: List[ConversationAgent],
         analyzer: Analyzer,
+        *,
+        fetcher_config: Optional[FetcherConfig] = None,
     ) -> "ConversationManager":
         """Restore manager state from ``checkpoint.json`` (E4)."""
-        raise NotImplementedError("resume_from not implemented (E4)")
+        path = Path(checkpoint_path)
+        if not path.is_file():
+            raise FileNotFoundError(f"checkpoint not found: {path}")
+        data = CheckpointWriter.load(path)
+        settings = CheckpointWriter.restore_settings(data)
+        turn_taking = build_turn_taking(
+            settings.turn_taking_method.value,
+            settings.fixed_order,
+        )
+        run_path = path.parent
+        results_root = run_path.parent
+        manager = cls(
+            agents=agents,
+            settings=settings,
+            analyzer=analyzer,
+            run_dir=results_root,
+            turn_taking=turn_taking,
+            fetcher_config=fetcher_config,
+        )
+        manager.run_id = data["run_id"]
+        manager.state = CheckpointWriter.restore_state(data)
+        turn_taking.restore(
+            data.get("turn_taking", {}),
+            manager.state.turn_taking_state,
+        )
+        manager.stack = CheckpointWriter.restore_stack(data)
+        manager.metrics = CheckpointWriter.restore_metrics(data)
+        manager._checkpoint = (
+            CheckpointWriter(run_path) if settings.checkpoint_enabled else None
+        )
+        restore_agents(agents, data.get("agent_states", {}))
+        logger.info("Resumed conversation %s from %s", manager.run_id, path)
+        return manager
 
     def _ingest_seed(self, seed_messages: List[dict]) -> None:
         """Load starting conversation into stack and metrics."""
@@ -207,4 +252,5 @@ class ConversationManager:
                 self.state.turn_taking_state
             ),
             settings=self.settings.model_dump(),
+            agents=self.agents,
         )

@@ -43,6 +43,8 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from persistence.analysis_parse import parse_analysis_cell
+
 
 def setup_logging(log_level: str = "INFO") -> logging.Logger:
     """
@@ -634,7 +636,9 @@ class TheaterScriptPDFGenerator:
                 for _, row in df.head(10).iterrows():
                     if pd.notna(row["analysis"]):
                         try:
-                            analysis_data = eval(row["analysis"])
+                            analysis_data = parse_analysis_cell(
+                                row["analysis"]
+                            )
                             if isinstance(analysis_data, dict):
                                 analysis_metrics.update(analysis_data.keys())
                         except Exception as e:
@@ -690,7 +694,7 @@ class TheaterScriptPDFGenerator:
                 analysis_data = {}
                 if pd.notna(row["analysis"]):
                     try:
-                        analysis_data = eval(row["analysis"])
+                        analysis_data = parse_analysis_cell(row["analysis"])
                         if not isinstance(analysis_data, dict):
                             analysis_data = {}
                     except Exception as e:

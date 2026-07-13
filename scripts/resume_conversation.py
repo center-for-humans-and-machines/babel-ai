@@ -1,7 +1,8 @@
-"""Run a short ELIZA + mirror conversation without external LLM calls."""
+"""Resume a conversation from ``results/{run_id}/checkpoint.json``."""
 
 from __future__ import annotations
 
+import argparse
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class _LightAnalyzer:
-    """Cheap analyzer for smoke tests without embedding models."""
+    """Cheap analyzer for resumed smoke runs without embedding models."""
 
     def analyze(self, contents: list[str]) -> AnalysisResult:
         text = contents[-1] if contents else ""
@@ -33,38 +34,43 @@ class _LightAnalyzer:
 
 
 def main() -> None:
-    """Execute a six-turn ELIZA scaffolding smoke conversation."""
-    config_path = (
-        Path(__file__).resolve().parents[1]
-        / "configs"
-        / "brief_eliza_demo.yaml"
+    """Resume from checkpoint and continue until stop limits."""
+    parser = argparse.ArgumentParser(description="Resume a conversation run")
+    parser.add_argument(
+        "checkpoint",
+        help="Path to checkpoint.json under results/{run_id}/",
     )
-    config = load_yaml_config(ExperimentConfig, str(config_path))
-    settings = config.resolved_conversation_settings()
-    settings.checkpoint_enabled = False
+    parser.add_argument(
+        "--config",
+        help="Experiment YAML with the same agents as the original run",
+        default="configs/brief_eliza_demo.yaml",
+    )
+    args = parser.parse_args()
 
+    config_path = Path(args.config)
+    config = load_yaml_config(ExperimentConfig, str(config_path))
+    checkpoint_path = Path(args.checkpoint)
     agents = build_conversation_agents(config.agents)
-    output_dir = Path(config.output_dir or "results")
-    manager = ConversationManager(
+
+    manager = ConversationManager.resume_from(
+        checkpoint_path,
         agents=agents,
-        settings=settings,
         analyzer=_LightAnalyzer(),
-        run_dir=output_dir,
         fetcher_config=config.fetcher_config,
     )
-
-    seed = [{"role": "user", "content": "Men are all alike."}]
-    metrics = manager.run(seed)
+    metrics = manager.continue_run()
 
     print("\n--- Transcript ---")
     for message in manager.stack.messages:
         print(f"[{message.speaker}] {message.content}")
 
+    output_dir = Path(config.output_dir or "results")
     meta = {
         "run_id": manager.run_id,
         "timestamp": datetime.now().isoformat(),
         "config": config.model_dump(),
         "turn_count": len(metrics),
+        "resumed_from": str(checkpoint_path),
     }
     run_dir = save_run(
         output_dir / manager.run_id,

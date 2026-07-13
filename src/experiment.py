@@ -15,8 +15,7 @@ from analyzer import Analyzer
 from conversation.agents import ConversationAgent, LLMConversationAgent
 from conversation.factory import build_conversation_agents
 from conversation.manager import ConversationManager
-from conversation.settings import AnalysisPolicy, TurnTakingMethod
-from enums import AgentSelectionMethod
+from conversation.settings import AnalysisPolicy
 from models import AgentMetric, ExperimentConfig, ExperimentMetadata, Metric
 from persistence.run_store import RunManifest, save_run
 from prompt_fetcher import BasePromptFetcher
@@ -76,9 +75,10 @@ class Experiment:
         self.legacy_agents = [
             Agent(agent_config) for agent_config in self.config.agent_configs
         ]
-        self.agent_selection_method = AgentSelectionMethod(
-            self.config.agent_selection_method
-        )
+        if self.config.agent_configs:
+            logger.warning(
+                "agent_configs is deprecated; migrate to the agents list"
+            )
         self.result_metrics: List[Metric] = []
         self.messages: List[
             Dict[str, str]
@@ -111,8 +111,6 @@ class Experiment:
         settings = self.conversation_settings.model_copy()
         settings.max_iterations = self.max_iterations
         settings.max_total_characters = self.max_total_characters
-        if self.agent_selection_method == AgentSelectionMethod.ROUND_ROBIN:
-            settings.turn_taking_method = TurnTakingMethod.ROUND_ROBIN
 
         manager = ConversationManager(
             agents=conv_agents,

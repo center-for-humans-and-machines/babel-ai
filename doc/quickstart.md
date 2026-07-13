@@ -32,6 +32,12 @@ poetry run python -m viz
 
 Open `http://127.0.0.1:8765/runs` to browse trajectories and transcripts.
 
+Resume an interrupted run:
+
+```bash
+poetry run python scripts/resume_conversation.py results/{run_id}/checkpoint.json
+```
+
 ## ELIZA conversation configuration
 
 The script uses the canonical agent configuration:

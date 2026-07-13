@@ -97,7 +97,7 @@ class BudgetTracker:
             },
             AnthropicModels.CLAUDE_3_5_HAIKU_20241022: {
                 # $0.0008 per 1K/$0.80 per 1M input tokens
-                "input": 0.04,
+                "input": 0.0008,
                 # $0.004 per 1K/$4.00 per 1M output tokens
                 "output": 0.004,
             },

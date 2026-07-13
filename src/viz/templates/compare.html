@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Compare runs</title>
+</head>
+<body>
+  <h1>Compare runs</h1>
+  <p><a href="/runs">Back to run list</a></p>
+  <form method="get" action="/compare">
+    <fieldset>
+      <legend>Select runs</legend>
+      {% for run in runs %}
+      <label>
+        <input type="checkbox" name="runs" value="{{ run.run_id }}"
+          {% if run.run_id in selected_ids %}checked{% endif %}>
+        {{ run.run_id }}
+      </label><br>
+      {% endfor %}
+    </fieldset>
+    <label>Baseline run ID
+      <input type="text" name="baseline" value="{{ baseline }}">
+    </label>
+    <label>Metric
+      <input type="text" name="metric" value="{{ metric }}">
+    </label>
+    <button type="submit">Compare</button>
+  </form>
+  {% if overlay_chart %}
+  <h2>Overlay ({{ metric_label }})</h2>
+  {{ overlay_chart | safe }}
+  {% endif %}
+  {% if aggregate_chart %}
+  <h2>Aggregate mean ± 95% CI</h2>
+  {{ aggregate_chart | safe }}
+  {% endif %}
+  {% if diff_rows %}
+  <h2>Config diff</h2>
+  <table border="1">
+    <tr>
+      <th>Key</th>
+      {% for run_id in selected_ids %}
+      <th>{{ run_id }}</th>
+      {% endfor %}
+    </tr>
+    {% for row in diff_rows %}
+    <tr>
+      <td>{{ row.key }}</td>
+      {% for run_id in selected_ids %}
+      <td>{{ row[run_id] }}</td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</body>
+</html>

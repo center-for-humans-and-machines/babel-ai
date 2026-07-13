@@ -70,6 +70,14 @@ class RuleBasedConversationAgent:
             used_generic_fallback=turn.used_generic_fallback,
         )
 
+    def export_state(self) -> dict:
+        """Serialize ELIZA session state for checkpoint resume."""
+        return self._session.export_state()
+
+    def import_state(self, data: dict) -> None:
+        """Restore ELIZA session state from a checkpoint."""
+        self._session.import_state(data)
+
 
 class MirrorConversationAgent:
     """Echoes the latest message from a different speaker."""

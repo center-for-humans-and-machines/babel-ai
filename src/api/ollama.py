@@ -204,7 +204,10 @@ def raven_ollama_request(*args, **kwargs) -> LLMResponse:
     """
     defaults = {
         "model": OllamaModels.LLAMA3_70B,
-        "api_base_url": "https://hpc-llm-inference-fastapi.chm.mpib-berlin.mpg.de/v1",  # noqa: E501
+        "api_base_url": os.getenv(
+            "RAVEN_API_BASE",
+            "https://hpc-llm-inference-fastapi.chm.mpib-berlin.mpg.de/v1",
+        ),
         "endpoint": "chat/completions",
     }
     logger.debug(f"Raven defaults: {defaults}")

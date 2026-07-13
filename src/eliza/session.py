@@ -108,3 +108,16 @@ class PartnerSession:
         if "\nYou:" in cleaned:
             cleaned = cleaned.split("\nYou:", maxsplit=1)[0].strip()
         return cleaned
+
+    def export_state(self) -> dict[str, Any]:
+        """Serialize memory stack and script counters for checkpoints."""
+        return {
+            "memory_stack": list(self._memory_stack),
+            "script": deepcopy(self._script),
+        }
+
+    def import_state(self, data: dict[str, Any]) -> None:
+        """Restore memory stack and script counters from a checkpoint."""
+        self._memory_stack = list(data.get("memory_stack", []))
+        if "script" in data:
+            self._script = deepcopy(data["script"])

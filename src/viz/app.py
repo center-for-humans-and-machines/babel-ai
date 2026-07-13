@@ -9,6 +9,13 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from persistence import list_runs, load_run
+from viz.charts import (
+    aggregate_chart,
+    available_metrics,
+    config_diff_rows,
+    metric_label,
+    overlay_chart,
+)
 
 _TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
 _DEFAULT_RESULTS_ROOT = Path(__file__).resolve().parents[2] / "results"
@@ -53,6 +60,41 @@ def create_app(results_root: Path | None = None) -> FastAPI:
             },
         )
 
+    @app.get("/compare", response_class=HTMLResponse)
+    def compare(
+        request: Request,
+        runs: str = "",
+        baseline: str = "",
+        metric: str = "semantic_similarity_window",
+    ) -> HTMLResponse:
+        """Overlay, aggregate, and config-diff views for selected runs."""
+        all_runs = list_runs(app.state.results_root)
+        selected_ids = [part for part in runs.split(",") if part]
+        selected = [
+            record for record in all_runs if record.run_id in selected_ids
+        ]
+        if selected and metric not in available_metrics(selected[0].turns):
+            metric = available_metrics(selected[0].turns)[0]
+        overlay = overlay_chart(selected, metric, baseline_id=baseline or None)
+        aggregate = (
+            aggregate_chart(selected, metric) if len(selected) > 1 else ""
+        )
+        diff_rows = config_diff_rows(selected) if len(selected) > 1 else []
+        return templates.TemplateResponse(
+            request=request,
+            name="compare.html",
+            context={
+                "runs": all_runs,
+                "selected_ids": selected_ids,
+                "baseline": baseline,
+                "metric": metric,
+                "metric_label": metric_label(metric),
+                "overlay_chart": overlay,
+                "aggregate_chart": aggregate,
+                "diff_rows": diff_rows,
+            },
+        )
+
     return app
 
 
@@ -70,10 +112,8 @@ def _load_record(results_root: Path, run_id: str):
 
 def _trajectory_metric(turns: pd.DataFrame) -> tuple[str, str]:
     """Select semantic similarity when usable, otherwise turn index."""
-    metric = "semantic_similarity_window"
-    if metric in turns and turns[metric].notna().any():
-        return metric, "Semantic similarity (window)"
-    return "turn_index", "Turn index"
+    metric = available_metrics(turns)[0]
+    return metric, metric_label(metric)
 
 
 def _trajectory_chart(turns: pd.DataFrame, metric: str, title: str) -> str:

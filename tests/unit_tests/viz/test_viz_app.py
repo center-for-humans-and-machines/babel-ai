@@ -66,8 +66,33 @@ def test_run_detail_returns_not_found_for_incomplete_run(tmp_path):
     assert response.status_code == 404
 
 
+def test_compare_overlay_and_aggregate(tmp_path):
+    _save_run(tmp_path, "run-a", similarity=0.5, index=3)
+    _save_run(tmp_path, "run-b", similarity=0.8, index=5)
+    client = TestClient(create_app(tmp_path))
+
+    response = client.get("/compare?runs=run-a,run-b&baseline=run-a")
+
+    assert response.status_code == 200
+    assert "Overlay" in response.text
+    assert "Aggregate mean" in response.text
+    assert "Config diff" in response.text
+
+
+def test_runs_page_links_to_compare(tmp_path):
+    client = TestClient(create_app(tmp_path))
+
+    response = client.get("/runs")
+
+    assert response.status_code == 200
+    assert "/compare" in response.text
+
+
 def _save_run(
-    results_root, run_id: str, similarity: float | None = 0.75
+    results_root,
+    run_id: str,
+    similarity: float | None = 0.75,
+    index: int = 0,
 ) -> None:
     """Save a two-turn run used by viewer requests."""
     turns = pd.DataFrame(
@@ -82,4 +107,8 @@ def _save_run(
             ],
         }
     )
-    save_run(results_root / run_id, turns, {"run_id": run_id})
+    save_run(
+        results_root / run_id,
+        turns,
+        {"run_id": run_id, "config": {"max_iterations": index}},
+    )
