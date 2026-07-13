@@ -6,7 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from api.enums import OpenAIModels, Provider
-from babel_ai.enums import AgentSelectionMethod, AnalyzerType, FetcherType
+from enums import AgentSelectionMethod, AnalyzerType, FetcherType
 from models import (
     AgentConfig,
     AgentMetric,

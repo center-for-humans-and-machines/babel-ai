@@ -3,9 +3,9 @@ from enum import Enum
 from typing import TYPE_CHECKING, Generator, List, Type
 
 if TYPE_CHECKING:
-    from babel_ai.agent import Agent
-    from babel_ai.analyzer import Analyzer
-    from babel_ai.prompt_fetcher import BasePromptFetcher
+    from agent import Agent
+    from analyzer import Analyzer
+    from prompt_fetcher import BasePromptFetcher
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class FetcherType(Enum):
 
         # Import here to avoid circular imports
         logger.debug("Importing fetcher classes to avoid circular imports")
-        from babel_ai.prompt_fetcher import (
+        from prompt_fetcher import (
             InfiniteConversationFetcher,
             RandomPromptFetcher,
             ShareGPTConversationFetcher,
@@ -127,7 +127,7 @@ class AgentSelectionMethod(Enum):
         logger.debug(
             "Importing round_robin_agent_selection to avoid circular imports"
         )
-        from babel_ai.agent import round_robin_agent_selection
+        from agent import round_robin_agent_selection
 
         if self == AgentSelectionMethod.ROUND_ROBIN:
             logger.debug(
@@ -162,7 +162,7 @@ class AnalyzerType(Enum):
 
         # Import here to avoid circular imports
         logger.debug("Importing SimilarityAnalyzer to avoid circular imports")
-        from babel_ai.analyzer import SimilarityAnalyzer
+        from analyzer import SimilarityAnalyzer
 
         mapping = {
             AnalyzerType.SIMILARITY: SimilarityAnalyzer,

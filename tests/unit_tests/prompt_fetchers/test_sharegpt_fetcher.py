@@ -5,7 +5,7 @@ import os
 import tempfile
 from unittest import TestCase, main
 
-from babel_ai.prompt_fetcher import ShareGPTConversationFetcher
+from prompt_fetcher import ShareGPTConversationFetcher
 
 
 class TestShareGPTConversationFetcher(TestCase):

@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 from unittest import TestCase, main
 
-from babel_ai.prompt_fetcher import TopicalChatConversationFetcher
+from prompt_fetcher import TopicalChatConversationFetcher
 
 
 class TestTopicalChatConversationFetcher(TestCase):

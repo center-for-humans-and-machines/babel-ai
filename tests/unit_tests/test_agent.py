@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 import pytest
 
+from agent import Agent
 from api.enums import OpenAIModels, Provider
-from babel_ai.agent import Agent
 from models import AgentConfig
 
 
@@ -71,7 +71,7 @@ class TestAgent:
         assert agent.system_prompt == "You are a helpful assistant."
         assert agent.config.system_prompt == "You are a helpful assistant."
 
-    @patch("babel_ai.agent.LLMInterface.generate_response")
+    @patch("agent.LLMInterface.generate_response")
     def test_generate_response_calls_api(
         self, mock_generate_response, sample_agent_config, sample_messages
     ):
@@ -97,7 +97,7 @@ class TestAgent:
             top_p=0.9,
         )
 
-    @patch("babel_ai.agent.LLMInterface.generate_response")
+    @patch("agent.LLMInterface.generate_response")
     def test_generate_response_with_system_prompt(
         self, mock_generate_response
     ):
@@ -134,7 +134,7 @@ class TestAgent:
             top_p=1.0,
         )
 
-    @patch("babel_ai.agent.LLMInterface.generate_response")
+    @patch("agent.LLMInterface.generate_response")
     def test_generate_response_without_system_prompt(
         self, mock_generate_response
     ):

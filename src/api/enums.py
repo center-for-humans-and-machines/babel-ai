@@ -31,6 +31,7 @@ class Provider(Enum):
     RAVEN = "raven"
     AZURE = "azure"
     ANTHROPIC = "anthropic"
+    VLLM = "vllm"
 
     def get_model_enum(self) -> Type[Enum]:
         """Get the corresponding model enum for this provider."""
@@ -46,6 +47,8 @@ class Provider(Enum):
                 return AzureModels
             case Provider.ANTHROPIC:
                 return AnthropicModels
+            case Provider.VLLM:
+                return VLLMModels
             case _:
                 logger.error(
                     f"Invalid provider: {self}, available providers: "
@@ -61,6 +64,7 @@ class Provider(Enum):
         from api.azure_openai import azure_openai_request
         from api.ollama import ollama_request, raven_ollama_request
         from api.openai import openai_request
+        from api.vllm import vllm_request
 
         match self:
             case Provider.OPENAI:
@@ -73,6 +77,8 @@ class Provider(Enum):
                 return azure_openai_request
             case Provider.ANTHROPIC:
                 return anthropic_request
+            case Provider.VLLM:
+                return vllm_request
             case _:
                 logger.error(
                     f"Invalid provider: {self}, available providers: "
@@ -187,5 +193,17 @@ class AnthropicModels(Enum):
     CLAUDE_3_5_HAIKU_20241022 = "claude-3-5-haiku-20241022"
 
 
+class VLLMModels(Enum):
+    """Placeholder models for cluster vLLM endpoints (pillar A)."""
+
+    DEFAULT = "default"
+
+
 # Union type for all available models
-APIModels = Union[OpenAIModels, OllamaModels, AzureModels, AnthropicModels]
+APIModels = Union[
+    OpenAIModels,
+    OllamaModels,
+    AzureModels,
+    AnthropicModels,
+    VLLMModels,
+]

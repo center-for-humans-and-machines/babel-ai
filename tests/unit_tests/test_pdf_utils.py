@@ -6,7 +6,7 @@ from pypdf import PdfReader
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
-from src.utils.pdf_utils import (
+from utils.pdf_utils import (
     clamp_requested_pages,
     extract_pdf_selection,
     normalize_unique_order,

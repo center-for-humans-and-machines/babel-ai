@@ -3,10 +3,8 @@ from pathlib import Path
 import pandas as pd
 
 from graphical_analysis.data_utils import (
-    ANALYSIS_METRICS,
     aggregate_metric_across_experiments,
     compute_normalized_metrics,
-    list_experiment_csvs,
     load_experiment_rows,
     merge_metric_across_experiments,
 )
@@ -27,7 +25,9 @@ def test_parsing_edge_cases_and_rolling(tmp_path: Path) -> None:
         "timestamp": "t0",
         "role": "gpt",
         "content": "a",
-        "analysis": "{'semantic_similarity': '0.3', 'token_perplexity': 'inf'}",
+        "analysis": (
+            "{'semantic_similarity': '0.3', 'token_perplexity': 'inf'}"
+        ),
     }
     r2 = {
         "iteration": 1,
@@ -48,9 +48,7 @@ def test_parsing_edge_cases_and_rolling(tmp_path: Path) -> None:
     assert rows[0].token_perplexity == float("inf")
     assert rows[1].semantic_similarity == 0.5
 
-    merged = merge_metric_across_experiments(
-        [f1], "semantic_similarity"
-    )
+    merged = merge_metric_across_experiments([f1], "semantic_similarity")
     # rolling window = 2 should alter the second value to mean(0.3,0.5)=0.4
     agg = aggregate_metric_across_experiments(merged, window=2)
     it1 = agg[agg["iteration"] == 1]["mean"].iloc[0]
@@ -65,8 +63,5 @@ def test_parsing_edge_cases_and_rolling(tmp_path: Path) -> None:
             "value": [1.0, 2.0, 3.0],
         }
     )
-    normed = compute_normalized_metrics(
-        df.rename(columns={"value": "m"}), "m"
-    )
+    normed = compute_normalized_metrics(df.rename(columns={"value": "m"}), "m")
     assert "m_z" in normed.columns
-

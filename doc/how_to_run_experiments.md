@@ -22,7 +22,7 @@ poetry run python src/main.py config1.yaml config2.yaml config3.yaml
 #### 2. Programmatic Usage
 ```python
 import asyncio
-from babel_ai.experiment import Experiment, ExperimentConfig
+from experiment import Experiment, ExperimentConfig
 from utils import load_yaml_config
 
 # Load configuration

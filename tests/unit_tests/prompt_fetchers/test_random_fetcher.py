@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-from babel_ai.prompt_fetcher import RandomPromptFetcher
+from prompt_fetcher import RandomPromptFetcher
 
 
 class TestRandomPromptFetcher:

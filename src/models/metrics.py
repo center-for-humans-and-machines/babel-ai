@@ -182,8 +182,17 @@ class AgentMetric(Metric):
     agent_id: str = Field(
         description="ID of the agent that generated the response"
     )
-    agent_config: AgentConfig = Field(
-        description="Configuration of the agent that generated the response"
+    agent_config: Optional[AgentConfig] = Field(
+        default=None,
+        description="Configuration of the agent that generated the response",
+    )
+    speaker: Optional[str] = Field(
+        default=None,
+        description="Stable speaker label from ConversationAgent",
+    )
+    used_generic_fallback: Optional[bool] = Field(
+        default=None,
+        description="Whether ELIZA used the generic $ fallback",
     )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -191,11 +200,18 @@ class AgentMetric(Metric):
         result = super().to_dict()
         logger.info("Updating Metric with agent_id and agent_config.")
         logger.debug(f"Agent id: {self.agent_id}")
-        logger.debug(f"Agent config: {self.agent_config.model_dump()}")
+        if self.agent_config is not None:
+            logger.debug(f"Agent config: {self.agent_config.model_dump()}")
         result.update(
             {
                 "agent_id": self.agent_id,
-                "agent_config": self.agent_config.model_dump(),
+                "agent_config": (
+                    self.agent_config.model_dump()
+                    if self.agent_config is not None
+                    else None
+                ),
+                "speaker": self.speaker,
+                "used_generic_fallback": self.used_generic_fallback,
             }
         )
 

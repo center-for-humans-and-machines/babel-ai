@@ -1,8 +1,8 @@
-"""Tests for all enums in babel_ai.enums module."""
+"""Tests for all enums in the flat-layout enums module."""
 
-from babel_ai.analyzer import Analyzer, SimilarityAnalyzer
-from babel_ai.enums import AgentSelectionMethod, AnalyzerType, FetcherType
-from babel_ai.prompt_fetcher import (
+from analyzer import Analyzer, SimilarityAnalyzer
+from enums import AgentSelectionMethod, AnalyzerType, FetcherType
+from prompt_fetcher import (
     BasePromptFetcher,
     InfiniteConversationFetcher,
     RandomPromptFetcher,

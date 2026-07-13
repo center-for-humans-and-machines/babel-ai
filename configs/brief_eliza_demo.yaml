@@ -1,0 +1,26 @@
+# Brief ELIZA + mirror conversation (no LLM API required)
+fetcher_config:
+  fetcher: random
+  category: conversational
+
+analyzer_config:
+  analyzer: similarity
+  analyze_window: 2
+
+agents:
+  - type: rule_based
+    partner: eliza
+    generic_intervention: passthrough
+  - type: mirror
+
+conversation_settings:
+  turn_taking_method: round_robin
+  analysis_policy: at_end
+  checkpoint_enabled: false
+  max_iterations: 6
+  max_total_characters: 5000
+
+agent_selection_method: round_robin
+max_iterations: 6
+max_total_characters: 5000
+output_dir: results

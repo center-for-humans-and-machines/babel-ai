@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 from typing import List
 
-from babel_ai.experiment import Experiment, ExperimentConfig
+from experiment import Experiment, ExperimentConfig
 from utils import load_yaml_config
 
 logger = logging.getLogger(__name__)

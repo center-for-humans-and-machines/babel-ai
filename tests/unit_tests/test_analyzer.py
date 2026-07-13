@@ -5,8 +5,8 @@ from unittest.mock import patch
 
 import pytest
 
-from babel_ai.analyzer import Analyzer, SimilarityAnalyzer
-from babel_ai.enums import AnalyzerType
+from analyzer import Analyzer, SimilarityAnalyzer
+from enums import AnalyzerType
 from models import AnalysisResult
 
 
@@ -140,7 +140,7 @@ def test_semantic_similarity_clamping(analyzer):
     outputs = ["The quick brown fox", "A fast brown dog"]
 
     # Test clamping values above 1.0
-    with patch("babel_ai.analyzer.cos_sim") as mock_cos_sim:
+    with patch("analyzer.cos_sim") as mock_cos_sim:
         # Mock cos_sim to return a value above 1.0
         mock_cos_sim.return_value.item.return_value = 1.5
 
@@ -151,7 +151,7 @@ def test_semantic_similarity_clamping(analyzer):
         mock_cos_sim.assert_called_once()
 
     # Test clamping values below -1.0
-    with patch("babel_ai.analyzer.cos_sim") as mock_cos_sim:
+    with patch("analyzer.cos_sim") as mock_cos_sim:
         # Mock cos_sim to return a value below -1.0
         mock_cos_sim.return_value.item.return_value = -1.8
 
@@ -164,7 +164,7 @@ def test_semantic_similarity_clamping(analyzer):
     # Test multiple faulty values with different window sizes
     outputs = ["First text", "Second text", "Third text", "Fourth text"]
 
-    with patch("babel_ai.analyzer.cos_sim") as mock_cos_sim:
+    with patch("analyzer.cos_sim") as mock_cos_sim:
         # Mock cos_sim to return alternating faulty values
         mock_cos_sim.return_value.item.side_effect = [2.5, -3.0, 0.5]
 
@@ -180,7 +180,7 @@ def test_semantic_similarity_clamping_with_logging(analyzer, caplog):
     """Test that clamping logs appropriate warning messages."""
     outputs = ["The quick brown fox", "A fast brown dog"]
 
-    with patch("babel_ai.analyzer.cos_sim") as mock_cos_sim:
+    with patch("analyzer.cos_sim") as mock_cos_sim:
         # Mock cos_sim to return a value above 1.0
         mock_cos_sim.return_value.item.return_value = 2.3
 

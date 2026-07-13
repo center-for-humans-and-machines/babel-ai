@@ -1,0 +1,33 @@
+# babel-ai architecture documentation
+
+This documentation describes the ELIZA conversation architecture. The
+conversation manager, ELIZA partner, unified agent factory, and run
+artifacts are implemented.
+
+## Guides
+
+- [Architecture](architecture.md): system boundaries and pillars A–E.
+- [ELIZA partner](eliza_partner.md): deterministic partner and ladder.
+- [Conversation manager](conversation_manager.md): agents and recovery.
+- [Run artifacts](run_artifacts.md): canonical `results/{run_id}/` data.
+- [Configuration](configuration.md): canonical YAML agent configuration.
+- [Quick start](quickstart.md): installation and current runnable checks.
+
+## Source map
+
+| Area | Source |
+| --- | --- |
+| Managed conversation | `src/conversation/` |
+| ELIZA partner | `src/eliza/` |
+| Run artifact API | `src/persistence/run_store.py` |
+| Metrics and analysis | `src/analyzer.py` |
+| Visualization | `src/viz/` |
+
+Run the local smoke conversation with:
+
+```bash
+poetry run python scripts/brief_conversation.py
+```
+
+It uses flat imports such as `conversation.manager` and writes run
+artifacts under `results/`.

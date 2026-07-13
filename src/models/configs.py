@@ -11,7 +11,13 @@ from pydantic import (
 )
 
 from api.enums import APIModels, Provider
-from babel_ai.enums import AgentSelectionMethod, AnalyzerType, FetcherType
+from conversation.agent_config import (
+    LLMAgentConfig,
+    MirrorAgentConfig,
+    RuleBasedAgentConfig,
+)
+from conversation.settings import ConversationSettings
+from enums import AgentSelectionMethod, AnalyzerType, FetcherType
 
 logger = logging.getLogger(__name__)
 
@@ -299,7 +305,14 @@ class ExperimentConfig(BaseModel):
         description="Configuration for the analyzer"
     )
     agent_configs: List[AgentConfig] = Field(
-        description="Configurations for the agents"
+        default_factory=list,
+        description="Legacy LLM-only agent configurations",
+    )
+    agents: List[
+        LLMAgentConfig | RuleBasedAgentConfig | MirrorAgentConfig
+    ] = Field(
+        default_factory=list,
+        description="Canonical multi-agent list (llm, rule_based, mirror)",
     )
     agent_selection_method: AgentSelectionMethod = Field(
         description="Method to select the next agent"
@@ -309,3 +322,31 @@ class ExperimentConfig(BaseModel):
     output_dir: Optional[str] = Field(
         default=None, description="Directory to save results"
     )
+    conversation_settings: Optional[ConversationSettings] = Field(
+        default=None,
+        description="Conversation manager settings (optional)",
+    )
+
+    def resolved_conversation_settings(self) -> ConversationSettings:
+        """Build conversation settings from explicit or legacy fields."""
+        if self.conversation_settings is not None:
+            base = self.conversation_settings.model_copy()
+        else:
+            base = ConversationSettings()
+        return base.model_copy(
+            update={
+                "max_iterations": self.max_iterations,
+                "max_total_characters": self.max_total_characters,
+            }
+        )
+
+    def uses_canonical_agents(self) -> bool:
+        """Return True when the unified ``agents`` list is configured."""
+        return bool(self.agents)
+
+    @model_validator(mode="after")
+    def validate_agent_lists(self) -> "ExperimentConfig":
+        """Require at least one agent configuration source."""
+        if not self.agents and not self.agent_configs:
+            raise ValueError("configure either agents or agent_configs")
+        return self

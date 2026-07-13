@@ -11,7 +11,7 @@ from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import cos_sim
 from transformers import AutoModelForCausalLM, AutoTokenizer, BatchEncoding
 
-from babel_ai.enums import AnalyzerType
+from enums import AnalyzerType
 from models import AnalysisResult
 
 logger = logging.getLogger(__name__)

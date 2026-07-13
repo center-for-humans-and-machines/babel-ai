@@ -1,10 +1,8 @@
-import os
 from pathlib import Path
 
 import pandas as pd
 
 from graphical_analysis.data_utils import (
-    ANALYSIS_METRICS,
     aggregate_metric_across_experiments,
     list_experiment_csvs,
     load_experiment_rows,
@@ -66,4 +64,3 @@ def test_load_and_merge_and_aggregate_metrics(tmp_path: Path) -> None:
         "ci_high",
         "count",
     }.issubset(set(agg.columns))
-

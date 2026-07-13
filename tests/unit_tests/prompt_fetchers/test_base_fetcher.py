@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 import pytest
 
-from babel_ai.enums import FetcherType
-from babel_ai.prompt_fetcher import (
+from enums import FetcherType
+from prompt_fetcher import (
     BasePromptFetcher,
     InfiniteConversationFetcher,
     RandomPromptFetcher,

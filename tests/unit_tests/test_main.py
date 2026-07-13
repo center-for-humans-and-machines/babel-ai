@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from babel_ai.experiment import ExperimentConfig
+from experiment import ExperimentConfig
 from main import run_experiment, run_experiment_batch, setup_logging
 
 

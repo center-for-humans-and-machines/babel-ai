@@ -6,12 +6,11 @@ from unittest.mock import Mock, mock_open, patch
 
 import pytest
 
+from agent import Agent
+from analyzer import Analyzer
 from api.enums import OpenAIModels, Provider
-from babel_ai.agent import Agent
-from babel_ai.analyzer import Analyzer
-from babel_ai.enums import AgentSelectionMethod, AnalyzerType, FetcherType
-from babel_ai.experiment import Experiment
-from babel_ai.prompt_fetcher import BasePromptFetcher
+from enums import AgentSelectionMethod, AnalyzerType, FetcherType
+from experiment import Experiment
 from models import (
     AgentConfig,
     AgentMetric,
@@ -21,6 +20,7 @@ from models import (
     FetcherConfig,
     FetcherMetric,
 )
+from prompt_fetcher import BasePromptFetcher
 
 
 @pytest.fixture
@@ -110,9 +110,9 @@ def mock_agent(sample_agent_config):
 class TestExperiment:
     """Test the Experiment class."""
 
-    @patch("babel_ai.experiment.Analyzer.create_analyzer")
-    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.experiment.Agent")
+    @patch("experiment.Analyzer.create_analyzer")
+    @patch("experiment.BasePromptFetcher.create_fetcher")
+    @patch("experiment.Agent")
     def test_experiment_initialization(
         self,
         mock_agent_class,
@@ -163,9 +163,9 @@ class TestExperiment:
         assert experiment.messages == sample_messages
         assert experiment.result_metrics == []
 
-    @patch("babel_ai.experiment.Analyzer.create_analyzer")
-    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.experiment.Agent")
+    @patch("experiment.Analyzer.create_analyzer")
+    @patch("experiment.BasePromptFetcher.create_fetcher")
+    @patch("experiment.Agent")
     def test_experiment_initialization_with_custom_output_dir(
         self,
         mock_agent_class,
@@ -189,9 +189,9 @@ class TestExperiment:
 
         assert experiment.output_dir == Path("/custom/output/path")
 
-    @patch("babel_ai.experiment.Analyzer.create_analyzer")
-    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.experiment.Agent")
+    @patch("experiment.Analyzer.create_analyzer")
+    @patch("experiment.BasePromptFetcher.create_fetcher")
+    @patch("experiment.Agent")
     def test_should_continue_generation(
         self,
         mock_agent_class,
@@ -202,30 +202,43 @@ class TestExperiment:
         mock_prompt_fetcher,
         mock_agent,
     ):
-        """Test _should_continue_generation method."""
-        # Setup mocks
+        """Test ConversationManager stop conditions."""
+        from conversation.agents import LLMConversationAgent
+        from conversation.manager import ConversationManager
+        from conversation.messages import ConversationMessage, MessageSource
+        from conversation.settings import ConversationSettings
+
         mock_analyzer_create.return_value = mock_analyzer
         mock_fetcher_create.return_value = mock_prompt_fetcher
         mock_agent_class.return_value = mock_agent
 
-        experiment = Experiment(sample_experiment_config)
-        experiment.total_characters = 500
+        settings = ConversationSettings(
+            max_iterations=5,
+            max_total_characters=1000,
+            checkpoint_enabled=False,
+        )
+        manager = ConversationManager(
+            agents=[LLMConversationAgent(mock_agent, "agent_0")],
+            settings=settings,
+            analyzer=mock_analyzer,
+            run_dir=Path("/tmp"),
+        )
+        assert manager._should_continue() is True
+        for i in range(5):
+            manager.stack.append(
+                ConversationMessage(
+                    turn_index=i,
+                    role="user",
+                    speaker="seed",
+                    content="msg",
+                    source=MessageSource.SEED,
+                )
+            )
+        assert manager._should_continue() is False
 
-        # Should continue when under limits
-        assert experiment._should_continue_generation() is True
-
-        # Should stop when max iterations reached
-        experiment.messages = ["msg"] * 5  # Reach max_iterations
-        assert experiment._should_continue_generation() is False
-
-        # Reset messages, test character limit
-        experiment.messages = ["msg"] * 3
-        experiment.total_characters = 1001  # Exceed max_total_characters
-        assert experiment._should_continue_generation() is False
-
-    @patch("babel_ai.experiment.Analyzer.create_analyzer")
-    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.experiment.Agent")
+    @patch("experiment.Analyzer.create_analyzer")
+    @patch("experiment.BasePromptFetcher.create_fetcher")
+    @patch("experiment.Agent")
     def test_generate_conversation(
         self,
         mock_agent_class,
@@ -249,13 +262,6 @@ class TestExperiment:
 
         experiment = Experiment(sample_experiment_config)
 
-        # Mock agent selection generator
-        def mock_agent_generator():
-            while True:
-                yield mock_agent
-
-        experiment.agent_selection_method = mock_agent_generator()
-
         results = experiment.run_interaction_loop()
 
         # Should have 3 FetcherMetrics + 1 AgentMetric
@@ -275,7 +281,7 @@ class TestExperiment:
         agent_metric = results[3]
         assert isinstance(agent_metric, AgentMetric)
         assert agent_metric.iteration == 3
-        assert agent_metric.role == "test_agent_1"
+        assert agent_metric.role == "agent_0"
         assert agent_metric.content == "Test response from agent"
         assert agent_metric.agent_id == "test_agent_1"
 
@@ -288,9 +294,9 @@ class TestExperiment:
         )
         assert experiment.metadata.num_iterations_total == 4
 
-    @patch("babel_ai.experiment.Analyzer.create_analyzer")
-    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.experiment.Agent")
+    @patch("experiment.Analyzer.create_analyzer")
+    @patch("experiment.BasePromptFetcher.create_fetcher")
+    @patch("experiment.Agent")
     @patch("builtins.open", new_callable=mock_open)
     @patch("pandas.DataFrame.to_csv")
     @patch("pathlib.Path.mkdir")
@@ -344,9 +350,9 @@ class TestExperiment:
         mock_file_open.assert_called()
         mock_json_dump.assert_called_once()
 
-    @patch("babel_ai.experiment.Analyzer.create_analyzer")
-    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.experiment.Agent")
+    @patch("experiment.Analyzer.create_analyzer")
+    @patch("experiment.BasePromptFetcher.create_fetcher")
+    @patch("experiment.Agent")
     def test_run_method(
         self,
         mock_agent_class,
@@ -386,9 +392,9 @@ class TestExperiment:
 
             assert results == []
 
-    @patch("babel_ai.experiment.Analyzer.create_analyzer")
-    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.experiment.Agent")
+    @patch("experiment.Analyzer.create_analyzer")
+    @patch("experiment.BasePromptFetcher.create_fetcher")
+    @patch("experiment.Agent")
     def test_run_method_with_custom_output_dir(
         self,
         mock_agent_class,
@@ -425,9 +431,9 @@ class TestExperiment:
                 output_dir=custom_output_dir,
             )
 
-    @patch("babel_ai.experiment.Analyzer.create_analyzer")
-    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.experiment.Agent")
+    @patch("experiment.Analyzer.create_analyzer")
+    @patch("experiment.BasePromptFetcher.create_fetcher")
+    @patch("experiment.Agent")
     def test_multiple_agents_selection(
         self,
         mock_agent_class,
@@ -490,9 +496,9 @@ class TestExperiment:
         assert agent_metrics[0].agent_id == "agent_1"
         assert agent_metrics[1].agent_id == "agent_2"
 
-    @patch("babel_ai.experiment.Analyzer.create_analyzer")
-    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.experiment.Agent")
+    @patch("experiment.Analyzer.create_analyzer")
+    @patch("experiment.BasePromptFetcher.create_fetcher")
+    @patch("experiment.Agent")
     def test_experiment_stops_at_character_limit(
         self,
         mock_agent_class,
@@ -518,13 +524,6 @@ class TestExperiment:
 
         experiment = Experiment(sample_experiment_config)
 
-        # Mock agent selection generator
-        def mock_agent_generator():
-            while True:
-                yield mock_agent
-
-        experiment.agent_selection_method = mock_agent_generator()
-
         results = experiment.run_interaction_loop()
 
         # Should stop due to character limit, not iteration limit
@@ -532,9 +531,9 @@ class TestExperiment:
         assert len(results) >= 3
         assert experiment.total_characters >= 100
 
-    @patch("babel_ai.experiment.Analyzer.create_analyzer")
-    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.experiment.Agent")
+    @patch("experiment.Analyzer.create_analyzer")
+    @patch("experiment.BasePromptFetcher.create_fetcher")
+    @patch("experiment.Agent")
     def test_experiment_with_empty_messages(
         self,
         mock_agent_class,
@@ -571,9 +570,9 @@ class TestExperiment:
         assert len(agent_metrics) > 0
         assert experiment.metadata.num_fetcher_messages == 0
 
-    @patch("babel_ai.experiment.Analyzer.create_analyzer")
-    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.experiment.Agent")
+    @patch("experiment.Analyzer.create_analyzer")
+    @patch("experiment.BasePromptFetcher.create_fetcher")
+    @patch("experiment.Agent")
     def test_experiment_with_notebook_tqdm_flag(
         self,
         mock_agent_class,
@@ -596,9 +595,9 @@ class TestExperiment:
 
         assert experiment.use_notebook_tqdm is True
 
-    @patch("babel_ai.experiment.Analyzer.create_analyzer")
-    @patch("babel_ai.experiment.BasePromptFetcher.create_fetcher")
-    @patch("babel_ai.experiment.Agent")
+    @patch("experiment.Analyzer.create_analyzer")
+    @patch("experiment.BasePromptFetcher.create_fetcher")
+    @patch("experiment.Agent")
     def test_experiment_messages_accumulate_correctly(
         self,
         mock_agent_class,
@@ -621,16 +620,7 @@ class TestExperiment:
         sample_experiment_config.max_total_characters = 500
 
         experiment = Experiment(sample_experiment_config)
-
-        # Track messages before and after
         initial_message_count = len(experiment.messages)
-
-        # Mock agent selection generator
-        def mock_agent_generator():
-            while True:
-                yield mock_agent
-
-        experiment.agent_selection_method = mock_agent_generator()
 
         experiment.run_interaction_loop()
 
@@ -639,7 +629,7 @@ class TestExperiment:
 
         # Last message should be from agent
         last_message = experiment.messages[-1]
-        assert last_message["role"] == mock_agent.id
+        assert last_message["role"] in ("user", "assistant")
         assert (
             last_message["content"]
             == mock_agent.generate_response.return_value

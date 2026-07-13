@@ -9,7 +9,7 @@ from typing import Dict, List, Optional
 
 import requests
 
-from babel_ai.enums import FetcherType
+from enums import FetcherType
 
 logger = logging.getLogger(__name__)
 

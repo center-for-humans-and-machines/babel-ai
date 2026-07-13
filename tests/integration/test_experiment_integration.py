@@ -14,8 +14,8 @@ from unittest.mock import patch
 import pytest
 
 from api.enums import OpenAIModels, Provider
-from babel_ai.enums import AgentSelectionMethod, AnalyzerType, FetcherType
-from babel_ai.experiment import Experiment
+from enums import AgentSelectionMethod, AnalyzerType, FetcherType
+from experiment import Experiment
 from models import (
     AgentConfig,
     AgentMetric,
