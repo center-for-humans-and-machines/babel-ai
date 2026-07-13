@@ -221,6 +221,24 @@ class ConversationManager:
             eliza_branch=getattr(turn, "eliza_branch", None),
             eliza_keyword=getattr(turn, "eliza_keyword", None),
             eliza_reassembly=getattr(turn, "eliza_reassembly", None),
+            scaffolder_action=getattr(turn, "scaffolder_action", None),
+            scaffolder_informative=getattr(
+                turn, "scaffolder_informative", None
+            ),
+            scaffolder_novelty=getattr(turn, "scaffolder_novelty", None),
+            scaffolder_continuity=getattr(turn, "scaffolder_continuity", None),
+            scaffolder_content_tokens=getattr(
+                turn, "scaffolder_content_tokens", None
+            ),
+            scaffolder_meta_detected=getattr(
+                turn, "scaffolder_meta_detected", None
+            ),
+            scaffolder_memory_size=getattr(
+                turn, "scaffolder_memory_size", None
+            ),
+            scaffolder_topic_source_turn=getattr(
+                turn, "scaffolder_topic_source_turn", None
+            ),
         )
 
     def _should_continue(self) -> bool:

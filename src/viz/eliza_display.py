@@ -14,11 +14,20 @@ def extract_eliza_agent_config(meta: dict[str, Any]) -> dict[str, str]:
     for agent in agents:
         if not isinstance(agent, dict):
             continue
-        if agent.get("type") == "rule_based" or agent.get("partner") == "eliza":
+        if (
+            agent.get("type") == "rule_based"
+            or agent.get("partner") == "eliza"
+        ):
             return {
                 "partner": str(agent.get("partner", "eliza")),
                 "generic_intervention": str(
                     agent.get("generic_intervention", "passthrough")
+                ),
+                "topic_switch_probability": str(
+                    agent.get("topic_switch_probability", "0.5")
+                ),
+                "feed_sources": ", ".join(
+                    agent.get("feed_sources", ["topic_bank"])
                 ),
             }
     return {}
@@ -74,7 +83,7 @@ def eliza_branch_status(turns: pd.DataFrame) -> str:
             "Re-run the experiment with a current build to capture "
             "keyword, memory, and generic fallback paths."
         )
-    tracked = turns.loc[
-        turns["speaker"] == "eliza", "eliza_branch"
-    ].notna().sum()
+    tracked = (
+        turns.loc[turns["speaker"] == "eliza", "eliza_branch"].notna().sum()
+    )
     return f"Tracked {tracked} of {eliza_count} ELIZA turns."

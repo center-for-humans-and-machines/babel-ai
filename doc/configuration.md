@@ -13,8 +13,15 @@ agents:
     system_prompt: "You are having a conversation."
   - type: rule_based
     partner: eliza
-    generic_intervention: passthrough
+    generic_intervention: live_feed
+    topic_switch_probability: 0.5
+    feed_sources:
+      - topic_bank
+      - hackernews
   - type: mirror
+  - type: scaffolder
+    stuck_turns: 2
+    random_seed: 0
 
 conversation_settings:
   turn_taking_method: round_robin
@@ -30,12 +37,21 @@ conversation_settings:
 | Type | Required keys | Optional keys |
 | --- | --- | --- |
 | `llm` | `provider`, `model` | `system_prompt` |
-| `rule_based` | None; `partner` defaults to `eliza` | `generic_intervention` |
+| `rule_based` | None; `partner` defaults to `eliza` | `generic_intervention`, `topic_switch_probability`, `feed_sources` |
 | `mirror` | None | None |
+| `scaffolder` | None | thresholds, memory policy, `random_seed` |
 
 `generic_intervention` accepts `passthrough`, `llm_nudge`, `live_feed`,
-or `custom`. Only `passthrough` is currently executable; the other
-modes are intentionally scaffolded.
+or `custom`. `live_feed` uses `topic_switch_probability` (default
+`0.5`) and `feed_sources` (`topic_bank`, `hackernews`). `passthrough`,
+`llm_nudge`, and `live_feed` are fully executable; `custom` remains
+reserved.
+
+The `scaffolder` uses three branches: protect informative continuation,
+consume one remembered topic when stuck, then inject a local topic when
+memory is empty. Its lexical thresholds, memory limits, cooldown, and
+random seed are configurable. See
+`configs/scaffolder_gpt_first_test.yaml` for all fields.
 
 ## Conversation settings
 

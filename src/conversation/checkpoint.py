@@ -137,6 +137,23 @@ class CheckpointWriter:
                     agent_config=raw.get("agent_config"),
                     speaker=raw.get("speaker"),
                     used_generic_fallback=raw.get("used_generic_fallback"),
+                    eliza_branch=raw.get("eliza_branch"),
+                    eliza_keyword=raw.get("eliza_keyword"),
+                    eliza_reassembly=raw.get("eliza_reassembly"),
+                    scaffolder_action=raw.get("scaffolder_action"),
+                    scaffolder_informative=raw.get("scaffolder_informative"),
+                    scaffolder_novelty=raw.get("scaffolder_novelty"),
+                    scaffolder_continuity=raw.get("scaffolder_continuity"),
+                    scaffolder_content_tokens=raw.get(
+                        "scaffolder_content_tokens"
+                    ),
+                    scaffolder_meta_detected=raw.get(
+                        "scaffolder_meta_detected"
+                    ),
+                    scaffolder_memory_size=raw.get("scaffolder_memory_size"),
+                    scaffolder_topic_source_turn=raw.get(
+                        "scaffolder_topic_source_turn"
+                    ),
                 )
             )
         return metrics

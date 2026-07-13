@@ -15,6 +15,7 @@ from conversation.agent_config import (
     LLMAgentConfig,
     MirrorAgentConfig,
     RuleBasedAgentConfig,
+    ScaffolderAgentConfig,
 )
 from conversation.settings import ConversationSettings
 from enums import AgentSelectionMethod, AnalyzerType, FetcherType
@@ -309,10 +310,13 @@ class ExperimentConfig(BaseModel):
         description="Legacy LLM-only agent configurations",
     )
     agents: List[
-        LLMAgentConfig | RuleBasedAgentConfig | MirrorAgentConfig
+        LLMAgentConfig
+        | RuleBasedAgentConfig
+        | MirrorAgentConfig
+        | ScaffolderAgentConfig
     ] = Field(
         default_factory=list,
-        description="Canonical multi-agent list (llm, rule_based, mirror)",
+        description="Canonical multi-agent configuration list",
     )
     agent_selection_method: AgentSelectionMethod = Field(
         description="Method to select the next agent"

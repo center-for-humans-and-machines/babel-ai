@@ -1,11 +1,12 @@
 """Optional handlers for ELIZA's generic ``$`` response."""
 
 import logging
+import random
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
-from .live_feed import LiveFeedProvider, LiveFeedStub
+from .live_feed import LiveFeedProvider, build_feed, format_topic_switch
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ class GenericResult:
     """Outcome of a generic-response intervention."""
 
     partner_text: str | None = None
+    topic_switched: bool = False
 
 
 class GenericIntervention(Protocol):
@@ -69,15 +71,31 @@ class LLMNudgeIntervention:
 
 
 class LiveFeedIntervention:
-    """Reserved live-feed hook that currently preserves ELIZA output."""
+    """Sometimes replace generic ``$`` text with a feed topic switch."""
 
-    def __init__(self, feed: LiveFeedProvider) -> None:
+    def __init__(
+        self,
+        feed: LiveFeedProvider,
+        *,
+        topic_switch_probability: float = 0.5,
+        rng: Callable[[], float] | None = None,
+    ) -> None:
         self._feed = feed
+        self._probability = topic_switch_probability
+        self._rng = rng or random.random
 
     def on_generic(self, ctx: GenericContext) -> GenericResult:
-        """Warn that feeds are unavailable and keep the default."""
-        logger.warning("Live-feed intervention is unavailable; using ELIZA.")
-        return GenericResult()
+        """Maybe return a topic-switch line from the configured feed."""
+        if self._rng() >= self._probability:
+            return GenericResult()
+        topic = self._feed.pick_topic()
+        if not topic:
+            logger.warning("Live feed returned no topic; using ELIZA default.")
+            return GenericResult()
+        return GenericResult(
+            partner_text=format_topic_switch(topic),
+            topic_switched=True,
+        )
 
 
 def build_intervention(
@@ -85,6 +103,8 @@ def build_intervention(
     *,
     hints: list[str] | None = None,
     feed: LiveFeedProvider | None = None,
+    topic_switch_probability: float = 0.5,
+    feed_sources: list[str] | None = None,
 ) -> GenericIntervention:
     """Build a generic-response intervention."""
     resolved = GenericInterventionMode(mode)
@@ -93,7 +113,11 @@ def build_intervention(
     if resolved is GenericInterventionMode.LLM_NUDGE:
         return LLMNudgeIntervention(hints=hints)
     if resolved is GenericInterventionMode.LIVE_FEED:
-        return LiveFeedIntervention(feed or LiveFeedStub())
+        resolved_feed = feed or build_feed(feed_sources)
+        return LiveFeedIntervention(
+            resolved_feed,
+            topic_switch_probability=topic_switch_probability,
+        )
     raise NotImplementedError(
         f"intervention mode {resolved!r} not implemented"
     )

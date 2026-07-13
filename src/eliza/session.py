@@ -63,12 +63,13 @@ class PartnerSession:
         """Produce the next partner turn from conversation history."""
         user_turn = self._last_user_turn(messages)
         used_generic_fallback = False
+        topic_switched = False
         turn_index = (
             sum(message.get("role") == "user" for message in messages) - 1
         )
 
         def intervene(default_response: str) -> str:
-            nonlocal used_generic_fallback
+            nonlocal used_generic_fallback, topic_switched
             used_generic_fallback = True
             if self._intervention is None:
                 return default_response
@@ -79,6 +80,8 @@ class PartnerSession:
                 turn_index=turn_index,
             )
             result = self._intervention.on_generic(context)
+            if result.topic_switched:
+                topic_switched = True
             return result.partner_text or default_response
 
         response, trace = generate_traced_response(
@@ -102,10 +105,13 @@ class PartnerSession:
             text,
             trace_reassembly,
         )
+        branch = trace.label()
+        if topic_switched:
+            branch = "generic:topic_switch"
         return PartnerTurn(
             text=text,
             used_generic_fallback=used_generic_fallback,
-            eliza_branch=trace.label(),
+            eliza_branch=branch,
             eliza_keyword=trace.keyword,
             eliza_reassembly=trace_reassembly,
         )

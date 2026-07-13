@@ -36,6 +36,8 @@ def test_run_detail_shows_eliza_branch_columns(tmp_path):
 
     assert response.status_code == 200
     assert "ELIZA setup" in response.text
+    assert "Started:" in response.text
+    assert "Monday, 13 July 2026, 17:46" in response.text
     assert "ELIZA decision paths" in response.text
     assert "keyword:like" in response.text
     assert "Branch counts" in response.text
@@ -130,6 +132,7 @@ def _save_run(
         {
             "run_id": run_id,
             "run_slug": "eliza_sharegpt_2turns",
+            "timestamp_human": "Monday, 13 July 2026, 17:46",
             "config": {
                 "max_iterations": index,
                 "agents": [

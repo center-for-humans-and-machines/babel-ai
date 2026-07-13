@@ -18,6 +18,9 @@
   {% if run_slug %}
   <p><strong>Config slug:</strong> {{ run_slug }}</p>
   {% endif %}
+  {% if timestamp_human %}
+  <p><strong>Started:</strong> {{ timestamp_human }}</p>
+  {% endif %}
 
   <div class="meta-box">
     <h2>ELIZA setup</h2>

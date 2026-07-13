@@ -20,6 +20,7 @@ flowchart TB
   Agents --> Mirror[MirrorConversationAgent]
   Rule --> Eliza[PartnerSession]
   Eliza --> Vendor[Vendored rdimaio ELIZA]
+  Eliza --> Feed[LiveFeedProvider]
   Manager --> Checkpoint[checkpoint.json]
   Manager --> Analyzer[Analyzer]
   Analyzer --> Store[Run store]
@@ -42,10 +43,14 @@ flowchart LR
   Memory -->|yes| Pop[Pop remembered reply]
   Memory -->|no| Generic["$ generic response"]
   Generic --> Hook[GenericIntervention]
-  Reassemble --> Clean[Strip ELIZA and You prefixes]
-  Pop --> Clean
-  Hook --> Clean
-  Clean --> Partner[PartnerTurn]
+  Hook -->|live_feed| TopicSwitch[Topic switch line]
+  Hook -->|passthrough/nudge| Stock[Stock $ text]
+  Reassemble --> Redirect[Topic/self redirects]
+  Pop --> Redirect
+  TopicSwitch --> Redirect
+  Stock --> Redirect
+  Redirect --> Clean[Strip ELIZA and You prefixes]
+  Clean --> Partner[PartnerTurn + branch label]
 ```
 
 The vendor logic remains stock rdimaio except for the `$` hook. The
@@ -62,12 +67,17 @@ wrapper does not call rdimaio's interactive `prepare_response()`.
 | E | Conversation manager | Owns lifecycle, context, scheduling, recovery. |
 
 The ELIZA work is coupled to E3: `RuleBasedConversationAgent` adapts a
-`PartnerSession`. Pillar B persists its fallback marker. Pillar C reads
-the resulting run directories without controlling experiments.
+`PartnerSession` with optional `live_feed` on the `$` path. Pillar B
+persists branch metadata and fallback markers. Pillar C reads the
+resulting run directories without controlling experiments.
 
 ## Delivery status
 
 E1 supplies the manager, context stack, round-robin scheduling,
-analysis policies, and atomic checkpoints. E2–E4, ELIZA execution,
-agent factories, run-store I/O, and canonical YAML loading remain
-scaffolding or planned work.
+analysis policies, and atomic checkpoints. E3 delivers
+`RuleBasedConversationAgent`, `MirrorConversationAgent`, `PartnerSession`,
+interventions (`passthrough`, `llm_nudge`, `live_feed`), branch tracing,
+and live feed sources (`topic_bank`, `hackernews`). E4 checkpoint resume,
+run-store I/O, config-driven run naming, and terminal turn progress are
+implemented. Canonical YAML loading through `Experiment` and full pillar
+D hygiene remain in progress.

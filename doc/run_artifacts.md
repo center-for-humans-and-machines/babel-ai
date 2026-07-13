@@ -15,6 +15,9 @@ results/{run_id}/
 `meta.json` records run metadata and resolved configuration.
 `manifest.json` is optional and records the artifact schema version.
 
+Run directory names are config-driven slugs from
+`persistence.run_naming` (agents, fetcher, turn limit, short uuid).
+
 ## Checkpoint schema
 
 The current checkpoint writer emits:
@@ -26,6 +29,7 @@ The current checkpoint writer emits:
 | `metrics` | Metrics accumulated so far. |
 | `turn_taking`, `turn_taking_state` | Algorithm snapshot and cursors. |
 | `pending_llm_nudge` | Visible-partner nudge pending for scheduling. |
+| `agent_states` | Per-agent state (ELIZA memory stack and counters). |
 | `agent_turn_count`, `settings` | Loop state and resolved settings. |
 
 Checkpoint writes are atomic within the filesystem: a temporary JSON
@@ -46,6 +50,9 @@ nested analysis blob.
 | `speaker` | string | Human-readable agent or seed name. |
 | `content` | string | Turn text. |
 | `agent_id` | nullable string | Producing agent identifier. |
+| `eliza_branch` | nullable string | ELIZA path label (`keyword:…`, `memory:pop`, `generic:$`, `generic:topic_switch`). |
+| `eliza_keyword` | nullable string | Matched keyword when applicable. |
+| `eliza_reassembly` | nullable string | Reassembly rule or redirect label. |
 | `word_count` | integer | Flat lexical metric. |
 | `semantic_similarity` | nullable float | Similarity signal. |
 | `semantic_similarity_window` | nullable float | Windowed signal. |
@@ -62,7 +69,7 @@ second handwritten registry.
 ## Current implementation state
 
 `RunManifest`, `RunRecord`, `save_run()`, `load_run()`, and
-`list_runs()` define the API in `persistence/run_store.py`, but the
-three I/O functions are currently scaffolds. Legacy `Experiment` still
-writes timestamped root-level CSV and metadata JSON; it is not the
-canonical format.
+`list_runs()` are implemented in `persistence/run_store.py`.
+`Experiment` writes canonical parquet and metadata for managed
+conversations; legacy root-level CSV remains for older experiment paths
+during migration.

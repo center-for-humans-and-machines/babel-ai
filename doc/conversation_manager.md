@@ -2,7 +2,7 @@
 
 `ConversationManager` is the conversation lifecycle owner. It accepts
 agents, settings, an analyzer, and a results root. Each manager creates
-a UUID run ID and writes checkpoints below that run directory.
+a config-driven run ID and writes checkpoints below that run directory.
 
 ## Loop
 
@@ -37,12 +37,16 @@ all stack messages, including seeds.
 | Type | Adapter | Status |
 | --- | --- | --- |
 | `llm` | `LLMConversationAgent` wraps legacy `Agent`. | Implemented |
-| `rule_based` | `RuleBasedConversationAgent` wraps ELIZA. | Scaffold |
-| `mirror` | `MirrorConversationAgent` echoes a peer turn. | Scaffold |
+| `rule_based` | `RuleBasedConversationAgent` wraps ELIZA. | Implemented |
+| `mirror` | `MirrorConversationAgent` echoes a peer turn. | Implemented |
 
 Each agent returns `AgentTurn`. Its `content` becomes a
-`ConversationMessage`; `llm_nudge` and `used_generic_fallback` carry
-partner-specific metadata for later persistence and scheduling work.
+`ConversationMessage`. ELIZA turns also carry `eliza_branch`,
+`eliza_keyword`, `eliza_reassembly`, and `used_generic_fallback` for
+persistence and visualization.
+
+`RuleBasedConversationAgent` builds interventions from config, including
+`live_feed` with `topic_switch_probability` and `feed_sources`.
 
 ## Turn-taking
 
@@ -65,7 +69,9 @@ derived from parity.
 
 `CheckpointWriter` writes `checkpoint.json.tmp` and then renames it to
 `checkpoint.json`. The payload contains messages, metrics, scheduling
-state, pending nudge, settings, and save time. The reader can rebuild
+state, pending nudge, agent states (including ELIZA memory stack),
+settings, and save time.
+
 `ConversationManager.resume_from()` restores stack, metrics, turn-taking,
 and ELIZA session state from `results/{run_id}/checkpoint.json`. Continue
 with `continue_run()` or:
@@ -74,8 +80,14 @@ with `continue_run()` or:
 poetry run python scripts/resume_conversation.py results/{run_id}/checkpoint.json
 ```
 
+## Run naming and progress
+
+`Experiment` assigns run directories via `persistence.run_naming`:
+`{agent-slug}__{fetcher}__{turns}turns_{short_uuid}`. When wired through
+`Experiment`, `TurnProgress` renders a terminal progress bar per turn.
+
 ## Integration boundary
 
-The manager currently saves checkpoints only. Pillar B will receive
-metrics at completion and write `turns.parquet`, `meta.json`, and an
-optional manifest in the same run directory.
+The manager saves checkpoints during a run. `Experiment` finalizes
+metrics and writes `turns.parquet`, `meta.json`, and an optional
+manifest in the same run directory via `persistence.save_run()`.

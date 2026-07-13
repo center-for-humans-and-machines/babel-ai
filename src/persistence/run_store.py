@@ -24,6 +24,14 @@ _CORE_COLUMNS = (
     "eliza_keyword",
     "eliza_reassembly",
     "used_generic_fallback",
+    "scaffolder_action",
+    "scaffolder_informative",
+    "scaffolder_novelty",
+    "scaffolder_continuity",
+    "scaffolder_content_tokens",
+    "scaffolder_meta_detected",
+    "scaffolder_memory_size",
+    "scaffolder_topic_source_turn",
 )
 
 

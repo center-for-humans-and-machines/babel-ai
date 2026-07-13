@@ -1,18 +1,14 @@
 """Tests for the flat-layout ELIZA partner."""
 
-import logging
-
 import pytest
 
 from eliza.interventions import (
     GenericContext,
     GenericInterventionMode,
-    LiveFeedIntervention,
     LLMNudgeIntervention,
     PassthroughIntervention,
     build_intervention,
 )
-from eliza.live_feed import LiveFeedStub
 from eliza.session import PartnerSession
 
 
@@ -123,11 +119,11 @@ def test_generic_responses_avoid_feeling_prompts():
         assert "feel" not in turn.text.lower()
 
 
-def test_live_feed_stubs_warn_and_passthrough(caplog):
-    caplog.set_level(logging.WARNING)
+def test_live_feed_factory_uses_topic_bank():
+    intervention = build_intervention(GenericInterventionMode.LIVE_FEED)
     context = GenericContext("x", "Default.", [], 0)
-    result = LiveFeedIntervention(LiveFeedStub()).on_generic(context)
-    assert result.partner_text is None
-    assert "unavailable" in caplog.text
-    assert LiveFeedStub().fetch_headline() is None
-    assert "not implemented" in caplog.text
+    result = intervention.on_generic(context)
+    if result.topic_switched:
+        assert "What comes to mind?" in (result.partner_text or "")
+    else:
+        assert result.partner_text is None

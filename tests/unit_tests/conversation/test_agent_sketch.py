@@ -1,9 +1,14 @@
 """Tests for conversation agent adapters."""
 
-from conversation.agent_config import MirrorAgentConfig, RuleBasedAgentConfig
+from conversation.agent_config import (
+    MirrorAgentConfig,
+    RuleBasedAgentConfig,
+    ScaffolderAgentConfig,
+)
 from conversation.agents import (
     MirrorConversationAgent,
     RuleBasedConversationAgent,
+    ScaffolderConversationAgent,
 )
 from conversation.factory import build_agent
 from conversation.messages import (
@@ -65,3 +70,9 @@ def test_mirror_generates_latest_peer_message():
         )
     )
     assert turn.content == "latest"
+
+
+def test_build_scaffolder_agent():
+    agent = build_agent(ScaffolderAgentConfig(), speaker="scaffolder")
+    assert isinstance(agent, ScaffolderConversationAgent)
+    assert agent.speaker == "scaffolder"

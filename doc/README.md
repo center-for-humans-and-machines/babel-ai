@@ -1,8 +1,8 @@
 # babel-ai architecture documentation
 
 This documentation describes the ELIZA conversation architecture. The
-conversation manager, ELIZA partner, unified agent factory, and run
-artifacts are implemented.
+conversation manager, ELIZA partner (including `live_feed`), unified
+agent factory, run artifacts, and web viewer are implemented.
 
 ## Guides
 

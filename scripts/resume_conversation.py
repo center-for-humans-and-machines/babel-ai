@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import argparse
 import logging
-from datetime import datetime
 from pathlib import Path
 
 from conversation.factory import build_conversation_agents
 from conversation.manager import ConversationManager
 from models.configs import ExperimentConfig
 from models.metrics import AnalysisResult
+from persistence.run_naming import enrich_run_meta
 from persistence.run_store import RunManifest, save_run
 from utils import load_yaml_config
 
@@ -65,13 +65,14 @@ def main() -> None:
         print(f"[{message.speaker}] {message.content}")
 
     output_dir = Path(config.output_dir or "results")
-    meta = {
-        "run_id": manager.run_id,
-        "timestamp": datetime.now().isoformat(),
-        "config": config.model_dump(),
-        "turn_count": len(metrics),
-        "resumed_from": str(checkpoint_path),
-    }
+    meta = enrich_run_meta(
+        {
+            "run_id": manager.run_id,
+            "config": config.model_dump(),
+            "turn_count": len(metrics),
+            "resumed_from": str(checkpoint_path),
+        }
+    )
     run_dir = save_run(
         output_dir / manager.run_id,
         metrics,

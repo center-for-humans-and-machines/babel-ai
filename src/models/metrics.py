@@ -206,6 +206,14 @@ class AgentMetric(Metric):
         default=None,
         description="ELIZA reassembly rule used for keyword matches",
     )
+    scaffolder_action: Optional[str] = None
+    scaffolder_informative: Optional[bool] = None
+    scaffolder_novelty: Optional[float] = None
+    scaffolder_continuity: Optional[float] = None
+    scaffolder_content_tokens: Optional[int] = None
+    scaffolder_meta_detected: Optional[bool] = None
+    scaffolder_memory_size: Optional[int] = None
+    scaffolder_topic_source_turn: Optional[int] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert metric to a dictionary format suitable for CSV export."""
@@ -227,6 +235,16 @@ class AgentMetric(Metric):
                 "eliza_branch": self.eliza_branch,
                 "eliza_keyword": self.eliza_keyword,
                 "eliza_reassembly": self.eliza_reassembly,
+                "scaffolder_action": self.scaffolder_action,
+                "scaffolder_informative": self.scaffolder_informative,
+                "scaffolder_novelty": self.scaffolder_novelty,
+                "scaffolder_continuity": self.scaffolder_continuity,
+                "scaffolder_content_tokens": self.scaffolder_content_tokens,
+                "scaffolder_meta_detected": self.scaffolder_meta_detected,
+                "scaffolder_memory_size": self.scaffolder_memory_size,
+                "scaffolder_topic_source_turn": (
+                    self.scaffolder_topic_source_turn
+                ),
             }
         )
 

@@ -12,6 +12,21 @@ Open `http://127.0.0.1:8765/runs` to select a run. Each run page shows
 the windowed semantic-similarity trajectory and transcript. If the
 metric is unavailable, the chart plots turn index instead.
 
+## ELIZA run detail
+
+When a run includes a rule-based ELIZA partner, the run-detail page
+shows:
+
+- Resolved partner config: `generic_intervention`,
+  `topic_switch_probability`, `feed_sources`
+- Per-turn branch labels: `keyword:…`, `memory:pop`, `generic:$`,
+  `generic:topic_switch`
+- Keyword, reassembly, and `used_generic_fallback` columns
+- Branch distribution chart and summary counts
+
+Older runs without `eliza_branch` in `turns.parquet` display a warning;
+re-run with a current build to capture branch metadata.
+
 ## Compare view (C2–C4)
 
 Open `http://127.0.0.1:8765/compare` to overlay multiple runs, plot mean
@@ -26,3 +41,9 @@ Query parameters:
 The viewer is read-only. It uses `persistence.list_runs()` and
 `persistence.load_run()`; create artifacts with the canonical
 `persistence.save_run()` API.
+
+## Terminal progress
+
+Long runs driven through `Experiment` render a live turn progress bar in
+the terminal (`conversation.progress.TurnProgress`), showing turn count,
+speaker, and a preview of the latest reply.

@@ -26,6 +26,8 @@ def test_extract_eliza_agent_config_reads_rule_based_agent():
     assert extract_eliza_agent_config(meta) == {
         "partner": "eliza",
         "generic_intervention": "passthrough",
+        "topic_switch_probability": "0.5",
+        "feed_sources": "topic_bank",
     }
 
 

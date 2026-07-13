@@ -7,7 +7,13 @@ from eliza.interventions import (
     PassthroughIntervention,
     build_intervention,
 )
-from eliza.live_feed import LiveFeedProvider, LiveFeedStub
+from eliza.live_feed import (
+    LiveFeedProvider,
+    LiveFeedStub,
+    TopicBankFeed,
+    build_feed,
+    format_topic_switch,
+)
 from eliza.session import PartnerSession, PartnerTurn
 
 __all__ = [
@@ -16,6 +22,9 @@ __all__ = [
     "GenericResult",
     "LiveFeedProvider",
     "LiveFeedStub",
+    "TopicBankFeed",
+    "build_feed",
+    "format_topic_switch",
     "PartnerSession",
     "PartnerTurn",
     "PassthroughIntervention",

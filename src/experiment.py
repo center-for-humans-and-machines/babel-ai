@@ -18,7 +18,11 @@ from conversation.manager import ConversationManager
 from conversation.progress import TurnProgress
 from conversation.settings import AnalysisPolicy
 from models import AgentMetric, ExperimentConfig, ExperimentMetadata, Metric
-from persistence.run_naming import build_run_id, build_run_slug
+from persistence.run_naming import (
+    build_run_id,
+    build_run_slug,
+    enrich_run_meta,
+)
 from persistence.run_store import RunManifest, save_run
 from prompt_fetcher import BasePromptFetcher
 
@@ -198,16 +202,18 @@ class Experiment:
         output_dir.mkdir(parents=True, exist_ok=True)
         run_id = self._manager.run_id if self._manager else str(self.uuid)
         run_dir = output_dir / run_id
-        meta = {
-            "run_id": run_id,
-            "run_slug": build_run_slug(self.config),
-            "experiment_uuid": str(self.uuid),
-            "timestamp": metadata.timestamp.isoformat(),
-            "config": metadata.config.model_dump(),
-            "num_iterations_total": metadata.num_iterations_total,
-            "num_fetcher_messages": metadata.num_fetcher_messages,
-            "total_characters": metadata.total_characters,
-        }
+        meta = enrich_run_meta(
+            {
+                "run_id": run_id,
+                "run_slug": build_run_slug(self.config),
+                "experiment_uuid": str(self.uuid),
+                "config": metadata.config.model_dump(),
+                "num_iterations_total": metadata.num_iterations_total,
+                "num_fetcher_messages": metadata.num_fetcher_messages,
+                "total_characters": metadata.total_characters,
+            },
+            timestamp=metadata.timestamp,
+        )
         save_run(run_dir, metrics, meta, manifest=RunManifest())
         logger.debug(f"Saved canonical run artifacts to {run_dir}")
         return run_dir

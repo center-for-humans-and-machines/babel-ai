@@ -12,6 +12,18 @@ Collapse metrics are stored as flat columns in `results/{run_id}/turns.parquet`.
 | `token_perplexity` | Language-model perplexity |
 | `used_generic_fallback` | ELIZA `$` fallback fired |
 
+## ELIZA observability
+
+| Column | Meaning |
+| --- | --- |
+| `eliza_branch` | Rule path: `keyword:…`, `memory:pop`, `generic:$`, `generic:topic_switch` |
+| `eliza_keyword` | Matched keyword on keyword branches |
+| `eliza_reassembly` | Reassembly rule id or redirect label |
+
+`generic:topic_switch` marks live-feed topic injections on the `$`
+path. Compare against `generic:$` to measure how often external topics
+enter the dialogue.
+
 ## API
 
 ```python

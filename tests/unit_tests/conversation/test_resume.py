@@ -4,7 +4,12 @@ from datetime import datetime
 from unittest.mock import Mock
 
 from api.enums import OpenAIModels, Provider
-from conversation.agents import LLMConversationAgent
+from conversation.agent_config import ScaffolderAgentConfig
+from conversation.agent_state import restore_agents
+from conversation.agents import (
+    LLMConversationAgent,
+    ScaffolderConversationAgent,
+)
 from conversation.checkpoint import CheckpointWriter, ConversationState
 from conversation.manager import ConversationManager
 from conversation.messages import (
@@ -15,6 +20,7 @@ from conversation.messages import (
 from conversation.settings import ConversationSettings
 from conversation.status import ConversationStatus
 from models import AgentConfig
+from models.metrics import AgentMetric
 
 
 def test_resume_from_continues_conversation(tmp_path):
@@ -109,3 +115,83 @@ def test_checkpoint_save_and_restore_stack(tmp_path):
     restored = CheckpointWriter.restore_stack(data)
     assert len(restored.messages) == 1
     assert restored.messages[0].content == "hello"
+
+
+def test_checkpoint_restores_scaffolder_metric_trace(tmp_path):
+    metric = AgentMetric(
+        iteration=0,
+        timestamp=datetime(2026, 7, 13),
+        role="scaffolder",
+        content="Add one concrete detail.",
+        agent_id="scaffolder",
+        scaffolder_action="thrive_protection",
+        scaffolder_informative=True,
+        scaffolder_novelty=0.4,
+        scaffolder_memory_size=2,
+    )
+    writer = CheckpointWriter(tmp_path)
+    writer.save(
+        state=ConversationState(run_id="run-1"),
+        stack=ContextStack(),
+        metrics=[metric],
+        turn_taking_data={},
+        settings={"max_iterations": 10},
+        agents=[],
+    )
+    data = CheckpointWriter.load(tmp_path / "checkpoint.json")
+    restored = CheckpointWriter.restore_metrics(data)[0]
+    assert restored.scaffolder_action == "thrive_protection"
+    assert restored.scaffolder_informative is True
+    assert restored.scaffolder_memory_size == 2
+
+
+def test_checkpoint_restores_scaffolder_policy_state(tmp_path):
+    config = ScaffolderAgentConfig(
+        min_content_tokens=3,
+        stuck_turns=1,
+        memory_cooldown=0,
+    )
+    original = ScaffolderConversationAgent(config)
+    stack = ContextStack(
+        messages=[
+            ConversationMessage(
+                turn_index=0,
+                role="assistant",
+                speaker="llm",
+                content="Ocean currents transport heat across the planet.",
+                source=MessageSource.AGENT,
+            )
+        ]
+    )
+    first = original.generate(stack)
+    stack.append(
+        ConversationMessage(
+            turn_index=1,
+            role="user",
+            speaker="scaffolder",
+            content=first.content,
+            source=MessageSource.AGENT,
+        )
+    )
+    stack.append(
+        ConversationMessage(
+            turn_index=2,
+            role="assistant",
+            speaker="llm",
+            content="Okay.",
+            source=MessageSource.AGENT,
+        )
+    )
+    writer = CheckpointWriter(tmp_path)
+    writer.save(
+        state=ConversationState(run_id="run-1"),
+        stack=stack,
+        metrics=[],
+        turn_taking_data={},
+        settings={"max_iterations": 10},
+        agents=[original],
+    )
+    data = CheckpointWriter.load(tmp_path / "checkpoint.json")
+    restored = ScaffolderConversationAgent(config)
+    restore_agents([restored], data["agent_states"])
+    assert restored.generate(stack) == original.generate(stack)

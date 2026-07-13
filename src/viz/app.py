@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from persistence import list_runs, load_run
+from persistence.run_naming import timestamp_from_meta
 from viz.charts import (
     aggregate_chart,
     available_metrics,
@@ -47,6 +48,7 @@ def create_app(results_root: Path | None = None) -> FastAPI:
         records = list_runs(app.state.results_root)
         for record in records:
             record.eliza_status = eliza_branch_status(record.turns)
+            record.timestamp_human = timestamp_from_meta(record.meta)
         return templates.TemplateResponse(
             request=request,
             name="runs.html",
@@ -63,12 +65,14 @@ def create_app(results_root: Path | None = None) -> FastAPI:
         eliza_counts = eliza_branch_bar_chart(record.turns)
         transcript = _transcript_rows(record.turns)
         run_slug = record.meta.get("run_slug", "")
+        timestamp_human = timestamp_from_meta(record.meta)
         return templates.TemplateResponse(
             request=request,
             name="run_detail.html",
             context={
                 "run": record,
                 "run_slug": run_slug,
+                "timestamp_human": timestamp_human,
                 "eliza_config": extract_eliza_agent_config(record.meta),
                 "eliza_status": eliza_branch_status(record.turns),
                 "has_eliza_branches": has_eliza_branch_data(record.turns),

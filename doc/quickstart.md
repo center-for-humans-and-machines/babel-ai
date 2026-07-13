@@ -7,6 +7,7 @@ Run these commands from the repository root:
 ```bash
 poetry install
 poetry run pytest tests/unit_tests/conversation/
+poetry run pytest tests/unit_tests/eliza/test_live_feed.py
 ```
 
 Python 3.13 and Poetry are required. Configure provider credentials in
@@ -30,7 +31,8 @@ After a run exists under `results/`, launch the local viewer:
 poetry run python -m viz
 ```
 
-Open `http://127.0.0.1:8765/runs` to browse trajectories and transcripts.
+Open `http://127.0.0.1:8765/runs` to browse trajectories, ELIZA branch
+metadata, and transcripts.
 
 Resume an interrupted run:
 
@@ -40,7 +42,28 @@ poetry run python scripts/resume_conversation.py results/{run_id}/checkpoint.jso
 
 ## ELIZA conversation configuration
 
-The script uses the canonical agent configuration:
+The smoke script uses passthrough ELIZA. To enable live-feed topic
+switches on generic `$` turns:
+
+```yaml
+agents:
+  - type: rule_based
+    partner: eliza
+    generic_intervention: live_feed
+    topic_switch_probability: 0.5
+    feed_sources:
+      - topic_bank
+  - type: mirror
+conversation_settings:
+  turn_taking_method: round_robin
+  max_iterations: 6
+  analysis_policy: at_end
+```
+
+Offline runs can use `topic_bank` only; add `hackernews` for live
+headlines when network access is available.
+
+A minimal LLM + ELIZA setup:
 
 ```yaml
 agents:
@@ -63,5 +86,6 @@ framing. See [Configuration](configuration.md) for the full schema.
 ## Inspect results
 
 The script prints the transcript and the path to its run artifacts.
+Run directories use config-driven slugs from `persistence.run_naming`.
 Modules use flat imports, for example `conversation.manager` and
 `persistence.run_store`.

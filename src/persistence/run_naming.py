@@ -3,9 +3,42 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime
 from uuid import uuid4
 
 from models.configs import ExperimentConfig
+
+
+def format_run_timestamp(when: datetime) -> str:
+    """Return a readable local timestamp for saved run metadata."""
+    return when.strftime("%A, %d %B %Y, %H:%M")
+
+
+def enrich_run_meta(
+    meta: dict,
+    *,
+    timestamp: datetime | None = None,
+) -> dict:
+    """Attach ISO and human-readable timestamps to run metadata."""
+    when = timestamp or datetime.now()
+    enriched = dict(meta)
+    enriched["timestamp"] = when.isoformat()
+    enriched["timestamp_human"] = format_run_timestamp(when)
+    return enriched
+
+
+def timestamp_from_meta(meta: dict) -> str:
+    """Return a human-readable timestamp from saved run metadata."""
+    human = meta.get("timestamp_human")
+    if isinstance(human, str) and human.strip():
+        return human
+    raw = meta.get("timestamp")
+    if not isinstance(raw, str) or not raw.strip():
+        return ""
+    try:
+        return format_run_timestamp(datetime.fromisoformat(raw))
+    except ValueError:
+        return raw
 
 
 def slugify_token(value: str, *, max_len: int = 24) -> str:

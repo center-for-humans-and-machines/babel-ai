@@ -5,6 +5,7 @@ from datetime import datetime
 import pandas as pd
 
 from collapse import detect_similarity_spikes, mark_generic_fallback_turns
+from models.metrics import AgentMetric
 from persistence.run_store import RunManifest, list_runs, load_run, save_run
 
 
@@ -58,3 +59,27 @@ def test_mark_generic_fallback_turns():
 def test_detect_similarity_spikes_flags_sharp_drops():
     turns = pd.DataFrame({"semantic_similarity_window": [0.8, 0.7, 0.5]})
     assert detect_similarity_spikes(turns).tolist() == [False, False, True]
+
+
+def test_scaffolder_trace_is_persisted(tmp_path):
+    metric = AgentMetric(
+        iteration=0,
+        timestamp=datetime(2026, 7, 13, 12, 0),
+        role="scaffolder",
+        content="Add one concrete detail.",
+        agent_id="scaffolder",
+        scaffolder_action="thrive_protection",
+        scaffolder_informative=True,
+        scaffolder_novelty=0.4,
+        scaffolder_continuity=0.2,
+        scaffolder_content_tokens=12,
+        scaffolder_meta_detected=False,
+        scaffolder_memory_size=2,
+        scaffolder_topic_source_turn=3,
+    )
+    run_dir = tmp_path / "trace-run"
+    save_run(run_dir, [metric], {"run_id": "trace-run"})
+    row = load_run(run_dir).turns.iloc[0]
+    assert row["scaffolder_action"] == "thrive_protection"
+    assert row["scaffolder_memory_size"] == 2
+    assert row["scaffolder_topic_source_turn"] == 3

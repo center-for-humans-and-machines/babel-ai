@@ -10,12 +10,14 @@ from conversation.agent_config import (
     LLMAgentConfig,
     MirrorAgentConfig,
     RuleBasedAgentConfig,
+    ScaffolderAgentConfig,
 )
 from conversation.agents import (
     ConversationAgent,
     LLMConversationAgent,
     MirrorConversationAgent,
     RuleBasedConversationAgent,
+    ScaffolderConversationAgent,
 )
 from models.configs import AgentConfig as LegacyAgentConfig
 
@@ -41,6 +43,8 @@ def build_agent(config: AgentConfig, *, speaker: str) -> ConversationAgent:
         return RuleBasedConversationAgent(config=config, speaker=speaker)
     if config.type is AgentType.MIRROR:
         return MirrorConversationAgent(speaker=speaker)
+    if config.type is AgentType.SCAFFOLDER:
+        return ScaffolderConversationAgent(config=config, speaker=speaker)
     raise ValueError(f"unknown agent type: {config.type}")
 
 
@@ -50,6 +54,8 @@ def _default_speaker(config: AgentConfig, index: int) -> str:
         return config.partner
     if isinstance(config, MirrorAgentConfig):
         return "mirror"
+    if isinstance(config, ScaffolderAgentConfig):
+        return "scaffolder"
     return f"agent_{index}"
 
 
