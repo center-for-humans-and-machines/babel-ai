@@ -105,8 +105,10 @@ def _prepare_turns(
         records = turns.to_dict(orient="records")
     else:
         records = [_metric_record(turn) for turn in turns]
-    flattened = [_flatten_turn(record, run_id, index) for index, record in
-                 enumerate(records)]
+    flattened = [
+        _flatten_turn(record, run_id, index)
+        for index, record in enumerate(records)
+    ]
     frame = pd.DataFrame(flattened)
     if frame.empty:
         frame = pd.DataFrame(columns=[*_CORE_COLUMNS, *parquet_columns()])
@@ -119,7 +121,9 @@ def _metric_record(metric: Mapping[str, Any] | Any) -> dict[str, Any]:
         return dict(metric)
     to_dict = getattr(metric, "to_dict", None)
     if not callable(to_dict):
-        raise TypeError("turns must contain mappings or objects with to_dict()")
+        raise TypeError(
+            "turns must contain mappings or objects with to_dict()"
+        )
     return dict(to_dict())
 
 
@@ -137,17 +141,16 @@ def _flatten_turn(
     if record_run_id is not None and record_run_id != run_id:
         raise ValueError("turn run_id must match the run directory name")
     row["run_id"] = run_id
-    return {
-        key: _serialize_nested(value)
-        for key, value in row.items()
-    }
+    return {key: _serialize_nested(value) for key, value in row.items()}
 
 
 def _ordered_columns(frame: pd.DataFrame) -> pd.DataFrame:
     """Place identity and known analysis fields before extra columns."""
     preferred = [*_CORE_COLUMNS, *parquet_columns()]
     present = [column for column in preferred if column in frame.columns]
-    remaining = sorted(column for column in frame.columns if column not in present)
+    remaining = sorted(
+        column for column in frame.columns if column not in present
+    )
     return frame.loc[:, [*present, *remaining]]
 
 

@@ -14,7 +14,9 @@ _SCRIPTS_DIR = Path(__file__).parent / "vendor" / "scripts"
 
 
 @lru_cache
-def _load_scripts(script_name: str) -> tuple[dict[str, Any], list[dict], list[str]]:
+def _load_scripts(
+    script_name: str,
+) -> tuple[dict[str, Any], list[dict], list[str]]:
     """Load and preprocess the immutable script templates."""
     if Path(script_name).name != script_name:
         raise ValueError("script_name must not contain a path")
@@ -54,9 +56,9 @@ class PartnerSession:
         """Produce the next partner turn from conversation history."""
         user_turn = self._last_user_turn(messages)
         used_generic_fallback = False
-        turn_index = sum(
-            message.get("role") == "user" for message in messages
-        ) - 1
+        turn_index = (
+            sum(message.get("role") == "user" for message in messages) - 1
+        )
 
         def intervene(default_response: str) -> str:
             nonlocal used_generic_fallback

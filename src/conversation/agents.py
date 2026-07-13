@@ -83,4 +83,6 @@ class MirrorConversationAgent:
         for message in reversed(stack.messages):
             if message.speaker != self.speaker:
                 return AgentTurn(content=message.content)
-        raise ValueError("mirror agent needs a prior message from another speaker")
+        raise ValueError(
+            "mirror agent needs a prior message from another speaker"
+        )

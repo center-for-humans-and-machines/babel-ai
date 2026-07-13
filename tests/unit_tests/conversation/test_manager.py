@@ -1,7 +1,6 @@
 """Tests for ConversationManager."""
 
 from datetime import datetime
-from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
@@ -15,10 +14,7 @@ from conversation.messages import (
     ConversationMessage,
     MessageSource,
 )
-from conversation.settings import (
-    AnalysisPolicy,
-    ConversationSettings,
-)
+from conversation.settings import AnalysisPolicy, ConversationSettings
 from conversation.status import ConversationStatus
 from enums import FetcherType
 from models import AgentConfig, FetcherConfig

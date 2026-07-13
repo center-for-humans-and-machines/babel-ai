@@ -2,9 +2,10 @@ import json
 
 from .rules import process_decomp_rules
 
+
 def setup(general_script_path, script_path):
     """Set up the program, loading the JSON scripts.
-    
+
     Returns
     -------
     general_script : dict
@@ -20,19 +21,20 @@ def setup(general_script_path, script_path):
     # Load scripts
     general_script = load_script(general_script_path)
     script = load_script(script_path)
-    
+
     # Process decomposition rules in custom script
-    script = process_decomp_rules(script, general_script['tags'])
-    
+    script = process_decomp_rules(script, general_script["tags"])
+
     # Get information needed for program execution
-    memory_inputs = general_script['memory_inputs']
-    exit_inputs = general_script['exit_inputs']
+    memory_inputs = general_script["memory_inputs"]
+    exit_inputs = general_script["exit_inputs"]
 
     return general_script, script, memory_inputs, exit_inputs
 
+
 def load_script(script_path):
     """Load script from a JSON file.
-    
+
     Parameters
     ----------
     script_path : str

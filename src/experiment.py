@@ -4,14 +4,11 @@ Runs multi-agent conversations via ConversationManager and persists flat
 run artifacts under ``results/{run_id}/``.
 """
 
-import json
 import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 from uuid import uuid4
-
-import pandas as pd
 
 from agent import Agent
 from analyzer import Analyzer
@@ -30,25 +27,16 @@ logger = logging.getLogger(__name__)
 class Experiment:
     """Main class for running LLM drift experiments."""
 
-    def __init__(
-        self,
-        config: ExperimentConfig,
-        use_notebook_tqdm: bool = False,
-    ):
+    def __init__(self, config: ExperimentConfig):
         self.uuid = uuid4()
         logger.info(
             f"Initializing Experiment {self.uuid} with config: {config}"
         )
-        if use_notebook_tqdm:
-            logger.info("Using notebook tqdm")
-        else:
-            logger.info("Using standard tqdm")
 
         self.config = config
         self.conversation_settings = config.resolved_conversation_settings()
         self.max_iterations = config.max_iterations
         self.max_total_characters = config.max_total_characters
-        self.use_notebook_tqdm = use_notebook_tqdm
 
         if config.output_dir is None:
             self.output_dir = Path.cwd() / "results"
@@ -92,9 +80,9 @@ class Experiment:
             self.config.agent_selection_method
         )
         self.result_metrics: List[Metric] = []
-        self.messages: List[Dict[str, str]] = (
-            self.prompt_fetcher.get_conversation()
-        )
+        self.messages: List[
+            Dict[str, str]
+        ] = self.prompt_fetcher.get_conversation()
         self.metadata.num_fetcher_messages = len(self.messages)
         self._manager: Optional[ConversationManager] = None
 
@@ -194,7 +182,7 @@ class Experiment:
         metadata: ExperimentMetadata,
         output_dir: Optional[Path] = None,
     ) -> None:
-        """Persist canonical run artifacts and legacy CSV."""
+        """Persist canonical run artifacts under ``results/{run_id}/``."""
         output_dir = output_dir or self.output_dir
         output_dir.mkdir(parents=True, exist_ok=True)
         run_id = self._manager.run_id if self._manager else str(self.uuid)
@@ -209,24 +197,4 @@ class Experiment:
             "total_characters": metadata.total_characters,
         }
         save_run(run_dir, metrics, meta, manifest=RunManifest())
-        self._save_legacy_csv(metrics, metadata, output_dir)
-
-    def _save_legacy_csv(
-        self,
-        metrics: List[Metric],
-        metadata: ExperimentMetadata,
-        output_dir: Path,
-    ) -> None:
-        """Write transitional root-level CSV for older notebooks."""
-        df = pd.DataFrame([metric.to_dict() for metric in metrics])
-        base_filename = (
-            f"drift_experiment_{metadata.timestamp.strftime('%Y%m%d_%H%M%S')}"
-        )
-        csv_path = output_dir / f"{base_filename}.csv"
-        meta_path = output_dir / f"{base_filename}_meta.json"
-        df.to_csv(csv_path, index=False)
-        metadata_dict = metadata.model_dump()
-        with meta_path.open("w", encoding="utf-8") as file:
-            json.dump(metadata_dict, file, indent=2, default=str)
-        logger.info(f"Saved experiment results to {csv_path}")
-        logger.info(f"Saved canonical run artifacts to {output_dir}")
+        logger.info(f"Saved canonical run artifacts to {run_dir}")

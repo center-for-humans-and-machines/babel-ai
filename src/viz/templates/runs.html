@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>babel-ai runs</title>
+</head>
+<body>
+  <h1>Completed runs</h1>
+  {% if runs %}
+  <ul>
+    {% for run in runs %}
+    <li>
+      <a href="/runs/{{ run.run_dir.name }}">{{ run.run_id }}</a>
+      ({{ run.turns|length }} turns)
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>No completed runs found.</p>
+  {% endif %}
+</body>
+</html>

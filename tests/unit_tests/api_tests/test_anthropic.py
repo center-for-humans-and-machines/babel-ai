@@ -55,6 +55,29 @@ def test_anthropic_request_success(mock_anthropic_response, sample_messages):
         )
 
 
+def test_system_messages_are_passed_as_system_parameter(
+    mock_anthropic_response,
+):
+    """Move system messages out of the conversation list."""
+    messages = [
+        {"role": "system", "content": "Be concise."},
+        {"role": "user", "content": "Hello"},
+        {"role": "system", "content": "Use plain text."},
+    ]
+
+    with patch(
+        "api.anthropic.CLIENT.messages.create",
+        return_value=mock_anthropic_response,
+    ) as mock_create:
+        anthropic_request(messages=messages, max_tokens=100)
+
+    call_kwargs = mock_create.call_args.kwargs
+    assert call_kwargs["system"] == "Be concise.\nUse plain text."
+    assert call_kwargs["messages"] == [
+        {"role": "user", "content": "Hello"},
+    ]
+
+
 def test_api_error_handling(sample_messages):
     """Test error handling when API call fails."""
     with patch(

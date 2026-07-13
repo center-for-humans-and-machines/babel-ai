@@ -4,7 +4,7 @@ import logging
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, List, Optional, Any
+from typing import Any, Callable, List, Optional
 from uuid import uuid4
 
 from analyzer import Analyzer
@@ -17,11 +17,7 @@ from conversation.messages import (
 )
 from conversation.settings import AnalysisPolicy, ConversationSettings
 from conversation.status import ConversationStatus
-from conversation.turn_taking import (
-    TurnTakingAlgorithm,
-    TurnTakingState,
-    build_turn_taking,
-)
+from conversation.turn_taking import TurnTakingAlgorithm, build_turn_taking
 from models import AgentMetric, FetcherConfig, FetcherMetric, Metric
 
 logger = logging.getLogger(__name__)

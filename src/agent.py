@@ -1,13 +1,12 @@
 """Agent for generating responses using various LLM providers."""
 
-import itertools
 import logging
 import uuid
 from copy import deepcopy
-from typing import Dict, Generator, List
+from typing import Dict, List
 
 from api.llm_interface import LLMInterface
-from models import AgentConfig
+from models.configs import AgentConfig
 
 logger = logging.getLogger(__name__)
 
@@ -131,25 +130,3 @@ class Agent:
             """Not implemented we need to wait
             for Bram to implement base models."""
         )
-
-
-def round_robin_agent_selection(
-    agents: List[Agent],
-) -> Generator[Agent, None, None]:
-    """Select the next agent in the round-robin sequence.
-
-    Args:
-        agents: List of agents to select from
-
-    Yields:
-        The next agent in the sequence, cycling infinitely
-    """
-    logger.debug("Selecting next agent in round-robin sequence")
-    logger.debug(f"Agents: {agents}")
-
-    if not agents:
-        raise ValueError("Cannot select from an empty list of agents")
-
-    for agent in itertools.cycle(agents):
-        logger.info(f"Yielding next agent in round-robin sequence: {agent.id}")
-        yield agent

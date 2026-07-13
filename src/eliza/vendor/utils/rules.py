@@ -1,5 +1,6 @@
 import re
 
+
 def decompose(keyword, in_str, script):
     """Find matching decomposition rule for a given keyword and string, if possible.
 
@@ -24,14 +25,14 @@ def decompose(keyword, in_str, script):
     """
 
     comps = []
-    reassembly_rule = ''
+    reassembly_rule = ""
 
     # Cycle through elements in script
-    for d in script: 
-        if d['keyword'] == keyword:
+    for d in script:
+        if d["keyword"] == keyword:
             # Cycle through decomp rules for that keyword
-            for rule in d['rules']:
-                m = re.match(rule['decomp'], in_str, re.IGNORECASE)
+            for rule in d["rules"]:
+                m = re.match(rule["decomp"], in_str, re.IGNORECASE)
                 # If decomp rule matches
                 if m:
                     # Decompose string according to decomposition rule
@@ -42,10 +43,11 @@ def decompose(keyword, in_str, script):
 
     return comps, reassembly_rule
 
+
 def reassemble(components, reassembly_rule):
     """Reassemble a list of strings given a reassembly rule.
     Note: reassembly rules are 1-indexed, according to the original paper.
-    
+
     Parameters
     ----------
     components : str[]
@@ -60,25 +62,26 @@ def reassemble(components, reassembly_rule):
 
     """
 
-    response = 'Eliza: '
+    response = "Eliza: "
 
     # Split reassembly rule into its components
-    reassembly_rule = reassembly_rule.split() 
+    reassembly_rule = reassembly_rule.split()
 
     for comp in reassembly_rule:
         # If comp is a number, then place the component at that index
         if comp.isnumeric():
-            # int(comp)-1 due to the fact that 
+            # int(comp)-1 due to the fact that
             # reassembly rules in Weizenbaum notation are 1-indexed
-            response += components[int(comp)-1] + ' '
+            response += components[int(comp) - 1] + " "
         # Otherwise, place the word itself
         else:
-            response += comp + ' '
+            response += comp + " "
 
     # Remove trailing space
     response = response[:-1]
 
     return response
+
 
 def process_decomp_rules(script, tags):
     """Processes decomposition rules in a script from Weizenbaum notation to regex.
@@ -93,16 +96,17 @@ def process_decomp_rules(script, tags):
     Returns
     -------
     script : dict[]
-        JSON object containing decomposition rules in regex. 
+        JSON object containing decomposition rules in regex.
 
     """
     # Cycle through each dict in the JSON script
     for d in script:
         # Cycle through all the rules in each dict
-        for rule in d['rules']:
+        for rule in d["rules"]:
             # Convert decomposition rule from Weizenbaum notation to regex
-            rule['decomp'] = decomp_to_regex(rule['decomp'], tags) 
+            rule["decomp"] = decomp_to_regex(rule["decomp"], tags)
     return script
+
 
 def preprocess_decomp_rule(in_str):
     """Preprocess a decomposition rule before converting to regex.
@@ -119,7 +123,7 @@ def preprocess_decomp_rule(in_str):
     """
     # The input is of the form: e.g. (0 YOU 0)
     # Strip parenthesis
-    in_str = re.sub('[()]', '', in_str)
+    in_str = re.sub("[()]", "", in_str)
 
     # Split string into space separated list
     return in_str.split()
@@ -140,19 +144,20 @@ def decomp_to_regex(in_str, tags):
     -------
     out_str : str
         Decomposition rule converted to regex form.
-        
+
     """
-    out_str = ''
+    out_str = ""
 
     in_str = preprocess_decomp_rule(in_str)
 
     for w in in_str:
         w = regexify(w, tags)
         # Parentheses are needed to properly divide sentence into components
-        # \s* matches zero or more whitespace characters 
-        out_str += '(' + w + r')\s*' 
+        # \s* matches zero or more whitespace characters
+        out_str += "(" + w + r")\s*"
 
     return out_str
+
 
 def regexify(w, tags):
     """Convert a single component of a decomposition rule
@@ -169,14 +174,14 @@ def regexify(w, tags):
     -------
     w : str
         Component of a decomposition rule converted to regex form.
-    
+
     """
     # 0 means "an indefinite number of words"
-    if w == '0': 
-        w = '.*'
+    if w == "0":
+        w = ".*"
     # A positive non-zero integer means "this specific amount of words"
     elif w.isnumeric() and int(w) > 0:
-        w = r'(?:\b\w+\b[\s\r\n]*){' + w + '}'
+        w = r"(?:\b\w+\b[\s\r\n]*){" + w + "}"
     # A word starting with @ signifies a tag
     elif w[0] == "@":
         # Get tag name
@@ -184,12 +189,13 @@ def regexify(w, tags):
         w = tag_to_regex(tag_name, tags)
     else:
         # Add word boundaries to match on a whole word basis
-        w = r'\b' + w + r'\b'
+        w = r"\b" + w + r"\b"
     return w
+
 
 def tag_to_regex(tag_name, tags):
     """Convert a decomposition rule tag into regex notation.
-    
+
     Parameters
     ----------
     tag_name : str
@@ -202,11 +208,12 @@ def tag_to_regex(tag_name, tags):
     w : str
         Tag converted to regex notation. Empty if `tag_name` is not in `tags`.
     """
-    w = ''
+    w = ""
     if tag_name in tags:
         # Make a regex separating each option with OR operator (e.g. x|y|z)
-        w = r'\b(' + '|'.join(tags[tag_name]) + r')\b'
+        w = r"\b(" + "|".join(tags[tag_name]) + r")\b"
     return w
+
 
 def update_last_used_reassembly_rule(rule):
     """Update the `last_used_reassembly_rule` ID for a given decomposition `rule`.
@@ -215,7 +222,7 @@ def update_last_used_reassembly_rule(rule):
     Parameters
     ----------
     rule : dict
-        Rule containing a decomposition rule, 
+        Rule containing a decomposition rule,
         one or more reassembly rules and a `last_used_reassembly_rule` counter.
 
     Returns
@@ -225,11 +232,12 @@ def update_last_used_reassembly_rule(rule):
     """
 
     # Update last used reassembly rule ID
-    next_id = rule['last_used_reassembly_rule']+1
+    next_id = rule["last_used_reassembly_rule"] + 1
     # If all reassembly rules have been used, start over
-    if next_id >= len(rule['reassembly']):
+    if next_id >= len(rule["reassembly"]):
         next_id = 0
-    rule['last_used_reassembly_rule'] = next_id
+    rule["last_used_reassembly_rule"] = next_id
+
 
 def reset_all_last_used_reassembly_rule(script):
     """Reset all `last_used_reassembly_rule` in a script to 0.
@@ -241,8 +249,9 @@ def reset_all_last_used_reassembly_rule(script):
     """
 
     for d in script:
-        for rule in d['rules']:
-            rule['last_used_reassembly_rule'] = 0
+        for rule in d["rules"]:
+            rule["last_used_reassembly_rule"] = 0
+
 
 def get_reassembly_rule(rule):
     """Return reassembly rule for a given decomposition rule.
@@ -250,14 +259,14 @@ def get_reassembly_rule(rule):
     Parameters
     ----------
     rule : dict
-        Rule containing a decomposition rule, 
+        Rule containing a decomposition rule,
         one or more reassembly rules and a `last_used_reassembly_rule` counter.
 
     Returns
     -------
     reassembly_rule : str
         Reassembly rule used to assemble a response for the user.
-    """   
-    reassembly_rule = rule['reassembly'][rule['last_used_reassembly_rule']]
+    """
+    reassembly_rule = rule["reassembly"][rule["last_used_reassembly_rule"]]
     update_last_used_reassembly_rule(rule)
     return reassembly_rule

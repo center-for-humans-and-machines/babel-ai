@@ -56,7 +56,9 @@ def flatten_analysis(
         values = dict(analysis)
 
     extra = values.pop("analysis_extra", {})
-    flattened = {column: values.pop(column, None) for column in parquet_columns()}
+    flattened = {
+        column: values.pop(column, None) for column in parquet_columns()
+    }
     for key, value in values.items():
         flattened[f"analysis_extra_{key}"] = value
     if isinstance(extra, Mapping):

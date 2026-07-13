@@ -94,4 +94,6 @@ def build_intervention(
         return LLMNudgeIntervention(hints=hints)
     if resolved is GenericInterventionMode.LIVE_FEED:
         return LiveFeedIntervention(feed or LiveFeedStub())
-    raise NotImplementedError(f"intervention mode {resolved!r} not implemented")
+    raise NotImplementedError(
+        f"intervention mode {resolved!r} not implemented"
+    )

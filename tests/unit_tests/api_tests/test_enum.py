@@ -11,6 +11,7 @@ from api.enums import (
     OllamaModels,
     OpenAIModels,
     Provider,
+    VLLMModels,
 )
 
 
@@ -21,6 +22,7 @@ def test_provider_enum_values():
     assert Provider.RAVEN.value == "raven"
     assert Provider.AZURE.value == "azure"
     assert Provider.ANTHROPIC.value == "anthropic"
+    assert Provider.VLLM.value == "vllm"
 
 
 def test_provider_by_string():
@@ -39,6 +41,7 @@ def test_get_model_enum_method():
     assert Provider.RAVEN.get_model_enum() == OllamaModels
     assert Provider.AZURE.get_model_enum() == AzureModels
     assert Provider.ANTHROPIC.get_model_enum() == AnthropicModels
+    assert Provider.VLLM.get_model_enum() == VLLMModels
 
 
 def test_get_request_function_method():
@@ -47,12 +50,14 @@ def test_get_request_function_method():
     from api.azure_openai import azure_openai_request
     from api.ollama import ollama_request, raven_ollama_request
     from api.openai import openai_request
+    from api.vllm import vllm_request
 
     assert Provider.OPENAI.get_request_function() == openai_request
     assert Provider.OLLAMA.get_request_function() == ollama_request
     assert Provider.RAVEN.get_request_function() == raven_ollama_request
     assert Provider.AZURE.get_request_function() == azure_openai_request
     assert Provider.ANTHROPIC.get_request_function() == anthropic_request
+    assert Provider.VLLM.get_request_function() == vllm_request
 
 
 def test_invalid_provider_raises_error():
@@ -77,6 +82,9 @@ def test_ollama_model_enum():
 def test_azure_model_enum():
     """Test AzureModel enum values."""
     assert AzureModels.GPT4O_2024_08_06.value == "gpt-4o-2024-08-06"
+    assert AzureModels.O3_2025_04_16.uses_new_parameters()
+    assert AzureModels.O4_MINI_2025_04_16.uses_new_parameters()
+    assert not AzureModels.GPT4O_2024_08_06.uses_new_parameters()
 
 
 def test_anthropic_model_enum():
@@ -98,7 +106,13 @@ def test_anthropic_model_enum():
 def test_model_type_contains_all_model_enums():
     """Test ModelType union contains all expected model enum classes."""
     model_types = get_args(APIModels)
-    expected_types = {OpenAIModels, OllamaModels, AzureModels, AnthropicModels}
+    expected_types = {
+        OpenAIModels,
+        OllamaModels,
+        AzureModels,
+        AnthropicModels,
+        VLLMModels,
+    }
     assert set(model_types) == expected_types
 
 

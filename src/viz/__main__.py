@@ -1,4 +1,4 @@
-"""CLI entry: ``poetry run python -m babel_ai.viz``."""
+"""CLI entry: ``poetry run python -m viz``."""
 
 from viz.app import create_app
 

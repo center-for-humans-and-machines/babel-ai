@@ -11,7 +11,10 @@ artifacts are implemented.
 - [Conversation manager](conversation_manager.md): agents and recovery.
 - [Run artifacts](run_artifacts.md): canonical `results/{run_id}/` data.
 - [Configuration](configuration.md): canonical YAML agent configuration.
+- [Web trajectory viewer](viz.md): inspect completed run trajectories.
+- [Metrics and persistence](metrics.md): parquet schema and analysis API.
 - [Quick start](quickstart.md): installation and current runnable checks.
+- [LLM providers](llm_providers/): provider setup and API references.
 
 ## Source map
 

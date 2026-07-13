@@ -7,8 +7,8 @@ import pytest
 from eliza.interventions import (
     GenericContext,
     GenericInterventionMode,
-    LLMNudgeIntervention,
     LiveFeedIntervention,
+    LLMNudgeIntervention,
     PassthroughIntervention,
     build_intervention,
 )
@@ -45,13 +45,9 @@ def test_paper_examples_keep_rule_state():
 
 def test_memory_stack_persists_between_turns():
     session = PartnerSession()
-    session.respond(
-        [{"role": "user", "content": "My mother is kind."}]
-    )
+    session.respond([{"role": "user", "content": "My mother is kind."}])
     expected = PartnerSession.strip_prefixes(session._memory_stack[-1])
-    turn = session.respond(
-        [{"role": "user", "content": "xyzzy"}]
-    )
+    turn = session.respond([{"role": "user", "content": "xyzzy"}])
     assert turn.text == expected
 
 
@@ -66,15 +62,18 @@ def test_passthrough_generic_response_needs_no_network():
 def test_sessions_deepcopy_their_rule_state():
     first = PartnerSession()
     second = PartnerSession()
-    assert first.respond(
-        [{"role": "user", "content": "xyzzy"}]
-    ).text == "Please go on."
-    assert second.respond(
-        [{"role": "user", "content": "xyzzy"}]
-    ).text == "Please go on."
-    assert first.respond(
-        [{"role": "user", "content": "xyzzy"}]
-    ).text == "I am not sure I understand you fully."
+    assert (
+        first.respond([{"role": "user", "content": "xyzzy"}]).text
+        == "Please go on."
+    )
+    assert (
+        second.respond([{"role": "user", "content": "xyzzy"}]).text
+        == "Please go on."
+    )
+    assert (
+        first.respond([{"role": "user", "content": "xyzzy"}]).text
+        == "I am not sure I understand you fully."
+    )
 
 
 def test_llm_nudge_rotates_hints():

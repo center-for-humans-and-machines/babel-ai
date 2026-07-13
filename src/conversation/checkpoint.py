@@ -7,8 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from conversation.messages import ConversationMessage, ContextStack
-from conversation.settings import AnalysisPolicy
+from conversation.messages import ContextStack, ConversationMessage
 from conversation.status import ConversationStatus
 from conversation.turn_taking import TurnTakingState
 from models.metrics import Metric
@@ -22,9 +21,7 @@ class ConversationState:
 
     run_id: str
     status: ConversationStatus = ConversationStatus.PENDING
-    turn_taking_state: TurnTakingState = field(
-        default_factory=TurnTakingState
-    )
+    turn_taking_state: TurnTakingState = field(default_factory=TurnTakingState)
     pending_llm_nudge: Optional[str] = None
     agent_turn_count: int = 0
     last_checkpoint_at: Optional[datetime] = None

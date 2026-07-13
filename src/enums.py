@@ -119,21 +119,10 @@ class AgentSelectionMethod(Enum):
     def get_generator(
         self, agents: List[Type["Agent"]]
     ) -> Generator[Type["Agent"], None, None]:
-        """Get the corresponding generator for this method."""
-        logger.info(f"Getting generator for {self.value}")
-        logger.debug(f"Agents: {[a.id for a in agents]}")
-
-        # Import here to avoid circular imports
-        logger.debug(
-            "Importing round_robin_agent_selection to avoid circular imports"
+        """Deprecated: turn-taking lives in ``conversation.turn_taking``."""
+        raise NotImplementedError(
+            "agent_selection_method is deprecated; use conversation_settings"
         )
-        from agent import round_robin_agent_selection
-
-        if self == AgentSelectionMethod.ROUND_ROBIN:
-            logger.debug(
-                f"Using round robin agent selection with {len(agents)} agents."
-            )
-            return round_robin_agent_selection(agents)
 
 
 class AnalyzerType(Enum):

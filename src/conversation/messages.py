@@ -64,9 +64,7 @@ class ContextStack:
 
     def to_legacy_messages(self) -> List[Dict[str, str]]:
         """Format for existing Agent.generate_response."""
-        return [
-            {"role": m.role, "content": m.content} for m in self.messages
-        ]
+        return [{"role": m.role, "content": m.content} for m in self.messages]
 
     def content_prefix(self) -> List[str]:
         """Text contents in order (for analyzer)."""

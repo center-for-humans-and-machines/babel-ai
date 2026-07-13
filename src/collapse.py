@@ -22,6 +22,9 @@ def mark_generic_fallback_turns(turns: pd.DataFrame) -> pd.Series:
     """Return a boolean mask for ELIZA generic-fallback turns."""
     if "used_generic_fallback" not in turns.columns:
         return pd.Series(False, index=turns.index, dtype=bool)
-    return turns["used_generic_fallback"].astype("boolean").fillna(False).astype(
-        bool
+    return (
+        turns["used_generic_fallback"]
+        .astype("boolean")
+        .fillna(False)
+        .astype(bool)
     )

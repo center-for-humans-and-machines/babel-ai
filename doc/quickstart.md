@@ -22,6 +22,16 @@ poetry run python scripts/brief_conversation.py
 
 It requires no provider credentials and writes a run under `results/`.
 
+## Trajectory viewer
+
+After a run exists under `results/`, launch the local viewer:
+
+```bash
+poetry run python -m viz
+```
+
+Open `http://127.0.0.1:8765/runs` to browse trajectories and transcripts.
+
 ## ELIZA conversation configuration
 
 The script uses the canonical agent configuration:

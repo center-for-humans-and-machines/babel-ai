@@ -35,7 +35,7 @@ def generate_response(
 
     """
     # Break down input into punctuation-delineated sentences
-    sentences = re.split(r'[.,!?](?!$)', in_str)
+    sentences = re.split(r"[.,!?](?!$)", in_str)
 
     # Get sentence in input with highest ranked word and sort keywords by rank
     sentence, sorted_keywords = rank(sentences, script, substitutions)
@@ -66,6 +66,7 @@ def generate_response(
         response = prepare_response(response)
     return response
 
+
 def generate_generic_response(script):
     """Generate a generic response that is independent of the user input.
 
@@ -78,11 +79,12 @@ def generate_generic_response(script):
     -------
     response : str
         Generic response.
-    
+
     """
     # '$' is the generic answer keyword
-    comps, reassembly_rule = decompose('$', '$', script)
+    comps, reassembly_rule = decompose("$", "$", script)
     return reassemble(comps, reassembly_rule)
+
 
 def generate_memory_response(sentence, script, memory_stack):
     """Generate a response for the memory stack.
@@ -95,16 +97,17 @@ def generate_memory_response(sentence, script, memory_stack):
         JSON object containing information on keywords and rules.
     memory_stack : str[]
         Stack of responses generated when `generate_memory_response` is prompted.
-    
+
     """
     # '^' is the memory stack keyword
-    mem_comps, mem_reassembly_rule = decompose('^', sentence, script)
+    mem_comps, mem_reassembly_rule = decompose("^", sentence, script)
     mem_response = reassemble(mem_comps, mem_reassembly_rule)
     memory_stack.append(mem_response)
 
+
 def prepare_response(response):
     """Processes the program's response before being shown to the user.
-    
+
     Parameters
     ----------
     response : str
@@ -120,9 +123,10 @@ def prepare_response(response):
     response += "\nYou: "
     return response
 
+
 def clean_string(in_str):
     """Removes superfluous characters from a string.
-    
+
     Parameters
     ----------
     in_str : str
@@ -135,8 +139,8 @@ def clean_string(in_str):
 
     """
     # Remove extra whitespaces
-    in_str = ' '.join(in_str.split())
+    in_str = " ".join(in_str.split())
     # Remove whitespaces before punctuation
-    in_str = re.sub(r'\s([?.!"](?:\s|$))', r'\1', in_str)
+    in_str = re.sub(r'\s([?.!"](?:\s|$))', r"\1", in_str)
 
     return in_str

@@ -168,7 +168,6 @@ class AzureModels(Enum):
         return self in [
             AzureModels.O3_2025_04_16,
             AzureModels.O4_MINI_2025_04_16,
-            AzureModels.GPT5_MINI_2025_08_07,
         ]
 
 

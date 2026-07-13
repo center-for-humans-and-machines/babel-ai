@@ -75,13 +75,25 @@ def anthropic_request(
         max_tokens = 2048
 
     try:
-        response = CLIENT.messages.create(
-            model=model.value,
-            messages=messages,
-            temperature=temperature,
-            top_p=top_p,
-            max_tokens=max_tokens,
-        )
+        system_parts = [
+            message["content"]
+            for message in messages
+            if message["role"] == "system"
+        ]
+        conversation_messages = [
+            message for message in messages if message["role"] != "system"
+        ]
+        request_params = {
+            "model": model.value,
+            "messages": conversation_messages,
+            "temperature": temperature,
+            "top_p": top_p,
+            "max_tokens": max_tokens,
+        }
+        if system_parts:
+            request_params["system"] = "\n".join(system_parts)
+
+        response = CLIENT.messages.create(**request_params)
         content = response.content[0].text
         logger.info("Successfully received response from Anthropic API")
         logger.debug(f"Response: {content[:50]}")
