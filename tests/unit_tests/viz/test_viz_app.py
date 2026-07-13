@@ -27,6 +27,18 @@ def test_runs_lists_completed_run(tmp_path):
     assert "2 turns" in response.text
 
 
+def test_run_detail_shows_eliza_branch_columns(tmp_path):
+    _save_run(tmp_path, "run-1", eliza_branch="keyword:alike")
+    client = TestClient(create_app(tmp_path))
+
+    response = client.get("/runs/run-1")
+
+    assert response.status_code == 200
+    assert "ELIZA branch" in response.text
+    assert "keyword:alike" in response.text
+    assert "ELIZA branch counts" in response.text
+
+
 def test_run_detail_shows_similarity_trajectory_and_transcript(tmp_path):
     _save_run(tmp_path, "run-1")
     client = TestClient(create_app(tmp_path))
@@ -93,6 +105,7 @@ def _save_run(
     run_id: str,
     similarity: float | None = 0.75,
     index: int = 0,
+    eliza_branch: str | None = None,
 ) -> None:
     """Save a two-turn run used by viewer requests."""
     turns = pd.DataFrame(
@@ -101,6 +114,8 @@ def _save_run(
             "role": ["user", "assistant"],
             "speaker": ["user", "eliza"],
             "content": ["Hello, ELIZA.", "How does that make you feel?"],
+            "eliza_branch": ["", eliza_branch or ""],
+            "eliza_reassembly": ["", "WHAT DOES THAT SUGGEST TO YOU"],
             "analysis": [
                 {"semantic_similarity_window": similarity},
                 {"semantic_similarity_window": similarity},
@@ -110,5 +125,9 @@ def _save_run(
     save_run(
         results_root / run_id,
         turns,
-        {"run_id": run_id, "config": {"max_iterations": index}},
+        {
+            "run_id": run_id,
+            "run_slug": "eliza_sharegpt_2turns",
+            "config": {"max_iterations": index},
+        },
     )

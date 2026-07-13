@@ -13,6 +13,9 @@ from viz.charts import (
     aggregate_chart,
     available_metrics,
     config_diff_rows,
+    eliza_branch_bar_chart,
+    eliza_branch_chart,
+    eliza_branch_summary,
     metric_label,
     overlay_chart,
 )
@@ -48,13 +51,20 @@ def create_app(results_root: Path | None = None) -> FastAPI:
         record = _load_record(app.state.results_root, run_id)
         metric, title = _trajectory_metric(record.turns)
         chart = _trajectory_chart(record.turns, metric, title)
+        eliza_chart = eliza_branch_chart(record.turns)
+        eliza_counts = eliza_branch_bar_chart(record.turns)
         transcript = _transcript_rows(record.turns)
+        run_slug = record.meta.get("run_slug", "")
         return templates.TemplateResponse(
             request=request,
             name="run_detail.html",
             context={
                 "run": record,
+                "run_slug": run_slug,
                 "chart": chart,
+                "eliza_chart": eliza_chart,
+                "eliza_counts": eliza_counts,
+                "eliza_summary": eliza_branch_summary(record.turns),
                 "metric_title": title,
                 "transcript": transcript,
             },
@@ -132,6 +142,20 @@ def _trajectory_chart(turns: pd.DataFrame, metric: str, title: str) -> str:
 
 def _transcript_rows(turns: pd.DataFrame) -> list[dict[str, object]]:
     """Extract display-safe transcript fields in turn order."""
-    fields = ("turn_index", "role", "speaker", "content")
+    fields = (
+        "turn_index",
+        "role",
+        "speaker",
+        "eliza_branch",
+        "eliza_reassembly",
+        "content",
+    )
     frame = turns.sort_values("turn_index")
-    return frame.reindex(columns=fields).fillna("").to_dict(orient="records")
+    present = [field for field in fields if field in frame.columns]
+    rows = frame.reindex(columns=present).fillna("").to_dict(orient="records")
+    for row in rows:
+        if "eliza_branch" not in row:
+            row["eliza_branch"] = ""
+        if "eliza_reassembly" not in row:
+            row["eliza_reassembly"] = ""
+    return rows

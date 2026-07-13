@@ -7,7 +7,7 @@ from ast import literal_eval
 from typing import Any
 
 
-def parse_analysis_cell(raw: Any) -> dict[str, Any]:
+def parse_analysis_cell(raw: Any) -> dict[str, Any]:  # noqa: C901
     """Parse a serialized analysis dictionary without using ``eval``."""
     if raw is None:
         return {}

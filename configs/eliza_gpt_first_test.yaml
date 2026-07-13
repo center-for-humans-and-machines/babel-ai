@@ -1,0 +1,34 @@
+# ELIZA + LLM conversation (~50 turns, ShareGPT seed)
+
+fetcher_config:
+  fetcher: sharegpt
+  data_path: data/human-ai_datasets/sharegpt_clean.json
+  min_messages: 2
+  max_messages: 6
+
+analyzer_config:
+  analyzer: similarity
+  analyze_window: 5
+
+agents:
+  - type: llm
+    provider: azure
+    model: gpt-4o-2024-08-06
+    system_prompt: >
+      Continue the conversation naturally in one or two
+      short sentences.
+  - type: rule_based
+    partner: eliza
+    generic_intervention: passthrough
+
+conversation_settings:
+  turn_taking_method: round_robin
+  analysis_policy: at_end
+  checkpoint_enabled: false
+  max_iterations: 200
+  max_total_characters: 100000
+
+agent_selection_method: round_robin
+max_iterations: 200
+max_total_characters: 100000
+output_dir: results

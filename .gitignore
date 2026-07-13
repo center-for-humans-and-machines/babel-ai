@@ -307,3 +307,6 @@ data/
 
 # logs
 logs/
+
+# experiment run artifacts
+results/

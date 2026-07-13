@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .interventions import GenericContext, GenericIntervention
-from .vendor.utils.response import generate_response
+from .response_trace import generate_traced_response
 from .vendor.utils.startup import setup
 
 _SCRIPTS_DIR = Path(__file__).parent / "vendor" / "scripts"
@@ -35,6 +35,9 @@ class PartnerTurn:
 
     text: str
     used_generic_fallback: bool = False
+    eliza_branch: str | None = None
+    eliza_keyword: str | None = None
+    eliza_reassembly: str | None = None
 
 
 class PartnerSession:
@@ -74,7 +77,7 @@ class PartnerSession:
             result = self._intervention.on_generic(context)
             return result.partner_text or default_response
 
-        response = generate_response(
+        response, trace = generate_traced_response(
             user_turn,
             self._script,
             self._general_script["substitutions"],
@@ -86,6 +89,9 @@ class PartnerSession:
         return PartnerTurn(
             text=self.strip_prefixes(response),
             used_generic_fallback=used_generic_fallback,
+            eliza_branch=trace.label(),
+            eliza_keyword=trace.keyword,
+            eliza_reassembly=trace.reassembly,
         )
 
     @staticmethod

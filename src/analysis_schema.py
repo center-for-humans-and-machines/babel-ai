@@ -17,7 +17,6 @@ class AnalysisResult(BaseModel):
     lexical_similarity_window: float | None = None
     semantic_similarity_window: float | None = None
     token_perplexity: float | None = None
-    used_generic_fallback: bool | None = None
     analysis_extra: dict[str, Any] = Field(default_factory=dict)
 
 

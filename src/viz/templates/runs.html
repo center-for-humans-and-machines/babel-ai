@@ -12,6 +12,9 @@
     {% for run in runs %}
     <li>
       <a href="/runs/{{ run.run_dir.name }}">{{ run.run_id }}</a>
+      {% if run.meta.get("run_slug") %}
+      <br><small>{{ run.meta.run_slug }}</small>
+      {% endif %}
       ({{ run.turns|length }} turns)
     </li>
     {% endfor %}

@@ -17,6 +17,7 @@ from conversation.factory import build_conversation_agents
 from conversation.manager import ConversationManager
 from conversation.settings import AnalysisPolicy
 from models import AgentMetric, ExperimentConfig, ExperimentMetadata, Metric
+from persistence.run_naming import build_run_id, build_run_slug
 from persistence.run_store import RunManifest, save_run
 from prompt_fetcher import BasePromptFetcher
 
@@ -119,6 +120,7 @@ class Experiment:
             run_dir=self.output_dir,
             fetcher_config=self.config.fetcher_config,
             metric_factory=self._build_agent_metric,
+            run_id=build_run_id(self.config),
         )
         self._manager = manager
         self.result_metrics = manager.run(self.messages)
@@ -157,6 +159,9 @@ class Experiment:
             agent_config=config,
             speaker=agent.speaker,
             used_generic_fallback=turn.used_generic_fallback or None,
+            eliza_branch=turn.eliza_branch,
+            eliza_keyword=turn.eliza_keyword,
+            eliza_reassembly=turn.eliza_reassembly,
         )
 
     def _analyze_response(self, metrics: List[Metric]) -> List[Metric]:
@@ -187,6 +192,7 @@ class Experiment:
         run_dir = output_dir / run_id
         meta = {
             "run_id": run_id,
+            "run_slug": build_run_slug(self.config),
             "experiment_uuid": str(self.uuid),
             "timestamp": metadata.timestamp.isoformat(),
             "config": metadata.config.model_dump(),

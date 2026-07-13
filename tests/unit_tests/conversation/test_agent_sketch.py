@@ -46,6 +46,7 @@ def test_rule_based_agent_generates_eliza_reply():
     turn = agent.generate(_stack(("user", "seed", "Men are all alike.")))
     assert turn.content == "In what way?"
     assert not turn.used_generic_fallback
+    assert turn.eliza_branch == "keyword:like"
 
 
 def test_build_mirror_agent():

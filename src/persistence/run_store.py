@@ -20,6 +20,10 @@ _CORE_COLUMNS = (
     "speaker",
     "content",
     "agent_id",
+    "eliza_branch",
+    "eliza_keyword",
+    "eliza_reassembly",
+    "used_generic_fallback",
 )
 
 

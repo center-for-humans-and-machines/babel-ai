@@ -19,6 +19,9 @@ class AgentTurn:
     content: str
     llm_nudge: Optional[str] = None
     used_generic_fallback: bool = False
+    eliza_branch: Optional[str] = None
+    eliza_keyword: Optional[str] = None
+    eliza_reassembly: Optional[str] = None
 
 
 class ConversationAgent(Protocol):
@@ -68,6 +71,9 @@ class RuleBasedConversationAgent:
         return AgentTurn(
             content=turn.text,
             used_generic_fallback=turn.used_generic_fallback,
+            eliza_branch=turn.eliza_branch,
+            eliza_keyword=turn.eliza_keyword,
+            eliza_reassembly=turn.eliza_reassembly,
         )
 
     def export_state(self) -> dict:

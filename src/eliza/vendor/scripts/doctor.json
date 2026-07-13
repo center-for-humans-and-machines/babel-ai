@@ -2,11 +2,11 @@
     {
         "keyword": "$",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Please go on.",
                     "I am not sure I understand you fully.",
@@ -23,11 +23,11 @@
     {
         "keyword": "are",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0 ARE YOU 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Do you believe you are 4 ?",
                     "Would you want to be 4 ?",
@@ -38,7 +38,7 @@
             },
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Why do you say 'am'?",
                     "I don't understand that."
@@ -50,11 +50,11 @@
     {
         "keyword": "am",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0 ARE I 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Why are you interested in whether I am 4 or not?",
                     "Would you prefer if I weren't 4 ?",
@@ -64,7 +64,7 @@
             },
             {
                 "decomp": "(0 ARE 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Did you think they might not be 3 ?",
                     "Would you like it if they were not 3 ?",
@@ -78,11 +78,11 @@
     {
         "keyword": "my",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0 MY 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Why are you concerned over my 3 ?",
                     "What about your own 3 ?",
@@ -96,11 +96,11 @@
     {
         "keyword": "was",
         "rank": 2,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0 WAS YOU 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "What if you were 4 ?",
                     "Do you think you were 4 ?",
@@ -112,7 +112,7 @@
             },
             {
                 "decomp": "(0 YOU WAS 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Were you really?",
                     "Why do you tell me you were 4 now?",
@@ -122,7 +122,7 @@
             },
             {
                 "decomp": "(0 WAS I 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Would you like to believe I was 4 ?",
                     "What suggests that I was 4 ?",
@@ -137,11 +137,11 @@
     {
         "keyword": "you",
         "rank": 1,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0 YOU @DESIRE 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "What would it mean to you if you got 5 ?",
                     "Why do you want 5 ?",
@@ -154,7 +154,7 @@
             },
             {
                 "decomp": "(0 YOU ARE 0 @SAD 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "I am sorry to hear that you are 6 .",
                     "Do you think coming here will help you not to be 6 ?",
@@ -165,7 +165,7 @@
             },
             {
                 "decomp": "(0 YOU ARE 0 @HAPPY 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "What makes you 6 just now?",
                     "Can you explain why you are 6 ?",
@@ -176,7 +176,7 @@
             },
             {
                 "decomp": "(0 YOU @BELIEF YOU 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Do you really think so?",
                     "But you are not sure you 6 ?",
@@ -186,7 +186,7 @@
             },
             {
                 "decomp": "(0 YOU ARE 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Is it because you are 4 that you came to me?",
                     "How long have you been 4 ?",
@@ -197,7 +197,7 @@
             },
             {
                 "decomp": "(0 YOU CAN'T 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "How do you know you can't 4 ?",
                     "Have you tried?",
@@ -208,7 +208,7 @@
             },
             {
                 "decomp": "(0 YOU DON'T 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Don't you really 4 ?",
                     "Why don't you 4 ?",
@@ -219,7 +219,7 @@
             },
             {
                 "decomp": "(0 YOU FEEL 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Tell me more about such feelings.",
                     "Do you often feel 4 ?",
@@ -230,7 +230,7 @@
             },
             {
                 "decomp": "(0 YOU 0 I 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Do you 3 anyone else?",
                     "Do you wish to 3 me?",
@@ -241,7 +241,7 @@
             },
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "You say 1 .",
                     "Can you elaborate on that?",
@@ -255,11 +255,11 @@
     {
         "keyword": "i",
         "rank": 2,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0 I AM 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "What makes you think I am 4 ?",
                     "Does it please you to believe I am 4 ?",
@@ -270,7 +270,7 @@
             },
             {
                 "decomp": "(0 I 0 YOU)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Why do you think I 3 you?",
                     "You like to think I 3 you - don't you?",
@@ -284,7 +284,7 @@
             },
             {
                 "decomp": "(0 I 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "We were discussing you - not me.",
                     "Oh, I 3 ?",
@@ -298,11 +298,11 @@
     {
         "keyword": "your",
         "rank": 2,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0 YOUR @FAMILY 0 YOU)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Who else in your family 5 you?",
                     "Your 4 5 you?",
@@ -313,7 +313,7 @@
             },
             {
                 "decomp": "(0 YOUR 0 @FAMILY 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Tell me more about your family.",
                     "Your 5 ?",
@@ -323,7 +323,7 @@
             },
             {
                 "decomp": "(0 YOUR 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Your 3 ?",
                     "Why do you say your 3 ?",
@@ -337,11 +337,11 @@
     {
         "keyword": "^",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0 YOUR @FAMILY 0 YOU)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Earlier you mentioned that your 4 5 you.",
                     "Would you like to discuss your 4 in more detail? Earlier you mentioned that your 4 5 you.",
@@ -355,7 +355,7 @@
             },
             {
                 "decomp": "(0 YOUR 0 @FAMILY 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Does that have anything to do with the fact that your 5 6 ?",
                     "Let's discuss your 5 further.",
@@ -369,7 +369,7 @@
             },
             {
                 "decomp": "(0 YOUR 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Does that have anything to do with the fact that your 3 ?",
                     "Let's discuss your 3 further.",
@@ -385,11 +385,11 @@
     {
         "keyword": "can",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0 CAN I 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "You believe I can 4 don't you?",
                     "You want me to be able to 4 ?",
@@ -399,7 +399,7 @@
             },
             {
                 "decomp": "(0 CAN YOU 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Whether or not you can 4 depends on you more than on me.",
                     "Do you want to be able to 4 ?",
@@ -412,11 +412,11 @@
     {
         "keyword": "what",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Why do you ask?",
                     "Does that question interest you?",
@@ -435,11 +435,11 @@
     {
         "keyword": "because",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Is that the real reason?",
                     "Don't any other reasons come to mind?",
@@ -453,11 +453,11 @@
     {
         "keyword": "why",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0 WHY DON'T I 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Do you believe I don't 5 ?",
                     "Perhaps I will 5 in good time.",
@@ -468,7 +468,7 @@
             },
             {
                 "decomp": "(0 WHY CAN'T YOU 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Do you think you should be able to 5 ?",
                     "Do you want to be able to 5 ?",
@@ -482,11 +482,11 @@
     {
         "keyword": "yes",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "You seem quite positive.",
                     "Are you sure?",
@@ -501,11 +501,11 @@
     {
         "keyword": "no",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Why not?",
                     "Are you saying 'no' just to be  negative?",
@@ -519,11 +519,11 @@
     {
         "keyword": "sorry",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Please don't apologize.",
                     "Apologies are not necessary.",
@@ -537,11 +537,11 @@
     {
         "keyword": "remember",
         "rank": 5,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0 YOU REMEMBER 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Do you often think of 4 ?",
                     "Does thinking of 4 bring anything else to mind?",
@@ -578,11 +578,11 @@
     {
         "keyword": "forgot",
         "rank": 5,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0 YOU FORGOT 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Can you think of why you might forget 4 ?",
                     "Why can't you remember 4 ?",
@@ -591,13 +591,13 @@
                     "Could it be a mental block?",
                     "Are you generally forgetful?",
                     "Do you think you are suppressing 4 ?"
-                    
+
                 ],
                 "last_used_reassembly_rule": 0
             },
             {
                 "decomp": "(0 DID I FORGOT 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Why do you ask?",
                     "Are you sure you told me?",
@@ -612,11 +612,11 @@
     {
         "keyword": "everyone",
         "rank": 2,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0 @EVERYONE 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Can you think of anyone in particular?",
                     "Really, 2 ?",
@@ -635,11 +635,11 @@
     {
         "keyword": "hi",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(HI 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Hi.",
                     "Hello.",
@@ -652,11 +652,11 @@
     {
         "keyword": "always",
         "rank": 1,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Can you think of a specific example?",
                     "When?",
@@ -670,11 +670,11 @@
     {
         "keyword": "like",
         "rank": 10,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0 @AM 0 LIKE 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "In what way?",
                     "What resemblance do you see?",
@@ -692,11 +692,11 @@
     {
         "keyword": "different",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "In what way?",
                     "How is it different?",
@@ -713,11 +713,11 @@
     {
         "keyword": "if",
         "rank": 3,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0 IF 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Do you think it's likely that 3 ?",
                     "Do you wish that 3 ?",
@@ -734,11 +734,11 @@
     {
         "keyword": "dreamt",
         "rank": 4,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0 I DREAMT 0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Really, 4 ?",
                     "Have you ever fantasized 4 while you were awake?",
@@ -751,11 +751,11 @@
     {
         "keyword": "dream",
         "rank": 3,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "What does that dream suggest to you?",
                     "Do you dream often?",
@@ -769,11 +769,11 @@
     {
         "keyword": "perhaps",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "You don't seem quite certain.",
                     "Why the uncertain tone?",
@@ -789,11 +789,11 @@
     {
         "keyword": "name",
         "rank": 15,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "I am not interested in names.",
                     "I've told you before, I don't care about names - please continue."
@@ -805,11 +805,11 @@
     {
         "keyword": "deustch",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "I only speak English.",
                     "I told you before, I don't understand German."
@@ -821,11 +821,11 @@
     {
         "keyword": "francais",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "I only speak English.",
                     "I told you before, I don't understand French."
@@ -837,11 +837,11 @@
     {
         "keyword": "italiano",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "I only speak English.",
                     "I told you before, I don't understand Italian."
@@ -853,11 +853,11 @@
     {
         "keyword": "espanol",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "I only speak English.",
                     "I told you before, I don't understand Spanish."
@@ -869,11 +869,11 @@
     {
         "keyword": "hello",
         "rank": 0,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Hi. What seems to be your problem?",
                     "How do you do? Please state your problem."
@@ -885,11 +885,11 @@
     {
         "keyword": "computer",
         "rank": 50,
-        "rules": 
+        "rules":
         [
             {
                 "decomp": "(0)",
-                "reassembly": 
+                "reassembly":
                 [
                     "Do computers worry you?",
                     "Why do you mention computers?",

@@ -7,8 +7,26 @@
 <body>
   <p><a href="/runs">All runs</a></p>
   <h1>{{ run.run_id }}</h1>
+  {% if run_slug %}
+  <p><strong>Config slug:</strong> {{ run_slug }}</p>
+  {% endif %}
   <h2>{{ metric_title }}</h2>
   {{ chart | safe }}
+  {% if eliza_chart %}
+  <h2>ELIZA branches</h2>
+  {{ eliza_chart | safe }}
+  {% endif %}
+  {% if eliza_counts %}
+  {{ eliza_counts | safe }}
+  {% endif %}
+  {% if eliza_summary %}
+  <h3>Branch summary</h3>
+  <ul>
+    {% for row in eliza_summary %}
+    <li>{{ row.branch }}: {{ row.count }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
   <h2>Transcript</h2>
   <table>
     <thead>
@@ -16,6 +34,8 @@
         <th>Turn</th>
         <th>Role</th>
         <th>Speaker</th>
+        <th>ELIZA branch</th>
+        <th>Reassembly</th>
         <th>Content</th>
       </tr>
     </thead>
@@ -25,6 +45,8 @@
         <td>{{ turn.turn_index }}</td>
         <td>{{ turn.role }}</td>
         <td>{{ turn.speaker }}</td>
+        <td>{{ turn.eliza_branch }}</td>
+        <td>{{ turn.eliza_reassembly }}</td>
         <td>{{ turn.content }}</td>
       </tr>
       {% endfor %}

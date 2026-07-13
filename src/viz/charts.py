@@ -23,11 +23,7 @@ def available_metrics(turns: pd.DataFrame) -> list[str]:
     """Return metric columns that contain at least one non-null value."""
     candidates = list(_METRIC_LABELS.keys())
     present = [column for column in candidates if column in turns.columns]
-    usable = [
-        column
-        for column in present
-        if turns[column].notna().any()
-    ]
+    usable = [column for column in present if turns[column].notna().any()]
     return usable or ["turn_index"]
 
 
@@ -76,7 +72,9 @@ def aggregate_chart(records: list[RunRecord], metric: str) -> str:
         part["run_id"] = record.run_id
         frames.append(part)
     combined = pd.concat(frames, ignore_index=True)
-    grouped = combined.groupby("turn_index")[metric].agg(["mean", "std", "count"])
+    grouped = combined.groupby("turn_index")[metric].agg(
+        ["mean", "std", "count"]
+    )
     grouped["ci95"] = 1.96 * grouped["std"] / np.sqrt(grouped["count"].clip(1))
     figure = go.Figure()
     figure.add_trace(
@@ -114,6 +112,58 @@ def aggregate_chart(records: list[RunRecord], metric: str) -> str:
     return figure.to_html(full_html=False, include_plotlyjs="cdn")
 
 
+def eliza_branch_chart(turns: pd.DataFrame) -> str:
+    """Plot ELIZA branch usage across ELIZA turns."""
+    if "eliza_branch" not in turns.columns:
+        return ""
+    frame = turns[turns["eliza_branch"].notna()].copy()
+    if frame.empty:
+        return ""
+    frame = frame.sort_values("turn_index")
+    figure = px.scatter(
+        frame,
+        x="turn_index",
+        y="eliza_branch",
+        color="eliza_branch",
+        title="ELIZA decision branches by turn",
+        labels={
+            "turn_index": "Turn",
+            "eliza_branch": "Branch",
+        },
+    )
+    figure.update_layout(showlegend=False, height=320)
+    return figure.to_html(full_html=False, include_plotlyjs=False)
+
+
+def eliza_branch_summary(turns: pd.DataFrame) -> list[dict[str, object]]:
+    """Summarize how often each ELIZA branch fired."""
+    if "eliza_branch" not in turns.columns:
+        return []
+    frame = turns[turns["eliza_branch"].notna()]
+    if frame.empty:
+        return []
+    counts = frame["eliza_branch"].value_counts().reset_index()
+    counts.columns = ["branch", "count"]
+    return counts.to_dict(orient="records")
+
+
+def eliza_branch_bar_chart(turns: pd.DataFrame) -> str:
+    """Bar chart of ELIZA branch counts."""
+    summary = eliza_branch_summary(turns)
+    if not summary:
+        return ""
+    frame = pd.DataFrame(summary)
+    figure = px.bar(
+        frame,
+        x="branch",
+        y="count",
+        title="ELIZA branch counts",
+        labels={"branch": "Branch", "count": "Turns"},
+    )
+    figure.update_layout(height=320)
+    return figure.to_html(full_html=False, include_plotlyjs=False)
+
+
 def config_diff_rows(records: list[RunRecord]) -> list[dict[str, str]]:
     """Flatten config keys across selected runs for side-by-side compare."""
     keys: set[str] = set()
@@ -126,7 +176,9 @@ def config_diff_rows(records: list[RunRecord]) -> list[dict[str, str]]:
     for key in sorted(keys):
         row = {"key": key}
         for record in records:
-            row[record.run_id] = _stringify(_lookup(configs[record.run_id], key))
+            row[record.run_id] = _stringify(
+                _lookup(configs[record.run_id], key)
+            )
         rows.append(row)
     return rows
 

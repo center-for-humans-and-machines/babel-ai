@@ -38,6 +38,7 @@ class ConversationManager:
         metric_factory: Optional[
             Callable[[ConversationAgent, int, Any], AgentMetric]
         ] = None,
+        run_id: Optional[str] = None,
     ):
         if not agents:
             raise ValueError("At least one agent is required")
@@ -51,7 +52,7 @@ class ConversationManager:
             settings.fixed_order,
         )
         self._metric_factory = metric_factory or self._default_agent_metric
-        self.run_id = str(uuid4())
+        self.run_id = run_id or str(uuid4())
         self.state = ConversationState(run_id=self.run_id)
         self.stack = ContextStack()
         self.metrics: List[Metric] = []
@@ -199,6 +200,9 @@ class ConversationManager:
             agent_config=config,
             speaker=agent.speaker,
             used_generic_fallback=fallback or None,
+            eliza_branch=getattr(turn, "eliza_branch", None),
+            eliza_keyword=getattr(turn, "eliza_keyword", None),
+            eliza_reassembly=getattr(turn, "eliza_reassembly", None),
         )
 
     def _should_continue(self) -> bool:

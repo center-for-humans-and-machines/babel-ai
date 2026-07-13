@@ -194,6 +194,18 @@ class AgentMetric(Metric):
         default=None,
         description="Whether ELIZA used the generic $ fallback",
     )
+    eliza_branch: Optional[str] = Field(
+        default=None,
+        description="ELIZA decision branch for this turn",
+    )
+    eliza_keyword: Optional[str] = Field(
+        default=None,
+        description="Matched ELIZA keyword when branch is keyword",
+    )
+    eliza_reassembly: Optional[str] = Field(
+        default=None,
+        description="ELIZA reassembly rule used for keyword matches",
+    )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert metric to a dictionary format suitable for CSV export."""
@@ -212,6 +224,9 @@ class AgentMetric(Metric):
                 ),
                 "speaker": self.speaker,
                 "used_generic_fallback": self.used_generic_fallback,
+                "eliza_branch": self.eliza_branch,
+                "eliza_keyword": self.eliza_keyword,
+                "eliza_reassembly": self.eliza_reassembly,
             }
         )
 
