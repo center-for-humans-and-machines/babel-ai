@@ -19,7 +19,7 @@ load_dotenv()
 # Default behavior is running locally
 API_BASE = os.getenv("OLLAMA_API_BASE", "http://localhost:11434")
 
-logger.info("Initializing Ollama API.")
+logger.debug("Initializing Ollama API.")
 
 
 def _estimate_token_count(text: str) -> int:
@@ -113,7 +113,7 @@ def ollama_request(
         raise ValueError("Messages must be a list of dictionaries")
 
     # Log request info
-    logger.info(
+    logger.debug(
         f"Sending {'streaming' if stream else 'standard'} request to Ollama API with "  # noqa: E501
         f"model {model.value}, temperature {temperature}, max_tokens {max_tokens}"  # noqa: E501
     )
@@ -153,7 +153,7 @@ def ollama_request(
         )
         response_content = _handle_response(response, is_streaming=stream)
 
-        logger.info("Successfully received response from Ollama API")
+        logger.debug("Successfully received response from Ollama API")
         logger.debug(f"Response: {response_content[:50]}")
 
         # Estimate token counts

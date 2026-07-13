@@ -15,6 +15,7 @@ from analyzer import Analyzer
 from conversation.agents import ConversationAgent, LLMConversationAgent
 from conversation.factory import build_conversation_agents
 from conversation.manager import ConversationManager
+from conversation.progress import TurnProgress
 from conversation.settings import AnalysisPolicy
 from models import AgentMetric, ExperimentConfig, ExperimentMetadata, Metric
 from persistence.run_naming import build_run_id, build_run_slug
@@ -29,7 +30,7 @@ class Experiment:
 
     def __init__(self, config: ExperimentConfig):
         self.uuid = uuid4()
-        logger.info(
+        logger.debug(
             f"Initializing Experiment {self.uuid} with config: {config}"
         )
 
@@ -46,7 +47,7 @@ class Experiment:
             )
         else:
             self.output_dir = Path(config.output_dir)
-            logger.info(
+            logger.debug(
                 f"Experiment {self.uuid} "
                 f"Using output directory {self.output_dir}"
             )
@@ -86,6 +87,7 @@ class Experiment:
         ] = self.prompt_fetcher.get_conversation()
         self.metadata.num_fetcher_messages = len(self.messages)
         self._manager: Optional[ConversationManager] = None
+        self._progress: Optional[TurnProgress] = None
 
     def run(
         self,
@@ -95,12 +97,14 @@ class Experiment:
         self.run_interaction_loop()
         if self.conversation_settings.analysis_policy == AnalysisPolicy.AT_END:
             self._analyze_response(self.result_metrics)
-        self._save_results(
+        run_dir = self._save_results(
             metrics=self.result_metrics,
             metadata=self.metadata,
             output_dir=output_dir,
         )
-        logger.info(
+        if self._progress is not None:
+            self._progress.complete(f"Saved run to {run_dir}")
+        logger.debug(
             f"Experiment {self.uuid} completed with "
             f"{len(self.result_metrics)} metrics"
         )
@@ -113,6 +117,8 @@ class Experiment:
         settings.max_iterations = self.max_iterations
         settings.max_total_characters = self.max_total_characters
 
+        progress = TurnProgress(settings.max_iterations)
+
         manager = ConversationManager(
             agents=conv_agents,
             settings=settings,
@@ -121,8 +127,10 @@ class Experiment:
             fetcher_config=self.config.fetcher_config,
             metric_factory=self._build_agent_metric,
             run_id=build_run_id(self.config),
+            progress=progress,
         )
         self._manager = manager
+        self._progress = progress
         self.result_metrics = manager.run(self.messages)
         self.messages = [
             {"role": message.role, "content": message.content}
@@ -166,13 +174,13 @@ class Experiment:
 
     def _analyze_response(self, metrics: List[Metric]) -> List[Metric]:
         """Analyze all metrics (at_end policy)."""
-        logger.info(
+        logger.debug(
             f"Experiment {self.uuid} "
             f"Analyzing response for {len(metrics)} metrics"
         )
         content = [metric.content for metric in metrics]
         for index, metric in enumerate(metrics):
-            logger.info(
+            logger.debug(
                 f"Experiment {self.uuid} "
                 f"Analyzing response for {index} of {len(metrics)} metrics"
             )
@@ -184,7 +192,7 @@ class Experiment:
         metrics: List[Metric],
         metadata: ExperimentMetadata,
         output_dir: Optional[Path] = None,
-    ) -> None:
+    ) -> Path:
         """Persist canonical run artifacts under ``results/{run_id}/``."""
         output_dir = output_dir or self.output_dir
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -201,4 +209,5 @@ class Experiment:
             "total_characters": metadata.total_characters,
         }
         save_run(run_dir, metrics, meta, manifest=RunManifest())
-        logger.info(f"Saved canonical run artifacts to {run_dir}")
+        logger.debug(f"Saved canonical run artifacts to {run_dir}")
+        return run_dir

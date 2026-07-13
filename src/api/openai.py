@@ -20,7 +20,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 # Create OpenAI client
 CLIENT = OpenAI(api_key=api_key)
 
-logger.info("Initializing OpenAI API client.")
+logger.debug("Initializing OpenAI API client.")
 
 
 def openai_request(
@@ -72,15 +72,15 @@ def openai_request(
             "Setting temperature to 1.0."
         )
 
-    logger.info(
+    logger.debug(
         "Sending request to OpenAI API "
         f"with model {request_params['model']}, "
         f"temperature {request_params['temperature']}, "
     )
     if "max_completion_tokens" in request_params:
-        logger.info(f"max_tokens {request_params['max_completion_tokens']}")
+        logger.debug(f"max_tokens {request_params['max_completion_tokens']}")
     elif "max_tokens" in request_params:
-        logger.info(f"max_tokens {request_params['max_tokens']}")
+        logger.debug(f"max_tokens {request_params['max_tokens']}")
 
     for msg in messages:
         logger.debug(f"Message: {msg['role']}: {msg['content'][:50]}")
@@ -92,7 +92,7 @@ def openai_request(
             content = response.choices[0].message.content
         else:
             content = response.choices[0].message.content
-        logger.info("Successfully received response from OpenAI API")
+        logger.debug("Successfully received response from OpenAI API")
         logger.debug(f"Response: {content[:50]}")
 
         # Extract content and token counts

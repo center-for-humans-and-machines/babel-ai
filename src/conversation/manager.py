@@ -4,7 +4,7 @@ import logging
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, List, Optional
 from uuid import uuid4
 
 from analyzer import Analyzer
@@ -20,6 +20,9 @@ from conversation.settings import AnalysisPolicy, ConversationSettings
 from conversation.status import ConversationStatus
 from conversation.turn_taking import TurnTakingAlgorithm, build_turn_taking
 from models import AgentMetric, FetcherConfig, FetcherMetric, Metric
+
+if TYPE_CHECKING:
+    from conversation.progress import TurnProgress
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +42,7 @@ class ConversationManager:
             Callable[[ConversationAgent, int, Any], AgentMetric]
         ] = None,
         run_id: Optional[str] = None,
+        progress: Optional["TurnProgress"] = None,
     ):
         if not agents:
             raise ValueError("At least one agent is required")
@@ -62,11 +66,13 @@ class ConversationManager:
             else None
         )
         self._last_checkpoint_time = time.monotonic()
+        self._progress = progress
 
     def run(self, seed_messages: List[dict]) -> List[Metric]:
         """Run conversation from seed messages until stop condition."""
         self.state.status = ConversationStatus.RUNNING
         self._ingest_seed(seed_messages)
+        self._refresh_progress()
         return self._run_loop()
 
     def continue_run(self) -> List[Metric]:
@@ -132,7 +138,7 @@ class ConversationManager:
             CheckpointWriter(run_path) if settings.checkpoint_enabled else None
         )
         restore_agents(agents, data.get("agent_states", {}))
-        logger.info("Resumed conversation %s from %s", manager.run_id, path)
+        logger.debug("Resumed conversation %s from %s", manager.run_id, path)
         return manager
 
     def _ingest_seed(self, seed_messages: List[dict]) -> None:
@@ -180,6 +186,18 @@ class ConversationManager:
         self.metrics.append(metric)
         if turn.llm_nudge:
             self.state.pending_llm_nudge = turn.llm_nudge
+        self._refresh_progress()
+
+    def _refresh_progress(self) -> None:
+        """Update the live terminal display after stack changes."""
+        if self._progress is None or not self.stack.messages:
+            return
+        latest = self.stack.messages[-1]
+        self._progress.update(
+            len(self.stack.messages),
+            latest.speaker,
+            latest.content,
+        )
 
     def _default_agent_metric(
         self,

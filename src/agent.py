@@ -33,7 +33,7 @@ class Agent:
         # agent types.
         self.is_conversational_agent = True
 
-        logger.info(
+        logger.debug(
             f"Agent {self.id} initialized "
             f"with provider {self.provider.value}, "
             f"model {self.model.value}, "
@@ -57,7 +57,7 @@ class Agent:
         """
         messages = deepcopy(messages)
         # Prepare messages with system prompt if configured
-        logger.info(f"Generating response for agent {self.id}")
+        logger.debug(f"Generating response for agent {self.id}")
         logger.debug(f"Agent {self.id} messages: {messages}")
 
         final_messages = []

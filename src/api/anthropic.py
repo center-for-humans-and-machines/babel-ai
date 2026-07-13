@@ -20,7 +20,7 @@ api_key = os.getenv("ANTHROPIC_API_KEY")
 # Create Anthropic client
 CLIENT = anthropic.Anthropic(api_key=api_key)
 
-logger.info("Initializing Anthropic API client.")
+logger.debug("Initializing Anthropic API client.")
 
 
 def anthropic_request(
@@ -47,7 +47,7 @@ def anthropic_request(
     Returns:
         LLMResponse with content and token counts
     """
-    logger.info(
+    logger.debug(
         f"Sending request to Anthropic API with model {model.value}, "
         f"temperature {temperature}, max_tokens {max_tokens}"
     )
@@ -95,7 +95,7 @@ def anthropic_request(
 
         response = CLIENT.messages.create(**request_params)
         content = response.content[0].text
-        logger.info("Successfully received response from Anthropic API")
+        logger.debug("Successfully received response from Anthropic API")
         logger.debug(f"Response: {content[:50]}")
 
         # Extract content and token counts

@@ -25,10 +25,10 @@ conversation_settings:
   turn_taking_method: round_robin
   analysis_policy: at_end
   checkpoint_enabled: false
-  max_iterations: 200
+  max_iterations: 50
   max_total_characters: 100000
 
 agent_selection_method: round_robin
-max_iterations: 200
+max_iterations: 50
 max_total_characters: 100000
 output_dir: results

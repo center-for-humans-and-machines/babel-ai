@@ -30,7 +30,7 @@ class Analyzer(ABC):
         cls, analyzer_type: "AnalyzerType", **kwargs
     ) -> "Analyzer":
         """Create an analyzer from a analyzer type."""
-        logger.info(f"Creating analyzer of type {analyzer_type}")
+        logger.debug(f"Creating analyzer of type {analyzer_type}")
         logger.debug(f"Analyzer kwargs: {kwargs}")
 
         analyzer_class = analyzer_type.get_class()
@@ -56,7 +56,7 @@ class SimilarityAnalyzer(Analyzer):
 
     token_model.eval()
 
-    logger.info(
+    logger.debug(
         f"Initialized SimilarityAnalyzer with "
         f"semantic model: {semantic_model_name}, "
         f"token model: {token_model_name}, "
@@ -89,7 +89,7 @@ class SimilarityAnalyzer(Analyzer):
         Returns:
             Tuple of (word_count, unique_word_count, coherence_score)
         """
-        logger.info("Analyzing word stats")
+        logger.debug("Analyzing word stats")
         logger.debug(f"Word stats analysis text: {text[:50]}")
 
         if not text:
@@ -122,7 +122,7 @@ class SimilarityAnalyzer(Analyzer):
         Returns:
             Average Jaccard similarity score or None if no comparison possible
         """
-        logger.info("Analyzing lexical similarity")
+        logger.debug("Analyzing lexical similarity")
         logger.debug(f"Number of input texts: {len(outputs)}")
         logger.debug(
             f"Lexical similarity analysis input: "
@@ -184,7 +184,7 @@ class SimilarityAnalyzer(Analyzer):
         Returns:
             Average cosine similarity score or None if no comparison possible
         """
-        logger.info("Analyzing semantic similarity")
+        logger.debug("Analyzing semantic similarity")
         logger.debug(f"Number of input texts: {len(outputs)}")
         logger.debug(
             f"Semantic similarity analysis input: "
@@ -265,7 +265,7 @@ class SimilarityAnalyzer(Analyzer):
         Returns:
             Average token perplexity or None if calculation not possible
         """
-        logger.info("Analyzing token perplexity")
+        logger.debug("Analyzing token perplexity")
         logger.debug(f"Token perplexity analysis text: {text[:50]}")
 
         # Ensure input text is not empty
@@ -344,7 +344,7 @@ class SimilarityAnalyzer(Analyzer):
                 text chunks, each within the model's
                 context length limit
         """
-        logger.info("Converting text to tokenizer encoding")
+        logger.debug("Converting text to tokenizer encoding")
         logger.debug(f"Text: {text[:50]}")
 
         encoding_list = []
@@ -401,7 +401,7 @@ class SimilarityAnalyzer(Analyzer):
 
         # Get word statistics and token perplexity
         # of the current text
-        logger.info("Analyzing input texts")
+        logger.debug("Analyzing input texts")
         logger.debug(f"Input texts: {[o[:10] for o in outputs]}")
 
         current_text = outputs[-1]
@@ -431,7 +431,7 @@ class SimilarityAnalyzer(Analyzer):
             outputs, window_size=self.analyze_window
         )
 
-        logger.info("Analysis complete.")
+        logger.debug("Analysis complete.")
         logger.debug(f"Word count: {word_count}")
         logger.debug(f"Unique word count: {unique_word_count}")
         logger.debug(f"Coherence score: {coherence_score}")

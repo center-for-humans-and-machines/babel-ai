@@ -10,16 +10,23 @@ from main import run_experiment, run_experiment_batch, setup_logging
 class TestSetupLogging:
     """Test logging configuration."""
 
-    def test_setup_logging_debug_vs_info(self):
-        """Test debug vs info logging levels."""
-        with patch("main.logging.basicConfig") as mock_basic_config:
-            # Test debug mode
-            setup_logging(debug=True)
-            assert mock_basic_config.call_args[1]["level"] == logging.DEBUG
+    def test_setup_logging_sets_console_and_file_levels(self, tmp_path):
+        """Console stays quiet unless debug mode is enabled."""
+        log_file = tmp_path / "test.log"
+        setup_logging(log_file=str(log_file), debug=False)
+        root = logging.getLogger()
+        console = root.handlers[0]
+        file_handler = root.handlers[1]
+        assert console.level == logging.WARNING
+        assert file_handler.level == logging.INFO
+        assert root.level == logging.DEBUG
 
-            # Test info mode
-            setup_logging(debug=False)
-            assert mock_basic_config.call_args[1]["level"] == logging.INFO
+    def test_setup_logging_debug_enables_console_debug(self):
+        """Debug mode mirrors verbose output to the console too."""
+        setup_logging(debug=True)
+        root = logging.getLogger()
+        console = root.handlers[0]
+        assert console.level == logging.DEBUG
 
 
 class TestExperimentExecution:
@@ -44,12 +51,10 @@ class TestExperimentExecution:
             "main.setup_logging"
         ), patch("main.os.makedirs"):
 
-            # Test parallel (default)
             await run_experiment_batch([mock_config, mock_config])
             assert mock_run.call_count == 2
 
             mock_run.reset_mock()
 
-            # Test sequential
             await run_experiment_batch([mock_config], parallel=False)
             assert mock_run.call_count == 1

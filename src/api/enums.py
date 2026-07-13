@@ -35,7 +35,7 @@ class Provider(Enum):
 
     def get_model_enum(self) -> Type[Enum]:
         """Get the corresponding model enum for this provider."""
-        logger.info(f"Getting model enum for provider: {self.value}")
+        logger.debug(f"Getting model enum for provider: {self.value}")
         match self:
             case Provider.OPENAI:
                 return OpenAIModels
@@ -58,7 +58,7 @@ class Provider(Enum):
 
     def get_request_function(self) -> Callable:
         """Get the corresponding request function for this provider."""
-        logger.info(f"Getting request function for provider: {self.value}")
+        logger.debug(f"Getting request function for provider: {self.value}")
         # Import here to avoid circular imports
         from api.anthropic import anthropic_request
         from api.azure_openai import azure_openai_request

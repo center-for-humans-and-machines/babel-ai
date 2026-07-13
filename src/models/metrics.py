@@ -142,7 +142,7 @@ class Metric(BaseModel):
         Returns:
             Dictionary with flattened structure for CSV export
         """
-        logger.info("Converting Metric to dictionary")
+        logger.debug("Converting Metric to dictionary")
         logger.debug(f"Metric: {self.model_dump()}")
         result = {
             "iteration": self.iteration,
@@ -165,7 +165,7 @@ class FetcherMetric(Metric):
     def to_dict(self) -> Dict[str, Any]:
         """Convert metric to a dictionary format suitable for CSV export."""
         result = super().to_dict()
-        logger.info("Updating Metric with fetcher_config.")
+        logger.debug("Updating Metric with fetcher_config.")
         logger.debug(f"Fetcher config: {self.fetcher_config.model_dump()}")
         result.update(
             {
@@ -210,7 +210,7 @@ class AgentMetric(Metric):
     def to_dict(self) -> Dict[str, Any]:
         """Convert metric to a dictionary format suitable for CSV export."""
         result = super().to_dict()
-        logger.info("Updating Metric with agent_id and agent_config.")
+        logger.debug("Updating Metric with agent_id and agent_config.")
         logger.debug(f"Agent id: {self.agent_id}")
         if self.agent_config is not None:
             logger.debug(f"Agent config: {self.agent_config.model_dump()}")

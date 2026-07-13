@@ -71,7 +71,7 @@ class LLMInterface:
         for attempt in range(max_retries):
             try:
                 # Log attempt number
-                logger.info(
+                logger.debug(
                     f"Request ID: {request_id}, "
                     f"Attempt {attempt + 1} of {max_retries} for "
                     f"provider: {provider.value}, model: {model.value}"
@@ -106,14 +106,14 @@ class LLMInterface:
                 )
 
                 # Log budget information
-                logger.info(
+                logger.debug(
                     f"Request ID: {request_id}, "
                     f"Budget - Cost: ${usage_summary['total_cost']:.6f}, "
                     f"Cumulative: ${usage_summary['cumulative_total_cost']:.6f}"  # noqa: E501
                 )
 
                 # If successful, return the content string
-                logger.info(
+                logger.debug(
                     f"Request ID: {request_id}, "
                     f"Successfully generated response on attempt "
                     f"{attempt + 1}"
@@ -136,7 +136,7 @@ class LLMInterface:
 
                 # Wait for next attempt with exponential backoff
                 delay = initial_delay**attempt
-                logger.info(
+                logger.debug(
                     f"Request ID: {request_id}, "
                     f"Retrying in {delay} seconds..."
                 )

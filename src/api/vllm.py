@@ -21,7 +21,7 @@ api_key = os.getenv("VLLM_API_KEY", "local-no-auth")
 # Create OpenAI-compatible vLLM client
 CLIENT = OpenAI(base_url=base_url, api_key=api_key)
 
-logger.info("Initializing vLLM API client.")
+logger.debug("Initializing vLLM API client.")
 
 
 def vllm_request(
@@ -43,13 +43,13 @@ def vllm_request(
         "top_p": top_p,
         "max_tokens": max_tokens,
     }
-    logger.info(
+    logger.debug(
         "Sending request to vLLM API "
         f"with model {request_params['model']}, "
         f"temperature {request_params['temperature']}"
     )
     if max_tokens is not None:
-        logger.info(f"max_tokens {max_tokens}")
+        logger.debug(f"max_tokens {max_tokens}")
 
     for msg in messages:
         logger.debug(f"Message: {msg['role']}: {msg['content'][:50]}")
@@ -57,7 +57,7 @@ def vllm_request(
     try:
         response = CLIENT.chat.completions.create(**request_params)
         content = response.choices[0].message.content
-        logger.info("Successfully received response from vLLM API")
+        logger.debug("Successfully received response from vLLM API")
         logger.debug(f"Response: {content[:50]}")
 
         return LLMResponse(

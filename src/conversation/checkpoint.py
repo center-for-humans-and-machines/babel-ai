@@ -70,7 +70,7 @@ class CheckpointWriter:
         tmp.write_text(json.dumps(payload, indent=2, default=str))
         tmp.replace(self.checkpoint_path)
         state.last_checkpoint_at = datetime.now()
-        logger.info("Checkpoint saved to %s", self.checkpoint_path)
+        logger.debug("Checkpoint saved to %s", self.checkpoint_path)
 
     @staticmethod
     def load(path: Path) -> Dict[str, Any]:

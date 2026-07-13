@@ -25,7 +25,7 @@ CLIENT = AzureOpenAI(
     api_key=api_key, azure_endpoint=endpoint, api_version=api_version
 )
 
-logger.info("Initialized Azure OpenAI client.")
+logger.debug("Initialized Azure OpenAI client.")
 
 
 def azure_openai_request(
@@ -77,15 +77,15 @@ def azure_openai_request(
             "Setting temperature to 1.0."
         )
 
-    logger.info(
+    logger.debug(
         "Sending request to Azure OpenAI API "
         f"with model {request_params['model']}, "
         f"temperature {request_params['temperature']}, "
     )
     if "max_completion_tokens" in request_params:
-        logger.info(f"max_tokens {request_params['max_completion_tokens']}")
+        logger.debug(f"max_tokens {request_params['max_completion_tokens']}")
     elif "max_tokens" in request_params:
-        logger.info(f"max_tokens {request_params['max_tokens']}")
+        logger.debug(f"max_tokens {request_params['max_tokens']}")
 
     for msg in messages:
         logger.debug(f"Message: {msg['role']}: {msg['content'][:50]}")
@@ -95,7 +95,7 @@ def azure_openai_request(
         response = CLIENT.chat.completions.create(**request_params)
 
         # Log response
-        logger.info("Successfully received response from Azure OpenAI API")
+        logger.debug("Successfully received response from Azure OpenAI API")
         logger.debug(f"Response: {response.choices[0].message.content[:50]}")
 
         # Extract content and token counts

@@ -133,7 +133,7 @@ class BudgetTracker:
         self._load_budget_data()
         self._initialized = True
 
-        logger.info(
+        logger.debug(
             f"BudgetTracker initialized, data stored at: "
             f"{self.budget_file.absolute()}"
         )
@@ -146,7 +146,7 @@ class BudgetTracker:
                     loaded_data = json.load(f)
                 # Merge with default structure to handle schema updates
                 self.budget_data.update(loaded_data)
-                logger.info("Loaded existing budget data from file")
+                logger.debug("Loaded existing budget data from file")
             except (json.JSONDecodeError, IOError) as e:
                 logger.warning(
                     f"Could not load budget data: {e}. "
@@ -267,5 +267,5 @@ class BudgetTracker:
                 ),
             }
 
-            logger.info(f"Added usage: {usage_summary}")
+            logger.debug(f"Added usage: {usage_summary}")
             return usage_summary

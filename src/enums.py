@@ -40,7 +40,7 @@ class FetcherType(Enum):
         Returns:
             The fetcher class corresponding to this enum value
         """
-        logger.info(f"Getting fetcher class for fetcher type: {self.value}")
+        logger.debug(f"Getting fetcher class for fetcher type: {self.value}")
 
         # Import here to avoid circular imports
         logger.debug("Importing fetcher classes to avoid circular imports")
@@ -65,7 +65,7 @@ class FetcherType(Enum):
         Get the kwargs for the fetcher.
         Depending on the fetcher type.
         """
-        logger.info(f"Getting requiredkwargs mapping for {self.value}")
+        logger.debug(f"Getting requiredkwargs mapping for {self.value}")
         required_kwargs = {
             FetcherType.RANDOM: ["category"],
             FetcherType.SHAREGPT: [
@@ -147,7 +147,7 @@ class AnalyzerType(Enum):
 
     def get_class(self) -> Type["Analyzer"]:
         """Get the corresponding analyzer class for this type."""
-        logger.info(f"Getting analyzer class for {self.value}")
+        logger.debug(f"Getting analyzer class for {self.value}")
 
         # Import here to avoid circular imports
         logger.debug("Importing SimilarityAnalyzer to avoid circular imports")
