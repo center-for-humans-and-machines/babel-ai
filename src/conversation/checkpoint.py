@@ -154,6 +154,9 @@ class CheckpointWriter:
                     scaffolder_topic_source_turn=raw.get(
                         "scaffolder_topic_source_turn"
                     ),
+                    scaffolder_novelty_nudge_kind=raw.get(
+                        "scaffolder_novelty_nudge_kind"
+                    ),
                 )
             )
         return metrics

@@ -56,6 +56,7 @@ class ScaffolderAgentConfig(BaseModel):
     memory_cooldown: int = Field(default=2, ge=0)
     memory_size: int = Field(default=20, ge=1)
     similarity_threshold: float = Field(default=0.70, ge=0.0, le=1.0)
+    novelty_nudge_rate: float = Field(default=0.20, ge=0.0, le=1.0)
     topic_source: Literal["topic_bank"] = "topic_bank"
     random_seed: int = 0
 

@@ -32,6 +32,7 @@ _CORE_COLUMNS = (
     "scaffolder_meta_detected",
     "scaffolder_memory_size",
     "scaffolder_topic_source_turn",
+    "scaffolder_novelty_nudge_kind",
 )
 
 

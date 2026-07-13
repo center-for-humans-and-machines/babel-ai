@@ -5,8 +5,13 @@ import pytest
 from conversation.agent_config import ScaffolderAgentConfig
 from conversation.agents import ScaffolderConversationAgent
 from conversation.factory import build_agent
-from conversation.messages import ConversationMessage, MessageSource
+from conversation.messages import (
+    ContextStack,
+    ConversationMessage,
+    MessageSource,
+)
 from conversation.scaffolder import (
+    NoveltyNudgeKind,
     ScaffolderAction,
     ThreeBehaviorScaffolder,
     content_tokens,
@@ -193,6 +198,8 @@ def test_replay_moves_from_thriving_through_stuck_to_memory():
 def test_policy_rejects_missing_or_reprocessed_peer_turns():
     with pytest.raises(ValueError, match="at least one topic"):
         ThreeBehaviorScaffolder([])
+    with pytest.raises(ValueError, match="between 0 and 1"):
+        ThreeBehaviorScaffolder(["topic"], novelty_nudge_rate=1.1)
     policy = _policy()
     with pytest.raises(ValueError, match="prior peer"):
         policy.respond([], speaker="scaffolder")
@@ -241,3 +248,77 @@ def test_representative_sentence_handles_empty_and_long_text():
     assert representative_sentence("", []) == ""
     summary = representative_sentence("x" * 200, [], max_length=20)
     assert summary == ("x" * 19) + "…"
+
+
+def test_novelty_nudge_runs_once_per_five_informative_turns():
+    policy = _policy(
+        novelty_nudge_rate=0.20,
+        novelty_threshold=0.0,
+        continuity_threshold=0.0,
+    )
+    messages = []
+    nudges = []
+    for index in range(10):
+        messages.append(
+            _message(
+                index * 2,
+                "Ocean currents shape climate systems in coastal regions.",
+            )
+        )
+        turn = policy.respond(messages, speaker="scaffolder")
+        nudges.append(turn.novelty_nudge_kind)
+        messages.append(_message(index * 2 + 1, turn.content, "scaffolder"))
+    assert [index for index, kind in enumerate(nudges) if kind] == [4, 9]
+
+
+def test_novelty_nudge_rotates_all_requested_strategies():
+    policy = _policy(
+        novelty_nudge_rate=1.0,
+        novelty_threshold=0.0,
+        continuity_threshold=0.0,
+    )
+    messages = []
+    turns = []
+    for index in range(6):
+        messages.append(
+            _message(
+                index * 2,
+                "Ocean ocean currents currents climate climate.",
+            )
+        )
+        turn = policy.respond(messages, speaker="scaffolder")
+        turns.append(turn)
+        messages.append(_message(index * 2 + 1, turn.content, "scaffolder"))
+    assert [turn.novelty_nudge_kind for turn in turns[:4]] == [
+        NoveltyNudgeKind.CONNECTED_NOVELTY,
+        NoveltyNudgeKind.SINGLE_CONCEPT,
+        NoveltyNudgeKind.COMBINED_CONCEPTS,
+        NoveltyNudgeKind.MODEL_TOPIC_SWITCH,
+    ]
+    assert '"climate"' in turns[1].content
+    assert '"climate"' in turns[2].content
+    assert '"currents"' in turns[2].content
+    assert "leave" in turns[5].content
+
+
+def test_agent_turn_exposes_novelty_nudge_trace():
+    agent = ScaffolderConversationAgent(
+        ScaffolderAgentConfig(
+            min_content_tokens=3,
+            novelty_threshold=0.0,
+            continuity_threshold=0.0,
+            novelty_nudge_rate=1.0,
+        )
+    )
+    turn = agent.generate(
+        ContextStack(
+            messages=[
+                _message(
+                    0,
+                    "Ocean currents shape climate systems globally.",
+                )
+            ]
+        )
+    )
+    assert turn.scaffolder_action == "thrive_protection"
+    assert turn.scaffolder_novelty_nudge_kind == "connected_novelty"

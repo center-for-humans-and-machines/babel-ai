@@ -35,6 +35,7 @@ class AgentTurn:
     scaffolder_meta_detected: Optional[bool] = None
     scaffolder_memory_size: Optional[int] = None
     scaffolder_topic_source_turn: Optional[int] = None
+    scaffolder_novelty_nudge_kind: Optional[str] = None
 
 
 class ConversationAgent(Protocol):
@@ -139,6 +140,7 @@ class ScaffolderConversationAgent:
             memory_cooldown=config.memory_cooldown,
             memory_size=config.memory_size,
             similarity_threshold=config.similarity_threshold,
+            novelty_nudge_rate=config.novelty_nudge_rate,
             random_seed=config.random_seed,
         )
 
@@ -159,6 +161,11 @@ class ScaffolderConversationAgent:
             scaffolder_meta_detected=scores.meta_detected,
             scaffolder_memory_size=turn.memory_size,
             scaffolder_topic_source_turn=turn.topic_source_turn,
+            scaffolder_novelty_nudge_kind=(
+                turn.novelty_nudge_kind.value
+                if turn.novelty_nudge_kind
+                else None
+            ),
         )
 
     def export_state(self) -> dict:

@@ -21,6 +21,7 @@ agents:
   - type: mirror
   - type: scaffolder
     stuck_turns: 2
+    novelty_nudge_rate: 0.20
     random_seed: 0
 
 conversation_settings:
@@ -50,7 +51,8 @@ reserved.
 The `scaffolder` uses three branches: protect informative continuation,
 consume one remembered topic when stuck, then inject a local topic when
 memory is empty. Its lexical thresholds, memory limits, cooldown, and
-random seed are configurable. See
+novelty-nudge rate are configurable. The default `0.20` rate schedules
+one model-generated novelty prompt per five informative turns. See
 `configs/scaffolder_gpt_first_test.yaml` for all fields.
 
 ## Conversation settings

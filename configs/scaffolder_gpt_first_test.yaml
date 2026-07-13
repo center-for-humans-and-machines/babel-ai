@@ -26,6 +26,7 @@ agents:
     memory_cooldown: 2
     memory_size: 20
     similarity_threshold: 0.70
+    novelty_nudge_rate: 0.20
     topic_source: topic_bank
     random_seed: 0
 

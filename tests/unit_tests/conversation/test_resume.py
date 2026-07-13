@@ -128,6 +128,7 @@ def test_checkpoint_restores_scaffolder_metric_trace(tmp_path):
         scaffolder_informative=True,
         scaffolder_novelty=0.4,
         scaffolder_memory_size=2,
+        scaffolder_novelty_nudge_kind="connected_novelty",
     )
     writer = CheckpointWriter(tmp_path)
     writer.save(
@@ -143,6 +144,7 @@ def test_checkpoint_restores_scaffolder_metric_trace(tmp_path):
     assert restored.scaffolder_action == "thrive_protection"
     assert restored.scaffolder_informative is True
     assert restored.scaffolder_memory_size == 2
+    assert restored.scaffolder_novelty_nudge_kind == "connected_novelty"
 
 
 def test_checkpoint_restores_scaffolder_policy_state(tmp_path):

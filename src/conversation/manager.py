@@ -239,6 +239,9 @@ class ConversationManager:
             scaffolder_topic_source_turn=getattr(
                 turn, "scaffolder_topic_source_turn", None
             ),
+            scaffolder_novelty_nudge_kind=getattr(
+                turn, "scaffolder_novelty_nudge_kind", None
+            ),
         )
 
     def _should_continue(self) -> bool:

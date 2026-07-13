@@ -176,4 +176,3 @@ def test_hacker_news_feed_handles_network_errors():
 def test_combined_feed_returns_none_when_all_empty():
     combined = CombinedFeed([_FixedFeed(None), _FixedFeed(None)])
     assert combined.pick_topic() is None
-

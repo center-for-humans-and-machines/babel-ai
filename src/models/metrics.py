@@ -214,6 +214,7 @@ class AgentMetric(Metric):
     scaffolder_meta_detected: Optional[bool] = None
     scaffolder_memory_size: Optional[int] = None
     scaffolder_topic_source_turn: Optional[int] = None
+    scaffolder_novelty_nudge_kind: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert metric to a dictionary format suitable for CSV export."""
@@ -244,6 +245,9 @@ class AgentMetric(Metric):
                 "scaffolder_memory_size": self.scaffolder_memory_size,
                 "scaffolder_topic_source_turn": (
                     self.scaffolder_topic_source_turn
+                ),
+                "scaffolder_novelty_nudge_kind": (
+                    self.scaffolder_novelty_nudge_kind
                 ),
             }
         )

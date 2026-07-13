@@ -5,6 +5,7 @@ from __future__ import annotations
 import random
 import re
 import unicodedata
+from collections import Counter
 from dataclasses import asdict, dataclass
 from enum import Enum
 from typing import Any, Iterable
@@ -35,6 +36,28 @@ _ENCOURAGEMENTS = (
     "Develop one consequence.",
     "Name one edge case.",
 )
+_CONNECTED_NOVELTY_PROMPTS = (
+    "Introduce a genuinely new idea that still connects to this topic.",
+    "Take this topic in an unexpected but clearly connected direction.",
+    "Add a new concept that changes how this topic can be viewed.",
+    "Find a non-obvious neighboring idea and explain the connection.",
+)
+_CONTENT_STOPWORDS = frozenset(
+    """
+    about after again also and are because been before being between both
+    but can could did does doing each for from further had has have having
+    here how into its itself just more most not now off once only other our
+    out over same should some such than that the their them then there these
+    they this those through too under very was were what when where which
+    while who why will with would you your
+    aspect conversation discussion example examples idea ideas information
+    question questions thing things topic topics
+    aber als auch auf aus bei das dem den der des die ein eine einem einen
+    einer für haben ist mit nicht oder sich sind und von war werden wie zu
+    con como del desde donde el ella en entre era es esta este la las los
+    más para pero por que se sin sobre son sus una uno
+    """.split()
+)
 
 
 class ScaffolderAction(str, Enum):
@@ -43,6 +66,15 @@ class ScaffolderAction(str, Enum):
     THRIVE_PROTECTION = "thrive_protection"
     MEMORY_RESURFACE = "memory_resurface"
     TOPIC_INJECTION = "topic_injection"
+
+
+class NoveltyNudgeKind(str, Enum):
+    """Prompt strategy used within thrive protection."""
+
+    CONNECTED_NOVELTY = "connected_novelty"
+    SINGLE_CONCEPT = "single_concept"
+    COMBINED_CONCEPTS = "combined_concepts"
+    MODEL_TOPIC_SWITCH = "model_topic_switch"
 
 
 @dataclass(frozen=True)
@@ -91,6 +123,7 @@ class ScaffolderTurn:
     scores: DecisionScores
     memory_size: int
     topic_source_turn: int | None = None
+    novelty_nudge_kind: NoveltyNudgeKind | None = None
 
 
 class ThreeBehaviorScaffolder:
@@ -108,6 +141,7 @@ class ThreeBehaviorScaffolder:
         memory_cooldown: int = 2,
         memory_size: int = 20,
         similarity_threshold: float = 0.70,
+        novelty_nudge_rate: float = 0.20,
         random_seed: int = 0,
     ) -> None:
         self.min_content_tokens = min_content_tokens
@@ -118,6 +152,9 @@ class ThreeBehaviorScaffolder:
         self.memory_cooldown = memory_cooldown
         self.memory_size = memory_size
         self.similarity_threshold = similarity_threshold
+        if not 0.0 <= novelty_nudge_rate <= 1.0:
+            raise ValueError("novelty_nudge_rate must be between 0 and 1")
+        self.novelty_nudge_rate = novelty_nudge_rate
         self.random_seed = random_seed
         self._base_topics = tuple(
             topic.strip() for topic in topics if topic.strip()
@@ -130,6 +167,11 @@ class ThreeBehaviorScaffolder:
         self._peer_turn_count = 0
         self._noninformative_streak = 0
         self._encouragement_index = 0
+        self._novelty_credit = 0.0
+        self._novelty_variant_index = 0
+        self._connected_prompt_index = 0
+        self._single_concept_index = 0
+        self._concept_counts: Counter[str] = Counter()
         self._topic_cycle = 0
         self._topic_deck: list[str] = []
         self._topic_index = 0
@@ -160,6 +202,7 @@ class ThreeBehaviorScaffolder:
         features = text_features(latest.content)
         self._history.append(features)
         self._peer_turn_count += 1
+        self._track_concepts(latest.content)
 
         if scores.informative:
             self._noninformative_streak = 0
@@ -231,6 +274,11 @@ class ThreeBehaviorScaffolder:
             "peer_turn_count": self._peer_turn_count,
             "noninformative_streak": self._noninformative_streak,
             "encouragement_index": self._encouragement_index,
+            "novelty_credit": self._novelty_credit,
+            "novelty_variant_index": self._novelty_variant_index,
+            "connected_prompt_index": self._connected_prompt_index,
+            "single_concept_index": self._single_concept_index,
+            "concept_counts": dict(self._concept_counts),
             "topic_cycle": self._topic_cycle,
             "topic_deck": self._topic_deck,
             "topic_index": self._topic_index,
@@ -246,12 +294,15 @@ class ThreeBehaviorScaffolder:
         ]
         self._processed_turns = set(data.get("processed_turns", []))
         self._peer_turn_count = int(data.get("peer_turn_count", 0))
-        self._noninformative_streak = int(
-            data.get("noninformative_streak", 0)
+        self._noninformative_streak = int(data.get("noninformative_streak", 0))
+        self._encouragement_index = int(data.get("encouragement_index", 0))
+        self._novelty_credit = float(data.get("novelty_credit", 0.0))
+        self._novelty_variant_index = int(data.get("novelty_variant_index", 0))
+        self._connected_prompt_index = int(
+            data.get("connected_prompt_index", 0)
         )
-        self._encouragement_index = int(
-            data.get("encouragement_index", 0)
-        )
+        self._single_concept_index = int(data.get("single_concept_index", 0))
+        self._concept_counts = Counter(data.get("concept_counts", {}))
         self._topic_cycle = int(data.get("topic_cycle", 0))
         self._topic_deck = list(data.get("topic_deck", []))
         self._topic_index = int(data.get("topic_index", 0))
@@ -261,6 +312,7 @@ class ThreeBehaviorScaffolder:
         self._processed_turns.add(message.turn_index)
         self._history.append(features)
         self._peer_turn_count += 1
+        self._track_concepts(message.content)
         if len(content_tokens(message.content)) >= self.min_content_tokens:
             self._remember(message, features)
 
@@ -301,6 +353,15 @@ class ThreeBehaviorScaffolder:
         return None
 
     def _encourage(self, scores: DecisionScores) -> ScaffolderTurn:
+        if scores.informative and self._novelty_nudge_due():
+            content, kind = self._novelty_nudge()
+            return ScaffolderTurn(
+                content=content,
+                action=ScaffolderAction.THRIVE_PROTECTION,
+                scores=scores,
+                memory_size=len(self._memory),
+                novelty_nudge_kind=kind,
+            )
         content = _ENCOURAGEMENTS[
             self._encouragement_index % len(_ENCOURAGEMENTS)
         ]
@@ -311,6 +372,61 @@ class ThreeBehaviorScaffolder:
             scores=scores,
             memory_size=len(self._memory),
         )
+
+    def _novelty_nudge_due(self) -> bool:
+        self._novelty_credit += self.novelty_nudge_rate
+        if self._novelty_credit + 1e-12 < 1.0:
+            return False
+        self._novelty_credit -= 1.0
+        return True
+
+    def _novelty_nudge(self) -> tuple[str, NoveltyNudgeKind]:
+        variant = self._novelty_variant_index % 4
+        self._novelty_variant_index += 1
+        concepts = self._frequent_concepts(limit=2)
+        if variant == 1 and concepts:
+            concept = concepts[0]
+            if self._single_concept_index % 2:
+                text = (
+                    f"Continue with a connected new idea, but leave "
+                    f'"{concept}" out of the discussion.'
+                )
+            else:
+                text = (
+                    f'Focus on the recurring concept "{concept}" and '
+                    "connect it to a genuinely new idea."
+                )
+            self._single_concept_index += 1
+            return text, NoveltyNudgeKind.SINGLE_CONCEPT
+        if variant == 2 and len(concepts) >= 2:
+            return (
+                f'Combine the recurring concepts "{concepts[0]}" and '
+                f'"{concepts[1]}" in a new context.',
+                NoveltyNudgeKind.COMBINED_CONCEPTS,
+            )
+        if variant == 3:
+            return (
+                "It is time for a topic switch. Introduce a new topic "
+                "with one clear connection to the current discussion.",
+                NoveltyNudgeKind.MODEL_TOPIC_SWITCH,
+            )
+        prompt = _CONNECTED_NOVELTY_PROMPTS[
+            self._connected_prompt_index % len(_CONNECTED_NOVELTY_PROMPTS)
+        ]
+        self._connected_prompt_index += 1
+        return prompt, NoveltyNudgeKind.CONNECTED_NOVELTY
+
+    def _track_concepts(self, text: str) -> None:
+        self._concept_counts.update(concept_candidates(text))
+
+    def _frequent_concepts(self, limit: int) -> list[str]:
+        candidates = [
+            (count, concept)
+            for concept, count in self._concept_counts.items()
+            if count >= 2
+        ]
+        candidates.sort(key=lambda item: (-item[0], item[1]))
+        return [concept for _, concept in candidates[:limit]]
 
     def _next_topic(self) -> str:
         if self._topic_index >= len(self._topic_deck):
@@ -351,6 +467,15 @@ def content_tokens(text: str) -> list[str]:
     return tokens
 
 
+def concept_candidates(text: str) -> list[str]:
+    """Approximate nouns with repeated non-stopword content terms."""
+    return [
+        token
+        for token in content_tokens(text)
+        if len(token) >= 3 and token not in _CONTENT_STOPWORDS
+    ]
+
+
 def text_features(text: str) -> frozenset[str]:
     """Build word and character-trigram features."""
     normalized = normalize_text(text)
@@ -359,7 +484,7 @@ def text_features(text: str) -> frozenset[str]:
     trigrams = {
         f"c:{compact[index:index + 3]}"
         for index in range(max(0, len(compact) - 2))
-        if compact[index:index + 3].strip()
+        if compact[index : index + 3].strip()
     }
     return frozenset(words | trigrams)
 
@@ -377,7 +502,9 @@ def representative_sentence(
     ]
     if not sentences:
         return text.strip()[:max_length]
-    seen = frozenset().union(*history[:-1]) if len(history) > 1 else frozenset()
+    seen = (
+        frozenset().union(*history[:-1]) if len(history) > 1 else frozenset()
+    )
     best = max(
         sentences,
         key=lambda sentence: len(text_features(sentence) - seen),

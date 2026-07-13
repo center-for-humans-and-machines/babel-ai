@@ -76,6 +76,7 @@ def test_scaffolder_trace_is_persisted(tmp_path):
         scaffolder_meta_detected=False,
         scaffolder_memory_size=2,
         scaffolder_topic_source_turn=3,
+        scaffolder_novelty_nudge_kind="connected_novelty",
     )
     run_dir = tmp_path / "trace-run"
     save_run(run_dir, [metric], {"run_id": "trace-run"})
@@ -83,3 +84,4 @@ def test_scaffolder_trace_is_persisted(tmp_path):
     assert row["scaffolder_action"] == "thrive_protection"
     assert row["scaffolder_memory_size"] == 2
     assert row["scaffolder_topic_source_turn"] == 3
+    assert row["scaffolder_novelty_nudge_kind"] == "connected_novelty"
