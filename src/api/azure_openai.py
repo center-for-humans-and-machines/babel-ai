@@ -100,7 +100,7 @@ def azure_openai_request(
 
         # Extract content and token counts
         if model.uses_new_parameters():
-            content = response.choices[0].message.content.content[0].text
+            content = response.choices[0].message.content[0].text
         else:
             content = response.choices[0].message.content
         input_tokens = response.usage.prompt_tokens
