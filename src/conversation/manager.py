@@ -247,6 +247,13 @@ class ConversationManager:
             scaffolder_novelty_nudge_kind=getattr(
                 turn, "scaffolder_novelty_nudge_kind", None
             ),
+            rag_used=getattr(turn, "rag_used", None),
+            rag_mode=getattr(turn, "rag_mode", None),
+            rag_words=getattr(turn, "rag_words", None),
+            rag_query=getattr(turn, "rag_query", None),
+            rag_source_url=getattr(turn, "rag_source_url", None),
+            rag_source_title=getattr(turn, "rag_source_title", None),
+            rag_fallback_reason=getattr(turn, "rag_fallback_reason", None),
         )
 
     def _should_continue(self) -> bool:

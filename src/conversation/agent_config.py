@@ -15,6 +15,7 @@ class AgentType(str, Enum):
     RULE_BASED = "rule_based"
     MIRROR = "mirror"
     SCAFFOLDER = "scaffolder"
+    RAG_SCAFFOLDER = "rag_scaffolder"
 
 
 class LLMAgentConfig(BaseModel):
@@ -71,12 +72,34 @@ class ScaffolderAgentConfig(BaseModel):
     random_seed: int = 0
 
 
+class RagScaffolderAgentConfig(ScaffolderAgentConfig):
+    """Web-search-grounded scaffolder sharing the three-behavior policy."""
+
+    type: Literal[AgentType.RAG_SCAFFOLDER] = AgentType.RAG_SCAFFOLDER
+    word_model: str = "glove-wiki-gigaword-100"
+    num_words: int = Field(default=5, ge=1)
+    search_backend: Literal["duckduckgo", "wikipedia", "auto"] = "duckduckgo"
+    search_results: int = Field(default=5, ge=1)
+    fetch_page: bool = True
+    max_source_chars: int = Field(default=4000, ge=100)
+    search_timeout: float = Field(default=8.0, gt=0.0)
+    context_turns: int = Field(default=6, ge=1)
+    nudge_system_prompt: str = (
+        "You are a research assistant embedded in a conversation. You help "
+        "a language model stay novel and grounded. Always answer with a "
+        "single short instruction (one or two sentences) that the model "
+        "should follow."
+    )
+    nudge_max_tokens: Optional[int] = Field(default=300, ge=1)
+
+
 AgentConfig = Annotated[
     Union[
         LLMAgentConfig,
         RuleBasedAgentConfig,
         MirrorAgentConfig,
         ScaffolderAgentConfig,
+        RagScaffolderAgentConfig,
     ],
     Field(discriminator="type"),
 ]

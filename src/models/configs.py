@@ -15,6 +15,7 @@ from api.enums import APIModels, Provider
 from conversation.agent_config import (
     LLMAgentConfig,
     MirrorAgentConfig,
+    RagScaffolderAgentConfig,
     RuleBasedAgentConfig,
     ScaffolderAgentConfig,
 )
@@ -322,6 +323,7 @@ class ExperimentConfig(BaseModel):
         | RuleBasedAgentConfig
         | MirrorAgentConfig
         | ScaffolderAgentConfig
+        | RagScaffolderAgentConfig
     ] = Field(
         default_factory=list,
         description="Canonical multi-agent configuration list",

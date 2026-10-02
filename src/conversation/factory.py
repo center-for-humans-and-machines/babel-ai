@@ -9,6 +9,7 @@ from conversation.agent_config import (
     AgentType,
     LLMAgentConfig,
     MirrorAgentConfig,
+    RagScaffolderAgentConfig,
     RuleBasedAgentConfig,
     ScaffolderAgentConfig,
 )
@@ -16,6 +17,7 @@ from conversation.agents import (
     ConversationAgent,
     LLMConversationAgent,
     MirrorConversationAgent,
+    RagScaffolderConversationAgent,
     RuleBasedConversationAgent,
     ScaffolderConversationAgent,
 )
@@ -26,13 +28,23 @@ def build_conversation_agents(
     configs: List[AgentConfig],
 ) -> List[ConversationAgent]:
     """Instantiate agents from the unified ``agents`` config list."""
+    llm_config = _first_llm_config(configs)
     return [
-        build_agent(config, speaker=_default_speaker(config, index))
+        build_agent(
+            config,
+            speaker=_default_speaker(config, index),
+            llm_config=llm_config,
+        )
         for index, config in enumerate(configs)
     ]
 
 
-def build_agent(config: AgentConfig, *, speaker: str) -> ConversationAgent:
+def build_agent(
+    config: AgentConfig,
+    *,
+    speaker: str,
+    llm_config: LegacyAgentConfig | None = None,
+) -> ConversationAgent:
     """Instantiate one conversation agent from config."""
     if config.type is AgentType.LLM:
         return LLMConversationAgent(
@@ -45,7 +57,25 @@ def build_agent(config: AgentConfig, *, speaker: str) -> ConversationAgent:
         return MirrorConversationAgent(speaker=speaker)
     if config.type is AgentType.SCAFFOLDER:
         return ScaffolderConversationAgent(config=config, speaker=speaker)
+    if config.type is AgentType.RAG_SCAFFOLDER:
+        if llm_config is None:
+            raise ValueError(
+                "rag_scaffolder requires an 'llm' agent in the same config"
+            )
+        return RagScaffolderConversationAgent(
+            config=config,
+            llm_config=llm_config,
+            speaker=speaker,
+        )
     raise ValueError(f"unknown agent type: {config.type}")
+
+
+def _first_llm_config(configs: List[AgentConfig]) -> LegacyAgentConfig | None:
+    """Resolve the experiment LLM reused by the RAG scaffolder."""
+    for config in configs:
+        if isinstance(config, LLMAgentConfig):
+            return _legacy_agent_config(config)
+    return None
 
 
 def _default_speaker(config: AgentConfig, index: int) -> str:
@@ -54,6 +84,8 @@ def _default_speaker(config: AgentConfig, index: int) -> str:
         return config.partner
     if isinstance(config, MirrorAgentConfig):
         return "mirror"
+    if isinstance(config, RagScaffolderAgentConfig):
+        return "rag_scaffolder"
     if isinstance(config, ScaffolderAgentConfig):
         return "scaffolder"
     return f"agent_{index}"

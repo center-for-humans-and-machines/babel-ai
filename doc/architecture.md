@@ -18,6 +18,11 @@ flowchart TB
   Agents --> LLM[LLMConversationAgent]
   Agents --> Rule[RuleBasedConversationAgent]
   Agents --> Mirror[MirrorConversationAgent]
+  Agents --> Scaffolder[ScaffolderConversationAgent]
+  Agents --> Rag[RagScaffolderConversationAgent]
+  Rag --> Words[RandomWordSampler]
+  Rag --> Search[SearchClient: DuckDuckGo / Wikipedia]
+  Rag --> LLM
   Rule --> Eliza[PartnerSession]
   Eliza --> Vendor[Vendored rdimaio ELIZA]
   Eliza --> Feed[LiveFeedProvider]

@@ -5,16 +5,22 @@ from typing import TYPE_CHECKING, Optional, Protocol
 
 from agent import Agent
 from conversation.messages import ContextStack
-from conversation.scaffolder import ThreeBehaviorScaffolder
+from conversation.rag.nudge import RagNudgeProvider
+from conversation.rag.scaffolder import RagScaffolder
+from conversation.rag.search import build_search_client
+from conversation.rag.word_sampler import RandomWordSampler
+from conversation.scaffolder import ScaffolderTurn, ThreeBehaviorScaffolder
 from eliza.interventions import build_intervention
 from eliza.live_feed import load_topic_bank_topics
 from eliza.session import PartnerSession
 
 if TYPE_CHECKING:
     from conversation.agent_config import (
+        RagScaffolderAgentConfig,
         RuleBasedAgentConfig,
         ScaffolderAgentConfig,
     )
+    from models.configs import AgentConfig as LegacyAgentConfig
 
 
 @dataclass
@@ -36,6 +42,13 @@ class AgentTurn:
     scaffolder_memory_size: Optional[int] = None
     scaffolder_topic_source_turn: Optional[int] = None
     scaffolder_novelty_nudge_kind: Optional[str] = None
+    rag_used: Optional[bool] = None
+    rag_mode: Optional[str] = None
+    rag_words: Optional[list[str]] = None
+    rag_query: Optional[str] = None
+    rag_source_url: Optional[str] = None
+    rag_source_title: Optional[str] = None
+    rag_fallback_reason: Optional[str] = None
 
 
 class ConversationAgent(Protocol):
@@ -132,16 +145,7 @@ class ScaffolderConversationAgent:
         self.speaker = speaker
         self._policy = ThreeBehaviorScaffolder(
             load_topic_bank_topics(),
-            min_content_tokens=config.min_content_tokens,
-            novelty_threshold=config.novelty_threshold,
-            continuity_threshold=config.continuity_threshold,
-            history_window=config.history_window,
-            stuck_turns=config.stuck_turns,
-            memory_cooldown=config.memory_cooldown,
-            memory_size=config.memory_size,
-            similarity_threshold=config.similarity_threshold,
-            novelty_nudge_rate=config.novelty_nudge_rate,
-            random_seed=config.random_seed,
+            **_scaffolder_policy_kwargs(config),
         )
 
     def generate(self, stack: ContextStack) -> AgentTurn:
@@ -150,23 +154,7 @@ class ScaffolderConversationAgent:
             stack.messages,
             speaker=self.speaker,
         )
-        scores = turn.scores
-        return AgentTurn(
-            content=turn.content,
-            scaffolder_action=turn.action.value,
-            scaffolder_informative=scores.informative,
-            scaffolder_novelty=scores.novelty,
-            scaffolder_continuity=scores.continuity,
-            scaffolder_content_tokens=scores.content_tokens,
-            scaffolder_meta_detected=scores.meta_detected,
-            scaffolder_memory_size=turn.memory_size,
-            scaffolder_topic_source_turn=turn.topic_source_turn,
-            scaffolder_novelty_nudge_kind=(
-                turn.novelty_nudge_kind.value
-                if turn.novelty_nudge_kind
-                else None
-            ),
-        )
+        return _scaffolder_turn_to_agent_turn(turn)
 
     def export_state(self) -> dict:
         """Serialize policy state for checkpoint resume."""
@@ -175,3 +163,98 @@ class ScaffolderConversationAgent:
     def import_state(self, data: dict) -> None:
         """Restore policy state from a checkpoint."""
         self._policy.import_state(data)
+
+
+class RagScaffolderConversationAgent:
+    """Adapt the search-grounded scaffolder to the conversation protocol."""
+
+    def __init__(
+        self,
+        config: "RagScaffolderAgentConfig",
+        llm_config: "LegacyAgentConfig",
+        speaker: str = "rag_scaffolder",
+    ) -> None:
+        self.agent_id = "rag_scaffolder"
+        self.speaker = speaker
+        self._config = config
+        sampler = RandomWordSampler(config.word_model, seed=config.random_seed)
+        search_client = build_search_client(
+            config.search_backend, timeout=config.search_timeout
+        )
+        provider = RagNudgeProvider(
+            sampler=sampler,
+            search_client=search_client,
+            llm_config=llm_config,
+            num_words=config.num_words,
+            top_k=config.search_results,
+            fetch_page=config.fetch_page,
+            max_source_chars=config.max_source_chars,
+            search_timeout=config.search_timeout,
+            context_turns=config.context_turns,
+            system_prompt=config.nudge_system_prompt,
+            max_tokens=config.nudge_max_tokens,
+            seed=config.random_seed,
+        )
+        self._policy = RagScaffolder(
+            load_topic_bank_topics(),
+            provider=provider,
+            **_scaffolder_policy_kwargs(config),
+        )
+
+    def generate(self, stack: ContextStack) -> AgentTurn:
+        """Produce a web-grounded scaffold for the latest LLM turn."""
+        turn = self._policy.respond(
+            stack.messages,
+            speaker=self.speaker,
+        )
+        return _scaffolder_turn_to_agent_turn(turn)
+
+    def export_state(self) -> dict:
+        """Serialize policy and RAG provider state for checkpoint resume."""
+        return self._policy.export_state()
+
+    def import_state(self, data: dict) -> None:
+        """Restore policy and RAG provider state from a checkpoint."""
+        self._policy.import_state(data)
+
+
+def _scaffolder_policy_kwargs(config: object) -> dict:
+    """Shared three-behavior constructor kwargs for both scaffolders."""
+    return {
+        "min_content_tokens": config.min_content_tokens,
+        "novelty_threshold": config.novelty_threshold,
+        "continuity_threshold": config.continuity_threshold,
+        "history_window": config.history_window,
+        "stuck_turns": config.stuck_turns,
+        "memory_cooldown": config.memory_cooldown,
+        "memory_size": config.memory_size,
+        "similarity_threshold": config.similarity_threshold,
+        "novelty_nudge_rate": config.novelty_nudge_rate,
+        "random_seed": config.random_seed,
+    }
+
+
+def _scaffolder_turn_to_agent_turn(turn: ScaffolderTurn) -> AgentTurn:
+    """Map a policy turn and its trace onto an ``AgentTurn``."""
+    scores = turn.scores
+    return AgentTurn(
+        content=turn.content,
+        scaffolder_action=turn.action.value,
+        scaffolder_informative=scores.informative,
+        scaffolder_novelty=scores.novelty,
+        scaffolder_continuity=scores.continuity,
+        scaffolder_content_tokens=scores.content_tokens,
+        scaffolder_meta_detected=scores.meta_detected,
+        scaffolder_memory_size=turn.memory_size,
+        scaffolder_topic_source_turn=turn.topic_source_turn,
+        scaffolder_novelty_nudge_kind=(
+            turn.novelty_nudge_kind.value if turn.novelty_nudge_kind else None
+        ),
+        rag_used=turn.rag_used,
+        rag_mode=turn.rag_mode,
+        rag_words=list(turn.rag_words) if turn.rag_words else None,
+        rag_query=turn.rag_query,
+        rag_source_url=turn.rag_source_url,
+        rag_source_title=turn.rag_source_title,
+        rag_fallback_reason=turn.rag_fallback_reason,
+    )

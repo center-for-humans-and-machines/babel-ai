@@ -33,6 +33,13 @@ _CORE_COLUMNS = (
     "scaffolder_memory_size",
     "scaffolder_topic_source_turn",
     "scaffolder_novelty_nudge_kind",
+    "rag_used",
+    "rag_mode",
+    "rag_words",
+    "rag_query",
+    "rag_source_url",
+    "rag_source_title",
+    "rag_fallback_reason",
 )
 
 

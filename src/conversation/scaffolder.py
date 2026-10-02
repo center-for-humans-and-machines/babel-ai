@@ -75,6 +75,7 @@ class NoveltyNudgeKind(str, Enum):
     SINGLE_CONCEPT = "single_concept"
     COMBINED_CONCEPTS = "combined_concepts"
     MODEL_TOPIC_SWITCH = "model_topic_switch"
+    RAG_SEARCH = "rag_search"
 
 
 @dataclass(frozen=True)
@@ -115,6 +116,25 @@ class DecisionScores:
 
 
 @dataclass(frozen=True)
+class ScaffoldNudge:
+    """Text plus optional search provenance for one scaffold response.
+
+    The deterministic policy leaves the ``rag_*`` fields empty. The RAG
+    scaffolder fills them so every grounded nudge is traceable.
+    """
+
+    content: str
+    novelty_nudge_kind: NoveltyNudgeKind | None = None
+    rag_used: bool = False
+    rag_mode: str | None = None
+    rag_words: tuple[str, ...] = ()
+    rag_query: str | None = None
+    rag_source_url: str | None = None
+    rag_source_title: str | None = None
+    rag_fallback_reason: str | None = None
+
+
+@dataclass(frozen=True)
 class ScaffolderTurn:
     """Text and trace data emitted by the policy."""
 
@@ -124,6 +144,13 @@ class ScaffolderTurn:
     memory_size: int
     topic_source_turn: int | None = None
     novelty_nudge_kind: NoveltyNudgeKind | None = None
+    rag_used: bool = False
+    rag_mode: str | None = None
+    rag_words: tuple[str, ...] = ()
+    rag_query: str | None = None
+    rag_source_url: str | None = None
+    rag_source_title: str | None = None
+    rag_fallback_reason: str | None = None
 
 
 class ThreeBehaviorScaffolder:
@@ -207,11 +234,11 @@ class ThreeBehaviorScaffolder:
         if scores.informative:
             self._noninformative_streak = 0
             self._remember(latest, features)
-            return self._encourage(scores)
+            return self._encourage(scores, messages, speaker)
 
         self._noninformative_streak += 1
         if self._noninformative_streak < self.stuck_turns:
-            return self._encourage(scores)
+            return self._encourage(scores, messages, speaker)
 
         card = self._pop_memory(features)
         if card is not None:
@@ -225,14 +252,10 @@ class ThreeBehaviorScaffolder:
                 memory_size=len(self._memory),
                 topic_source_turn=card.source_turn,
             )
-        topic = self._next_topic()
-        return ScaffolderTurn(
-            content=(
-                f"New topic: {topic}. "
-                "Give one informative connection or observation."
-            ),
-            action=ScaffolderAction.TOPIC_INJECTION,
-            scores=scores,
+        return self._turn_from_nudge(
+            self._produce_topic(messages, speaker),
+            ScaffolderAction.TOPIC_INJECTION,
+            scores,
             memory_size=0,
         )
 
@@ -352,15 +375,19 @@ class ThreeBehaviorScaffolder:
                 return self._memory.pop(index)
         return None
 
-    def _encourage(self, scores: DecisionScores) -> ScaffolderTurn:
+    def _encourage(
+        self,
+        scores: DecisionScores,
+        messages: list[ConversationMessage],
+        speaker: str,
+    ) -> ScaffolderTurn:
         if scores.informative and self._novelty_nudge_due():
-            content, kind = self._novelty_nudge()
-            return ScaffolderTurn(
-                content=content,
-                action=ScaffolderAction.THRIVE_PROTECTION,
-                scores=scores,
+            nudge = self._produce_novelty(messages, speaker)
+            return self._turn_from_nudge(
+                nudge,
+                ScaffolderAction.THRIVE_PROTECTION,
+                scores,
                 memory_size=len(self._memory),
-                novelty_nudge_kind=kind,
             )
         content = _ENCOURAGEMENTS[
             self._encouragement_index % len(_ENCOURAGEMENTS)
@@ -371,6 +398,55 @@ class ThreeBehaviorScaffolder:
             action=ScaffolderAction.THRIVE_PROTECTION,
             scores=scores,
             memory_size=len(self._memory),
+        )
+
+    def _produce_novelty(
+        self,
+        messages: list[ConversationMessage],
+        speaker: str,
+    ) -> ScaffoldNudge:
+        """Build the periodic novelty nudge (deterministic by default)."""
+        content, kind = self._novelty_nudge()
+        return ScaffoldNudge(content=content, novelty_nudge_kind=kind)
+
+    def _produce_topic(
+        self,
+        messages: list[ConversationMessage],
+        speaker: str,
+    ) -> ScaffoldNudge:
+        """Build a topic-injection prompt (deterministic by default)."""
+        topic = self._next_topic()
+        return ScaffoldNudge(
+            content=(
+                f"New topic: {topic}. "
+                "Give one informative connection or observation."
+            )
+        )
+
+    @staticmethod
+    def _turn_from_nudge(
+        nudge: ScaffoldNudge,
+        action: ScaffolderAction,
+        scores: DecisionScores,
+        *,
+        memory_size: int,
+        topic_source_turn: int | None = None,
+    ) -> ScaffolderTurn:
+        """Fold a scaffold nudge and its provenance into a policy turn."""
+        return ScaffolderTurn(
+            content=nudge.content,
+            action=action,
+            scores=scores,
+            memory_size=memory_size,
+            topic_source_turn=topic_source_turn,
+            novelty_nudge_kind=nudge.novelty_nudge_kind,
+            rag_used=nudge.rag_used,
+            rag_mode=nudge.rag_mode,
+            rag_words=nudge.rag_words,
+            rag_query=nudge.rag_query,
+            rag_source_url=nudge.rag_source_url,
+            rag_source_title=nudge.rag_source_title,
+            rag_fallback_reason=nudge.rag_fallback_reason,
         )
 
     def _novelty_nudge_due(self) -> bool:

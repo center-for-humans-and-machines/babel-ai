@@ -193,7 +193,13 @@ class AnthropicModels(Enum):
 
 
 class VLLMModels(Enum):
-    """Placeholder models for cluster vLLM endpoints (pillar A)."""
+    """Placeholder models for cluster vLLM endpoints (pillar A).
+
+    ``DEFAULT`` is a sentinel rather than a served name: the actual
+    Hugging Face model id is read from the ``VLLM_MODEL`` environment
+    variable by ``api.vllm.vllm_request``. Additional members can be
+    added to pin a specific served id in an experiment config.
+    """
 
     DEFAULT = "default"
 

@@ -157,6 +157,13 @@ class CheckpointWriter:
                     scaffolder_novelty_nudge_kind=raw.get(
                         "scaffolder_novelty_nudge_kind"
                     ),
+                    rag_used=raw.get("rag_used"),
+                    rag_mode=raw.get("rag_mode"),
+                    rag_words=raw.get("rag_words"),
+                    rag_query=raw.get("rag_query"),
+                    rag_source_url=raw.get("rag_source_url"),
+                    rag_source_title=raw.get("rag_source_title"),
+                    rag_fallback_reason=raw.get("rag_fallback_reason"),
                 )
             )
         return metrics

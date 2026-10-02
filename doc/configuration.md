@@ -29,6 +29,11 @@ agents:
     stuck_turns: 2
     novelty_nudge_rate: 0.20
     random_seed: 0
+  - type: rag_scaffolder
+    novelty_nudge_rate: 0.20
+    num_words: 5
+    search_results: 5
+    random_seed: 0
 
 conversation_settings:
   turn_taking_method: round_robin
@@ -47,6 +52,7 @@ conversation_settings:
 | `rule_based` | None; `partner` defaults to `eliza` | `generic_intervention`, `topic_switch_probability`, `feed_sources` |
 | `mirror` | None | None |
 | `scaffolder` | None | thresholds, memory policy, `random_seed` |
+| `rag_scaffolder` | an `llm` agent in the same list | scaffolder fields plus `word_model`, `num_words`, `search_backend`, `search_results`, `fetch_page`, `max_source_chars`, `search_timeout`, `context_turns`, `nudge_system_prompt`, `nudge_max_tokens` |
 
 LLM generation parameters mirror the legacy `agent_configs` fields.
 Defaults: `temperature` `1.0`, `max_tokens` unset, penalties `0.0`,
@@ -64,6 +70,22 @@ memory is empty. Its lexical thresholds, memory limits, cooldown, and
 novelty-nudge rate are configurable. The default `0.20` rate schedules
 one model-generated novelty prompt per five informative turns. See
 `configs/scaffolder_gpt_first_test.yaml` for all fields.
+
+The `rag_scaffolder` shares that three-branch policy but replaces both
+the novelty nudge and topic injection with a retrieval-augmented
+pipeline: draw random vectors in a `word_model` embedding space, take the
+nearest words, join them into a search query, pick one result, fetch its
+page text, and ask the experiment's `llm` agent for a short grounded
+instruction. It falls back to the deterministic wording whenever search
+or the LLM call fails. See `configs/rag_scaffolder_gpt_first_test.yaml`.
+Each grounded turn records its words, query, and source in the
+`rag_*` columns of `turns.parquet`.
+
+`search_backend` selects the search source: `duckduckgo` (default) scrapes
+DuckDuckGo HTML, `wikipedia` uses the MediaWiki API, and `auto` tries
+DuckDuckGo first and falls back to Wikipedia. DuckDuckGo can serve an
+anti-bot challenge on proxied or datacenter networks, in which case
+`auto` or `wikipedia` keeps the pipeline working.
 
 ## Conversation settings
 

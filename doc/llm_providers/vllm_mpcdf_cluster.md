@@ -50,7 +50,11 @@ response = client.chat.completions.create(
 
 ## MCE reference implementation
 
-File: `src/llm_interface/apis/mpcdf_vllm.py` (branch `feat/vllm_backend`)
+File: `src/agent/api/vllm.py` (async `VllmAPI`, structured JSON).
+
+babel-ai ports only the transport-level patterns (env config, dummy
+key, Llama 3 stop tokens) into the synchronous `vllm_request`; async
+and guided-decoding output are intentionally out of scope.
 
 Key patterns to port:
 
@@ -81,12 +85,13 @@ if babel-ai experiments need it later.
 
 ## Environment variables
 
-### babel-ai (proposed)
+### babel-ai
 
 ```bash
 # Remote or tunneled vLLM
 VLLM_BASE_URL=http://127.0.0.1:8000/v1
 VLLM_API_KEY=local-no-auth
+# Served HF id, used when the config selects the `default` model.
 VLLM_MODEL=Qwen/Qwen3-30B-A3B-Instruct-2507
 ```
 
@@ -125,28 +130,25 @@ CPU sim container runs Python worker; calls `localhost:8000/v1`.
 
 ---
 
-## babel-ai integration plan
+## babel-ai integration (done)
 
 1. Add `Provider.VLLM` to `src/api/enums.py`.
-2. Add `VLLMModels` enum (HF model ids served by your cluster).
-3. New module `src/api/vllm.py`:
+2. Add `VLLMModels` enum with a `DEFAULT` sentinel (the served HF id
+   comes from `VLLM_MODEL`).
+3. Module `src/api/vllm.py`:
    - sync `vllm_request()` matching existing provider signature
    - returns `LLMResponse` with token counts from `response.usage`
+   - resolves `DEFAULT` through `VLLM_MODEL`, adds Llama 3 stop tokens
 4. Wire into `Provider.get_request_function()`.
-5. YAML config:
+5. YAML config uses the sentinel; the served id lives in `.env`:
 
 ```yaml
 provider: vllm
-model: Qwen/Qwen3-30B-A3B-Instruct-2507
+model: default
 ```
 
-6. Document tunnel workflow in `doc/llm_providers/vllm.md`:
-
-```bash
-# Example: tunnel from laptop to compute node
-ssh -L 8000:localhost:8000 user@raven
-export VLLM_BASE_URL=http://127.0.0.1:8000/v1
-```
+6. Tunnel workflow (see the SSH example above): point
+   `VLLM_BASE_URL` at the forwarded `localhost:8000/v1`.
 
 ---
 
@@ -175,9 +177,9 @@ Keep both providers — Ollama for local dev, vLLM for cluster.
 
 ## Implementation checklist (pillar A)
 
-- [ ] Add `Provider.VLLM` + `vllm.py`
-- [ ] Env vars documented in `.env.example`
-- [ ] Port MCE dummy-api-key pattern
-- [ ] Optional async for batch experiments
+- [x] Add `Provider.VLLM` + `vllm.py`
+- [x] Env vars documented in `.env.example`
+- [x] Port MCE dummy-api-key pattern
+- [ ] Optional async for batch experiments (out of scope)
 - [ ] Health-check helper before long experiment runs
-- [ ] Integration test with mock HTTP or local vLLM
+- [x] Integration test with mocked responses

@@ -1,4 +1,4 @@
-# GPT-4o + deterministic three-behavior scaffolder.
+# GPT-4o + web-search-grounded RAG scaffolder.
 
 fetcher_config:
   fetcher: sharegpt
@@ -13,7 +13,7 @@ analyzer_config:
 agents:
   - type: llm
     provider: azure
-    model: gpt-o4-mini
+    model: gpt-4o-2024-08-06
     system_prompt: >
       Continue the conversation naturally in one or two
       short sentences.
@@ -22,7 +22,8 @@ agents:
     frequency_penalty: 0.0
     presence_penalty: 0.0
     top_p: 1.0
-  - type: scaffolder
+  - type: rag_scaffolder
+    # three-behavior knobs (shared with the deterministic scaffolder)
     min_content_tokens: 8
     novelty_threshold: 0.25
     continuity_threshold: 0.10
@@ -34,6 +35,17 @@ agents:
     novelty_nudge_rate: 0.20
     topic_source: topic_bank
     random_seed: 0
+    # RAG pipeline
+    word_model: glove-wiki-gigaword-100
+    num_words: 5
+    # duckduckgo | wikipedia | auto (DDG first, Wikipedia fallback)
+    search_backend: auto
+    search_results: 5
+    fetch_page: true
+    max_source_chars: 4000
+    search_timeout: 8.0
+    context_turns: 6
+    nudge_max_tokens: 300
 
 conversation_settings:
   turn_taking_method: round_robin

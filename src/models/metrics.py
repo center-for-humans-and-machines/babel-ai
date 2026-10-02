@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -215,6 +215,13 @@ class AgentMetric(Metric):
     scaffolder_memory_size: Optional[int] = None
     scaffolder_topic_source_turn: Optional[int] = None
     scaffolder_novelty_nudge_kind: Optional[str] = None
+    rag_used: Optional[bool] = None
+    rag_mode: Optional[str] = None
+    rag_words: Optional[List[str]] = None
+    rag_query: Optional[str] = None
+    rag_source_url: Optional[str] = None
+    rag_source_title: Optional[str] = None
+    rag_fallback_reason: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert metric to a dictionary format suitable for CSV export."""
@@ -249,6 +256,13 @@ class AgentMetric(Metric):
                 "scaffolder_novelty_nudge_kind": (
                     self.scaffolder_novelty_nudge_kind
                 ),
+                "rag_used": self.rag_used,
+                "rag_mode": self.rag_mode,
+                "rag_words": self.rag_words,
+                "rag_query": self.rag_query,
+                "rag_source_url": self.rag_source_url,
+                "rag_source_title": self.rag_source_title,
+                "rag_fallback_reason": self.rag_fallback_reason,
             }
         )
 
