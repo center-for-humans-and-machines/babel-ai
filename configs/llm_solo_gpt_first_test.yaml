@@ -1,4 +1,4 @@
-# GPT-4o + deterministic three-behavior scaffolder.
+# GPT-4o solo self-dialogue (LLM only, no partner agents).
 
 fetcher_config:
   fetcher: sharegpt
@@ -22,18 +22,6 @@ agents:
     frequency_penalty: 0.0
     presence_penalty: 0.0
     top_p: 1.0
-  - type: scaffolder
-    min_content_tokens: 8
-    novelty_threshold: 0.25
-    continuity_threshold: 0.10
-    history_window: 8
-    stuck_turns: 2
-    memory_cooldown: 2
-    memory_size: 20
-    similarity_threshold: 0.70
-    novelty_nudge_rate: 0.20
-    topic_source: topic_bank
-    random_seed: 0
 
 conversation_settings:
   turn_taking_method: round_robin

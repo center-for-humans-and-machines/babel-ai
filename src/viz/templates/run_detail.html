@@ -38,8 +38,19 @@
     </p>
   </div>
 
-  <h2>{{ metric_title }}</h2>
-  {{ chart | safe }}
+  <h2>Analysis trajectories</h2>
+  {% for item in trajectory_charts %}
+  <h3>{{ item.title }}</h3>
+  {{ item.chart | safe }}
+  {% else %}
+  <p>No analysis metrics available for this run.</p>
+  {% endfor %}
+
+  <h2>LLM topic cloud</h2>
+  <p>{{ tsne_status }}</p>
+  {% if tsne_chart %}
+  {{ tsne_chart | safe }}
+  {% endif %}
 
   {% if has_eliza_branches %}
   <h2>ELIZA decision paths</h2>

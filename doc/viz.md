@@ -9,8 +9,27 @@ poetry run python -m viz
 ```
 
 Open `http://127.0.0.1:8765/runs` to select a run. Each run page shows
-the windowed semantic-similarity trajectory and transcript. If the
-metric is unavailable, the chart plots turn index instead.
+grouped analysis trajectories: semantic and lexical similarity (windowed
+and direct on one chart, fixed 0–1 y-axis), token perplexity, plus the
+transcript. If no analysis metric is available, the page plots turn index
+instead.
+
+## LLM topic cloud
+
+Completed runs also show a per-run t-SNE map of generated LLM turns.
+Markers form the topic cloud; the connecting line and color gradient
+show turn order. Start and end points are labeled. Axes show t-SNE
+coordinates on an equal-scale grid.
+
+New experiments generate this artifact after saving. Backfill existing
+runs without calling an LLM:
+
+```bash
+poetry run python scripts/analyze_tsne.py results
+```
+
+Pass `results/{run_id}` to analyze one run. The viewer only reads saved
+coordinates and never computes embeddings.
 
 ## ELIZA run detail
 
@@ -36,7 +55,9 @@ Query parameters:
 
 - `runs` — comma-separated run ids
 - `baseline` — run id drawn with a bold solid line
-- `metric` — parquet column (default `semantic_similarity_window`)
+- `metric` — parquet column (default `semantic_similarity_window`;
+  also `semantic_similarity`, `lexical_similarity_window`,
+  `lexical_similarity`, `token_perplexity`)
 
 The viewer is read-only. It uses `persistence.list_runs()` and
 `persistence.load_run()`; create artifacts with the canonical

@@ -50,6 +50,20 @@ def test_save_load_and_list_run_flattens_metric_analysis(tmp_path):
     assert [record.run_id for record in list_runs(run_dir.parent)] == ["run-1"]
 
 
+def test_save_run_preserves_flat_analysis_columns(tmp_path):
+    run_dir = tmp_path / "flat-run"
+    turns = pd.DataFrame(
+        {
+            "turn_index": [0],
+            "content": ["hello"],
+            "semantic_similarity_window": [0.75],
+        }
+    )
+    save_run(run_dir, turns, {"run_id": "flat-run"})
+    loaded = load_run(run_dir)
+    assert loaded.turns.loc[0, "semantic_similarity_window"] == 0.75
+
+
 def test_mark_generic_fallback_turns():
     turns = pd.DataFrame({"used_generic_fallback": [False, True, None]})
     mask = mark_generic_fallback_turns(turns)

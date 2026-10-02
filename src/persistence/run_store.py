@@ -148,7 +148,8 @@ def _flatten_turn(
     """Flatten one metric record while preserving transcript fields."""
     row = dict(record)
     analysis = row.pop("analysis", None)
-    row.update(flatten_analysis(analysis))
+    if analysis is not None:
+        row.update(flatten_analysis(analysis))
     row["turn_index"] = row.pop("turn_index", row.pop("iteration", index))
     record_run_id = row.get("run_id")
     if record_run_id is not None and record_run_id != run_id:

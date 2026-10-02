@@ -68,6 +68,12 @@ def _legacy_agent_config(config: LLMAgentConfig) -> LegacyAgentConfig:
         provider=provider,
         model=model,
         system_prompt=config.system_prompt,
+        temperature=config.temperature,
+        max_tokens=config.max_tokens,
+        frequency_penalty=config.frequency_penalty,
+        presence_penalty=config.presence_penalty,
+        top_p=config.top_p,
+        forgetting=config.forgetting,
     )
 
 

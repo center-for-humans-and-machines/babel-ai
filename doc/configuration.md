@@ -11,6 +11,12 @@ agents:
     provider: ollama
     model: mistral:7b-instruct
     system_prompt: "You are having a conversation."
+    temperature: 0.7
+    max_tokens: 150
+    frequency_penalty: 0.0
+    presence_penalty: 0.0
+    top_p: 1.0
+    forgetting: null
   - type: rule_based
     partner: eliza
     generic_intervention: live_feed
@@ -37,10 +43,14 @@ conversation_settings:
 
 | Type | Required keys | Optional keys |
 | --- | --- | --- |
-| `llm` | `provider`, `model` | `system_prompt` |
+| `llm` | `provider`, `model` | `system_prompt`, `temperature`, `max_tokens`, `frequency_penalty`, `presence_penalty`, `top_p`, `forgetting` |
 | `rule_based` | None; `partner` defaults to `eliza` | `generic_intervention`, `topic_switch_probability`, `feed_sources` |
 | `mirror` | None | None |
 | `scaffolder` | None | thresholds, memory policy, `random_seed` |
+
+LLM generation parameters mirror the legacy `agent_configs` fields.
+Defaults: `temperature` `1.0`, `max_tokens` unset, penalties `0.0`,
+`top_p` `1.0`, `forgetting` unset (use full history).
 
 `generic_intervention` accepts `passthrough`, `llm_nudge`, `live_feed`,
 or `custom`. `live_feed` uses `topic_switch_probability` (default
@@ -66,6 +76,14 @@ one model-generated novelty prompt per five informative turns. See
 | `checkpoint_interval_seconds` | `120`, minimum `1` | Checkpoint cadence. |
 | `max_iterations` | `100`, minimum `1` | Stack-message stop limit. |
 | `max_total_characters` | `1000000`, minimum `1` | Context-size stop limit. |
+
+## Analyzer settings
+
+| Key | Values or default | Purpose |
+| --- | --- | --- |
+| `analyzer` | `similarity` | Drift metric implementation. |
+| `analyze_window` | minimum `1` | Rolling similarity window size. |
+| `analysis_scope` | `llm_only` | Include only LLM turns in similarity and t-SNE analysis. Set `all_turns` to include partner and seed turns. |
 
 ## Compatibility note
 

@@ -6,6 +6,8 @@ The canonical output contract is one directory per run:
 results/{run_id}/
 ├── checkpoint.json
 ├── turns.parquet
+├── tsne_trajectory.parquet
+├── tsne_meta.json
 ├── meta.json
 └── manifest.json
 ```
@@ -14,6 +16,10 @@ results/{run_id}/
 `turns.parquet` is the primary completed-run artifact.
 `meta.json` records run metadata and resolved configuration.
 `manifest.json` is optional and records the artifact schema version.
+The `tsne_*` files are independent post-run analysis artifacts. They
+contain the per-run 2-D projection for the configured analysis scope
+(default: generated LLM turns only) and its reproducibility settings;
+they do not alter `turns.parquet`.
 
 Run directory names are config-driven slugs from
 `persistence.run_naming` (agents, fetcher, turn limit, short uuid).

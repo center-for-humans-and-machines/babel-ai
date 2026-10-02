@@ -10,6 +10,7 @@ from pydantic import (
     model_validator,
 )
 
+from analysis_scope import AnalysisScope
 from api.enums import APIModels, Provider
 from conversation.agent_config import (
     LLMAgentConfig,
@@ -48,6 +49,13 @@ class AnalyzerConfig(BaseModel):
     analyze_window: int = Field(
         description="Number of previous responses to analyze for drift",
         ge=1,
+    )
+    analysis_scope: AnalysisScope = Field(
+        default=AnalysisScope.LLM_ONLY,
+        description=(
+            "Turns included in similarity analysis; "
+            "use all_turns to include partner responses"
+        ),
     )
 
 

@@ -11,6 +11,7 @@ from typing import Dict, List, Optional
 from uuid import uuid4
 
 from agent import Agent
+from analysis_scope import analysis_contents_for_metrics
 from analyzer import Analyzer
 from conversation.agents import ConversationAgent, LLMConversationAgent
 from conversation.factory import build_conversation_agents
@@ -25,6 +26,7 @@ from persistence.run_naming import (
 )
 from persistence.run_store import RunManifest, save_run
 from prompt_fetcher import BasePromptFetcher
+from trajectory.artifacts import analyze_run_safely
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +134,7 @@ class Experiment:
             metric_factory=self._build_agent_metric,
             run_id=build_run_id(self.config),
             progress=progress,
+            analysis_scope=self.config.analyzer_config.analysis_scope,
         )
         self._manager = manager
         self._progress = progress
@@ -182,13 +185,20 @@ class Experiment:
             f"Experiment {self.uuid} "
             f"Analyzing response for {len(metrics)} metrics"
         )
-        content = [metric.content for metric in metrics]
+        scope = self.config.analyzer_config.analysis_scope
         for index, metric in enumerate(metrics):
             logger.debug(
                 f"Experiment {self.uuid} "
                 f"Analyzing response for {index} of {len(metrics)} metrics"
             )
-            metric.analysis = self.analyzer.analyze(content[: index + 1])
+            contents = analysis_contents_for_metrics(
+                metrics,
+                scope=scope,
+                through_index=index,
+            )
+            if contents is None:
+                continue
+            metric.analysis = self.analyzer.analyze(contents)
         return metrics
 
     def _save_results(
@@ -215,5 +225,6 @@ class Experiment:
             timestamp=metadata.timestamp,
         )
         save_run(run_dir, metrics, meta, manifest=RunManifest())
+        analyze_run_safely(run_dir)
         logger.debug(f"Saved canonical run artifacts to {run_dir}")
         return run_dir

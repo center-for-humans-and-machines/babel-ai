@@ -6,7 +6,7 @@ agent factory, run artifacts, and web viewer are implemented.
 
 ## Guides
 
-- [Architecture](architecture.md): system boundaries and pillars A–E.
+- [Architecture](10%20Projects/work/AI%20Eliza%20Scaffolding/code/doc/architecture.md): system boundaries and pillars A–E.
 - [ELIZA partner](eliza_partner.md): deterministic partner and ladder.
 - [Conversation manager](conversation_manager.md): agents and recovery.
 - [Run artifacts](run_artifacts.md): canonical `results/{run_id}/` data.

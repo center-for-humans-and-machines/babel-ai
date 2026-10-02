@@ -1,7 +1,7 @@
 """Canonical multi-agent configuration (pillar E)."""
 
 from enum import Enum
-from typing import Annotated, Literal, Union
+from typing import Annotated, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -24,6 +24,16 @@ class LLMAgentConfig(BaseModel):
     provider: str
     model: str
     system_prompt: str = "You are having a conversation."
+    temperature: Optional[float] = Field(default=1.0, ge=0.0, le=2.0)
+    max_tokens: Optional[int] = Field(default=None, ge=1)
+    frequency_penalty: Optional[float] = Field(default=0.0, ge=-2.0, le=2.0)
+    presence_penalty: Optional[float] = Field(default=0.0, ge=-2.0, le=2.0)
+    top_p: Optional[float] = Field(default=1.0, ge=0.0, le=1.0)
+    forgetting: Optional[int] = Field(
+        default=None,
+        description="Number of past messages to use (None = all)",
+        ge=1,
+    )
 
 
 class RuleBasedAgentConfig(BaseModel):

@@ -34,6 +34,12 @@ poetry run python -m viz
 Open `http://127.0.0.1:8765/runs` to browse trajectories, ELIZA branch
 metadata, and transcripts.
 
+Backfill LLM t-SNE topic maps for existing runs:
+
+```bash
+poetry run python scripts/analyze_tsne.py results
+```
+
 Resume an interrupted run:
 
 ```bash

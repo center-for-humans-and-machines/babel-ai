@@ -5,8 +5,13 @@ from unittest.mock import Mock
 
 import pytest
 
+from analysis_scope import AnalysisScope
 from api.enums import OpenAIModels, Provider
-from conversation.agents import LLMConversationAgent
+from conversation.agent_config import RuleBasedAgentConfig
+from conversation.agents import (
+    LLMConversationAgent,
+    RuleBasedConversationAgent,
+)
 from conversation.checkpoint import CheckpointWriter, ConversationState
 from conversation.manager import ConversationManager
 from conversation.messages import (
@@ -72,6 +77,75 @@ def test_manager_runs_until_max_iterations(
     metrics = manager.run(seed)
     assert len(metrics) == 4
     assert mock_llm_agent.generate_response.call_count == 3
+
+
+def test_manager_skips_partner_turn_analysis(tmp_path, mock_analyzer):
+    llm = Mock()
+    llm.id = "llm-1"
+    llm.config = AgentConfig(
+        provider=Provider.OPENAI,
+        model=OpenAIModels.GPT4_1106_PREVIEW,
+    )
+    llm.generate_response.return_value = "llm reply"
+
+    partner = RuleBasedConversationAgent(
+        config=RuleBasedAgentConfig(),
+        speaker="eliza",
+    )
+
+    settings = ConversationSettings(
+        max_iterations=4,
+        max_total_characters=10_000,
+        checkpoint_enabled=False,
+        analysis_policy=AnalysisPolicy.PER_TURN,
+    )
+    manager = ConversationManager(
+        agents=[
+            LLMConversationAgent(llm, speaker="agent_0"),
+            partner,
+        ],
+        settings=settings,
+        analyzer=mock_analyzer,
+        run_dir=tmp_path,
+        analysis_scope=AnalysisScope.LLM_ONLY,
+    )
+    manager.run([{"role": "user", "content": "seed"}])
+
+    llm_metrics = [
+        metric for metric in manager.metrics if metric.agent_config is not None
+    ]
+    partner_metrics = [
+        metric
+        for metric in manager.metrics
+        if metric.agent_config is None and metric.role == "eliza"
+    ]
+    assert mock_analyzer.analyze.call_count == len(llm_metrics)
+    assert partner_metrics
+    assert all(metric.analysis is None for metric in partner_metrics)
+    assert all(metric.analysis is not None for metric in llm_metrics)
+
+
+def test_manager_analyzes_all_turns_when_configured(
+    tmp_path,
+    mock_analyzer,
+    mock_llm_agent,
+):
+    settings = ConversationSettings(
+        max_iterations=4,
+        max_total_characters=10_000,
+        checkpoint_enabled=False,
+        analysis_policy=AnalysisPolicy.PER_TURN,
+    )
+    conv = LLMConversationAgent(mock_llm_agent, speaker="agent_0")
+    manager = ConversationManager(
+        agents=[conv],
+        settings=settings,
+        analyzer=mock_analyzer,
+        run_dir=tmp_path,
+        analysis_scope=AnalysisScope.ALL_TURNS,
+    )
+    manager.run([{"role": "user", "content": "seed"}])
+    assert mock_analyzer.analyze.call_count == 3
 
 
 def test_checkpoint_save_and_restore_stack(tmp_path):

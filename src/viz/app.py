@@ -3,13 +3,13 @@
 from pathlib import Path
 
 import pandas as pd
-import plotly.express as px
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from persistence import list_runs, load_run
 from persistence.run_naming import timestamp_from_meta
+from trajectory.artifacts import load_projection
 from viz.charts import (
     aggregate_chart,
     available_metrics,
@@ -19,6 +19,7 @@ from viz.charts import (
     eliza_branch_summary,
     metric_label,
     overlay_chart,
+    trajectory_charts_for_run,
 )
 from viz.eliza_display import (
     eliza_branch_status,
@@ -26,6 +27,7 @@ from viz.eliza_display import (
     extract_eliza_agent_config,
     has_eliza_branch_data,
 )
+from viz.tsne_display import tsne_status, tsne_trajectory_chart
 
 _TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
 _DEFAULT_RESULTS_ROOT = Path(__file__).resolve().parents[2] / "results"
@@ -59,11 +61,14 @@ def create_app(results_root: Path | None = None) -> FastAPI:
     def run_detail(request: Request, run_id: str) -> HTMLResponse:
         """Render one run's trajectory and transcript."""
         record = _load_record(app.state.results_root, run_id)
-        metric, title = _trajectory_metric(record.turns)
-        chart = _trajectory_chart(record.turns, metric, title)
+        trajectory_charts = trajectory_charts_for_run(
+            record.turns,
+            record.meta,
+        )
         eliza_chart = eliza_branch_chart(record.turns)
         eliza_counts = eliza_branch_bar_chart(record.turns)
         transcript = _transcript_rows(record.turns)
+        tsne_result = load_projection(record.run_dir)
         run_slug = record.meta.get("run_slug", "")
         timestamp_human = timestamp_from_meta(record.meta)
         return templates.TemplateResponse(
@@ -77,12 +82,13 @@ def create_app(results_root: Path | None = None) -> FastAPI:
                 "eliza_status": eliza_branch_status(record.turns),
                 "has_eliza_branches": has_eliza_branch_data(record.turns),
                 "eliza_turns": eliza_turn_rows(record.turns),
-                "chart": chart,
+                "trajectory_charts": trajectory_charts,
                 "eliza_chart": eliza_chart,
                 "eliza_counts": eliza_counts,
                 "eliza_summary": eliza_branch_summary(record.turns),
-                "metric_title": title,
                 "transcript": transcript,
+                "tsne_chart": tsne_trajectory_chart(tsne_result),
+                "tsne_status": tsne_status(tsne_result),
             },
         )
 
@@ -134,26 +140,6 @@ def _load_record(results_root: Path, run_id: str):
         return load_run(run_dir)
     except (FileNotFoundError, OSError) as error:
         raise HTTPException(status_code=404, detail="Run not found") from error
-
-
-def _trajectory_metric(turns: pd.DataFrame) -> tuple[str, str]:
-    """Select semantic similarity when usable, otherwise turn index."""
-    metric = available_metrics(turns)[0]
-    return metric, metric_label(metric)
-
-
-def _trajectory_chart(turns: pd.DataFrame, metric: str, title: str) -> str:
-    """Return an embeddable Plotly trajectory chart."""
-    frame = turns.sort_values("turn_index")
-    figure = px.line(
-        frame,
-        x="turn_index",
-        y=metric,
-        markers=True,
-        title=title,
-        labels={"turn_index": "Turn", metric: title},
-    )
-    return figure.to_html(full_html=False, include_plotlyjs="cdn")
 
 
 def _transcript_rows(turns: pd.DataFrame) -> list[dict[str, object]]:

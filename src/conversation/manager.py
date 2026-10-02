@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, List, Optional
 from uuid import uuid4
 
+from analysis_scope import AnalysisScope, analysis_contents_for_metrics
 from analyzer import Analyzer
 from conversation.agent_state import restore_agents
 from conversation.agents import ConversationAgent
@@ -43,6 +44,7 @@ class ConversationManager:
         ] = None,
         run_id: Optional[str] = None,
         progress: Optional["TurnProgress"] = None,
+        analysis_scope: AnalysisScope = AnalysisScope.LLM_ONLY,
     ):
         if not agents:
             raise ValueError("At least one agent is required")
@@ -67,6 +69,7 @@ class ConversationManager:
         )
         self._last_checkpoint_time = time.monotonic()
         self._progress = progress
+        self.analysis_scope = analysis_scope
 
     def run(self, seed_messages: List[dict]) -> List[Metric]:
         """Run conversation from seed messages until stop condition."""
@@ -105,6 +108,7 @@ class ConversationManager:
         analyzer: Analyzer,
         *,
         fetcher_config: Optional[FetcherConfig] = None,
+        analysis_scope: AnalysisScope = AnalysisScope.LLM_ONLY,
     ) -> "ConversationManager":
         """Restore manager state from ``checkpoint.json`` (E4)."""
         path = Path(checkpoint_path)
@@ -125,6 +129,7 @@ class ConversationManager:
             run_dir=results_root,
             turn_taking=turn_taking,
             fetcher_config=fetcher_config,
+            analysis_scope=analysis_scope,
         )
         manager.run_id = data["run_id"]
         manager.state = CheckpointWriter.restore_state(data)
@@ -265,14 +270,26 @@ class ConversationManager:
     def _analyze_latest(self) -> None:
         if not self.metrics:
             return
-        contents = self.stack.content_prefix()
+        index = len(self.metrics) - 1
+        contents = analysis_contents_for_metrics(
+            self.metrics,
+            scope=self.analysis_scope,
+            through_index=index,
+        )
+        if contents is None:
+            return
         self.metrics[-1].analysis = self.analyzer.analyze(contents)
 
     def _analyze_all(self) -> None:
-        contents = self.stack.content_prefix()
-        for i, metric in enumerate(self.metrics):
-            prefix = contents[: i + 1]
-            metric.analysis = self.analyzer.analyze(prefix)
+        for index, metric in enumerate(self.metrics):
+            contents = analysis_contents_for_metrics(
+                self.metrics,
+                scope=self.analysis_scope,
+                through_index=index,
+            )
+            if contents is None:
+                continue
+            metric.analysis = self.analyzer.analyze(contents)
 
     def _maybe_checkpoint(self) -> None:
         if not self._checkpoint:

@@ -9,6 +9,7 @@ fetcher_config:
 analyzer_config:
   analyzer: similarity
   analyze_window: 5
+  # analysis_scope: llm_only  # default; use all_turns to include partners
 
 agents:
   - type: llm
@@ -17,6 +18,11 @@ agents:
     system_prompt: >
       Continue the conversation naturally in one or two
       short sentences.
+    temperature: 0.7
+    max_tokens: 150
+    frequency_penalty: 0.0
+    presence_penalty: 0.0
+    top_p: 1.0
   - type: rule_based
     partner: eliza
     generic_intervention: live_feed
