@@ -177,7 +177,11 @@ class RagScaffolderConversationAgent:
         self.agent_id = "rag_scaffolder"
         self.speaker = speaker
         self._config = config
-        sampler = RandomWordSampler(config.word_model, seed=config.random_seed)
+        sampler = RandomWordSampler(
+            config.word_model,
+            seed=config.random_seed,
+            model_path=config.word_model_path,
+        )
         search_client = build_search_client(
             config.search_backend, timeout=config.search_timeout
         )

@@ -46,6 +46,30 @@ shows:
 Older runs without `eliza_branch` in `turns.parquet` display a warning;
 re-run with a current build to capture branch metadata.
 
+## RAG scaffolder detail
+
+When a run includes a `rag_scaffolder` agent, the run-detail page shows:
+
+- Resolved pipeline config: `word_model`, `word_model_path`, `num_words`,
+  `search_backend`, `search_results`, `novelty_nudge_rate`
+- A per-turn table with mode, status (grounded / fallback / not used),
+  sampled words, search query, chosen source link, fallback reason, and
+  the emitted nudge
+- A grounded-vs-fallback usage chart over turn index
+
+A `fallback` status means the retrieval pipeline could not produce a
+grounded nudge this turn (offline, no vectors, no search results, or an
+LLM error) and the deterministic scaffolder wording was used instead.
+
+To populate vectors without `gensim.downloader`, pre-cache them:
+
+```bash
+poetry run python scripts/download_vectors.py glove-wiki-gigaword-100
+```
+
+`search_backend: auto` tries DuckDuckGo then Wikipedia; set
+`search_backend: wikipedia` if DuckDuckGo serves an anti-bot challenge.
+
 ## Compare view (C2–C4)
 
 Open `http://127.0.0.1:8765/compare` to overlay multiple runs, plot mean

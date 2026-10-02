@@ -3,9 +3,17 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
-from trajectory.artifacts import analyze_results_root, analyze_run_safely
+_SRC = Path(__file__).resolve().parents[1] / "src"
+if str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
+
+from trajectory.artifacts import (
+    analyze_results_root,
+    analyze_run_safely,
+)  # noqa: E402
 
 
 def main() -> None:

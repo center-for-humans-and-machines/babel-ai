@@ -67,6 +67,22 @@ nested analysis blob.
 | `coherence_score` | nullable float | Unique-to-total word signal. |
 | `token_perplexity` | nullable float | Token-distribution signal. |
 | `used_generic_fallback` | boolean | Whether ELIZA used `$`. |
+| `scaffolder_action` | nullable string | Scaffolder branch (`thrive_protection`, `memory_resurface`, `topic_injection`). |
+| `scaffolder_informative` | nullable boolean | Whether the peer turn scored as informative. |
+| `scaffolder_novelty` | nullable float | Lexical novelty score. |
+| `scaffolder_continuity` | nullable float | Lexical continuity score. |
+| `scaffolder_content_tokens` | nullable integer | Content-token count. |
+| `scaffolder_meta_detected` | nullable boolean | Meta/boilerplate turn detected. |
+| `scaffolder_memory_size` | nullable integer | Remembered topic cards after the decision. |
+| `scaffolder_topic_source_turn` | nullable integer | Source turn of a resurfaced topic. |
+| `scaffolder_novelty_nudge_kind` | nullable string | Nudge strategy (`connected_novelty`, `rag_search`, …). |
+| `rag_used` | nullable boolean | Whether a grounded (search-backed) nudge was produced. |
+| `rag_mode` | nullable string | `novelty` or `topic`. |
+| `rag_words` | nullable JSON string | Sampled embedding words. |
+| `rag_query` | nullable string | Joined search query. |
+| `rag_source_url` | nullable string | Chosen result URL. |
+| `rag_source_title` | nullable string | Chosen result title. |
+| `rag_fallback_reason` | nullable string | Why the deterministic fallback fired. |
 | `analysis_extra_*` | nullable | Future flat analysis fields. |
 
 Column names should be derived from the Pydantic analysis schema, not a

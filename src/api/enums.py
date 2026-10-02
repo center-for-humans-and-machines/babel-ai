@@ -199,9 +199,14 @@ class VLLMModels(Enum):
     Hugging Face model id is read from the ``VLLM_MODEL`` environment
     variable by ``api.vllm.vllm_request``. Additional members can be
     added to pin a specific served id in an experiment config.
+
+    Available models:
+        DEFAULT: Sentinel resolved through the ``VLLM_MODEL`` env var
+        QWEN3_30B_A3B_INSTRUCT_2507: Qwen3 30B A3B Instruct (July 2025)
     """
 
     DEFAULT = "default"
+    QWEN3_30B_A3B_INSTRUCT_2507 = "Qwen/Qwen3-30B-A3B-Instruct-2507"
 
 
 # Union type for all available models

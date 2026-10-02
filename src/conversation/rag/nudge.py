@@ -103,12 +103,9 @@ class RagNudgeProvider:
         """Run the full pipeline or raise :class:`RagUnavailable`."""
         try:
             words = self._sampler.sample(self._num_words)
-        except (
-            Exception
-        ) as exc:  # loading/network failures must not break runs
+        except Exception as exc:  # loading/network failures must not break
             raise RagUnavailable(f"word sampling failed: {exc}") from exc
-        query = " ".join(words)
-        results = self._run_search(query)
+        query, results = self._search_words(words)
         result = self._rng.choice(results)
         source = self._source_text(result)
         prompt = self._build_messages(mode, messages, speaker, result, source)
@@ -134,14 +131,24 @@ class RagNudgeProvider:
             source_title=result.title or None,
         )
 
-    def _run_search(self, query: str) -> list[SearchResult]:
-        try:
-            results = self._search_client.search(query, self._top_k)
-        except Exception as exc:
-            raise RagUnavailable(f"search failed: {exc}") from exc
-        if not results:
-            raise RagUnavailable("search returned no results")
-        return results
+    def _search_words(
+        self, words: tuple[str, ...] | list[str]
+    ) -> tuple[str, list[SearchResult]]:
+        """Search the joined words, narrowing the query until it hits."""
+        last_error: Exception | None = None
+        for query in _candidate_queries(words):
+            try:
+                results = self._search_client.search(query, self._top_k)
+            except Exception as exc:
+                last_error = exc
+                continue
+            if results:
+                return query, results
+        if last_error is not None:
+            raise RagUnavailable(
+                f"search failed: {last_error}"
+            ) from last_error
+        raise RagUnavailable("search returned no results")
 
     def _source_text(self, result: SearchResult) -> str:
         if self._fetch_page and result.url:
@@ -214,6 +221,29 @@ class RagNudgeProvider:
         sampler_state = getattr(self._sampler, "import_state", None)
         if callable(sampler_state) and data.get("sampler") is not None:
             sampler_state(data["sampler"])
+
+
+def _candidate_queries(words: object) -> list[str]:
+    """Query candidates from most to least specific.
+
+    Five arbitrary embedding words rarely match a full-text search, so the
+    provider falls back to progressively shorter prefixes while still
+    preferring the direct join.
+    """
+    cleaned = [str(word) for word in words if str(word).strip()]
+    if not cleaned:
+        return []
+    candidates = [" ".join(cleaned)]
+    if len(cleaned) >= 2:
+        candidates.append(" ".join(cleaned[:2]))
+    candidates.append(cleaned[0])
+    seen: set[str] = set()
+    unique: list[str] = []
+    for query in candidates:
+        if query and query not in seen:
+            seen.add(query)
+            unique.append(query)
+    return unique
 
 
 def _encode_rng_state(state: tuple) -> dict[str, Any]:

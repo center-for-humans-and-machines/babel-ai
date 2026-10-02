@@ -103,6 +103,15 @@ def test_anthropic_model_enum():
     )
 
 
+def test_vllm_model_enum():
+    """Test VLLMModels enum values."""
+    assert VLLMModels.DEFAULT.value == "default"
+    assert (
+        VLLMModels.QWEN3_30B_A3B_INSTRUCT_2507.value
+        == "Qwen/Qwen3-30B-A3B-Instruct-2507"
+    )
+
+
 def test_model_type_contains_all_model_enums():
     """Test ModelType union contains all expected model enum classes."""
     model_types = get_args(APIModels)

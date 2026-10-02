@@ -10,6 +10,8 @@
     .meta-box { background: #f8f8f8; padding: 0.8rem 1rem; margin: 1rem 0; }
     .warn { color: #8a4b00; }
     .eliza-row { background: #f3f8ff; }
+    .rag-row { background: #f1fbf3; }
+    .rag-fallback { background: #fff4e6; }
   </style>
 </head>
 <body>
@@ -92,6 +94,68 @@
     <li>{{ row.branch }}: {{ row.count }}</li>
     {% endfor %}
   </ul>
+  {% endif %}
+  {% endif %}
+
+  {% if has_rag_data %}
+  <div class="meta-box">
+    <h2>RAG scaffolding</h2>
+    {% if rag_config %}
+    <p>
+      <strong>Word model:</strong> {{ rag_config.word_model }}
+      {% if rag_config.word_model_path %}
+      (path: {{ rag_config.word_model_path }})
+      {% endif %}
+      &nbsp;|&nbsp;
+      <strong>Words:</strong> {{ rag_config.num_words }}
+      &nbsp;|&nbsp;
+      <strong>Search:</strong> {{ rag_config.search_backend }}
+      &nbsp;|&nbsp;
+      <strong>Results:</strong> {{ rag_config.search_results }}
+      &nbsp;|&nbsp;
+      <strong>Nudge rate:</strong> {{ rag_config.novelty_nudge_rate }}
+    </p>
+    {% else %}
+    <p>No rag_scaffolder agent found in run config.</p>
+    {% endif %}
+    <p>{{ rag_status }}</p>
+  </div>
+
+  <h2>RAG turns</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Turn</th>
+        <th>Mode</th>
+        <th>Status</th>
+        <th>Words</th>
+        <th>Query</th>
+        <th>Source</th>
+        <th>Fallback</th>
+        <th>Nudge</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for turn in rag_turns %}
+      <tr class="{% if turn.status == 'fallback' %}rag-fallback{% elif turn.status == 'grounded' %}rag-row{% endif %}">
+        <td>{{ turn.turn_index }}</td>
+        <td>{{ turn.rag_mode }}</td>
+        <td>{{ turn.status }}</td>
+        <td>{{ turn.rag_words }}</td>
+        <td>{{ turn.rag_query }}</td>
+        <td>
+          {% if turn.rag_source_url %}
+          <a href="{{ turn.rag_source_url }}" target="_blank" rel="noopener">{{ turn.rag_source_title or turn.rag_source_url }}</a>
+          {% endif %}
+        </td>
+        <td>{{ turn.rag_fallback_reason }}</td>
+        <td>{{ turn.content }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if rag_chart %}
+  {{ rag_chart | safe }}
   {% endif %}
   {% endif %}
 

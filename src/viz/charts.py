@@ -15,6 +15,7 @@ from analysis_scope import (
     trajectory_plot_frame,
 )
 from persistence.run_store import RunRecord
+from viz.rag_display import rag_turn_rows
 
 _DEFAULT_METRIC = "semantic_similarity_window"
 _SIMILARITY_METRICS = (
@@ -369,6 +370,26 @@ def eliza_branch_bar_chart(turns: pd.DataFrame) -> str:
         y="count",
         title="ELIZA branch counts",
         labels={"branch": "Branch", "count": "Turns"},
+    )
+    figure.update_layout(height=320)
+    return figure.to_html(full_html=False, include_plotlyjs=False)
+
+
+def rag_usage_chart(turns: pd.DataFrame) -> str:
+    """Plot grounded, fallback, and unused RAG turns over time."""
+    rows = rag_turn_rows(turns)
+    if not rows:
+        return ""
+    frame = pd.DataFrame(rows)
+    frame["turn_index"] = pd.to_numeric(frame["turn_index"], errors="coerce")
+    figure = px.scatter(
+        frame,
+        x="turn_index",
+        y="status",
+        color="status",
+        title="RAG usage by turn",
+        category_orders={"status": ["grounded", "fallback", "not_used"]},
+        labels={"turn_index": "Turn", "status": "RAG status"},
     )
     figure.update_layout(height=320)
     return figure.to_html(full_html=False, include_plotlyjs=False)

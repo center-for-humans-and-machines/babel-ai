@@ -139,6 +139,19 @@ class _StubSearch:
         return self._results[:top_k]
 
 
+class _NarrowingSearch:
+    """Return hits only for single-word queries."""
+
+    def __init__(self) -> None:
+        self.queries: list[str] = []
+
+    def search(self, query: str, top_k: int) -> list[SearchResult]:
+        self.queries.append(query)
+        if " " in query:
+            return []
+        return [SearchResult("Hit", "https://x.test/hit", "snippet")]
+
+
 class _StubProvider:
     def __init__(
         self, *, content: str = "Grounded nudge.", error=None
@@ -361,6 +374,24 @@ def test_rag_nudge_provider_falls_back_to_snippet_when_fetch_fails():
         RagMode.TOPIC, [_message(0, "hi")], speaker="rag_scaffolder"
     )
     assert "snippet body" in captured["messages"][1]["content"]
+
+
+def test_rag_nudge_provider_narrows_query_until_results():
+    search = _NarrowingSearch()
+    provider = RagNudgeProvider(
+        sampler=_StubSampler(["alpha", "beta", "gamma"]),
+        search_client=search,
+        llm_config=_legacy_llm_config(),
+        num_words=3,
+        fetch_page=False,
+        llm_fn=lambda **kwargs: "grounded",
+    )
+    nudge = provider.produce(
+        RagMode.NOVELTY, [_message(0, "hi")], speaker="rag_scaffolder"
+    )
+    assert nudge.query == "alpha"
+    assert nudge.source_url == "https://x.test/hit"
+    assert search.queries[:3] == ["alpha beta gamma", "alpha beta", "alpha"]
 
 
 def test_rag_nudge_provider_raises_without_results():

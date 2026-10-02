@@ -19,6 +19,7 @@ from viz.charts import (
     eliza_branch_summary,
     metric_label,
     overlay_chart,
+    rag_usage_chart,
     trajectory_charts_for_run,
 )
 from viz.eliza_display import (
@@ -26,6 +27,12 @@ from viz.eliza_display import (
     eliza_turn_rows,
     extract_eliza_agent_config,
     has_eliza_branch_data,
+)
+from viz.rag_display import (
+    extract_rag_agent_config,
+    has_rag_data,
+    rag_status,
+    rag_turn_rows,
 )
 from viz.tsne_display import tsne_status, tsne_trajectory_chart
 
@@ -89,6 +96,11 @@ def create_app(results_root: Path | None = None) -> FastAPI:
                 "transcript": transcript,
                 "tsne_chart": tsne_trajectory_chart(tsne_result),
                 "tsne_status": tsne_status(tsne_result),
+                "has_rag_data": has_rag_data(record.turns),
+                "rag_status": rag_status(record.turns),
+                "rag_config": extract_rag_agent_config(record.meta),
+                "rag_turns": rag_turn_rows(record.turns),
+                "rag_chart": rag_usage_chart(record.turns),
             },
         )
 

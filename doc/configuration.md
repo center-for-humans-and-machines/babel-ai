@@ -52,7 +52,7 @@ conversation_settings:
 | `rule_based` | None; `partner` defaults to `eliza` | `generic_intervention`, `topic_switch_probability`, `feed_sources` |
 | `mirror` | None | None |
 | `scaffolder` | None | thresholds, memory policy, `random_seed` |
-| `rag_scaffolder` | an `llm` agent in the same list | scaffolder fields plus `word_model`, `num_words`, `search_backend`, `search_results`, `fetch_page`, `max_source_chars`, `search_timeout`, `context_turns`, `nudge_system_prompt`, `nudge_max_tokens` |
+| `rag_scaffolder` | an `llm` agent in the same list | scaffolder fields plus `word_model`, `word_model_path`, `num_words`, `search_backend`, `search_results`, `fetch_page`, `max_source_chars`, `search_timeout`, `context_turns`, `nudge_system_prompt`, `nudge_max_tokens` |
 
 LLM generation parameters mirror the legacy `agent_configs` fields.
 Defaults: `temperature` `1.0`, `max_tokens` unset, penalties `0.0`,
@@ -86,6 +86,18 @@ DuckDuckGo HTML, `wikipedia` uses the MediaWiki API, and `auto` tries
 DuckDuckGo first and falls back to Wikipedia. DuckDuckGo can serve an
 anti-bot challenge on proxied or datacenter networks, in which case
 `auto` or `wikipedia` keeps the pipeline working.
+
+Word vectors are fetched lazily with `requests` into `~/gensim-data`
+(and cached). Prefetch them, or point `word_model_path` at a local
+word2vec/GloVe file:
+
+```bash
+poetry run python scripts/download_vectors.py glove-wiki-gigaword-100
+```
+
+Because five arbitrary embedding words rarely match a full-text query,
+the provider tries the joined words, then the first two, then the first
+word, and records whichever query succeeded in `rag_query`.
 
 ## Conversation settings
 

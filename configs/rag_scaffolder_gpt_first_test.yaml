@@ -12,8 +12,8 @@ analyzer_config:
 
 agents:
   - type: llm
-    provider: azure
-    model: gpt-4o-2024-08-06
+    provider: vllm
+    model: Qwen/Qwen3-30B-A3B-Instruct-2507
     system_prompt: >
       Continue the conversation naturally in one or two
       short sentences.
@@ -37,7 +37,8 @@ agents:
     random_seed: 0
     # RAG pipeline
     word_model: glove-wiki-gigaword-100
-    num_words: 5
+    # word_model_path: /path/to/glove.txt   # optional local override
+    num_words: 3
     # duckduckgo | wikipedia | auto (DDG first, Wikipedia fallback)
     search_backend: auto
     search_results: 5

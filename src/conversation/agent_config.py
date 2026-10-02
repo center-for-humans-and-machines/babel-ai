@@ -77,6 +77,13 @@ class RagScaffolderAgentConfig(ScaffolderAgentConfig):
 
     type: Literal[AgentType.RAG_SCAFFOLDER] = AgentType.RAG_SCAFFOLDER
     word_model: str = "glove-wiki-gigaword-100"
+    word_model_path: Optional[str] = Field(
+        default=None,
+        description=(
+            "Local path to a word2vec/GloVe vector file. When set, it is "
+            "loaded directly instead of downloading word_model."
+        ),
+    )
     num_words: int = Field(default=5, ge=1)
     search_backend: Literal["duckduckgo", "wikipedia", "auto"] = "duckduckgo"
     search_results: int = Field(default=5, ge=1)

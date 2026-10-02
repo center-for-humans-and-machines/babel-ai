@@ -3,15 +3,20 @@
 from __future__ import annotations
 
 import logging
+import sys
 from pathlib import Path
 
-from conversation.factory import build_conversation_agents
-from conversation.manager import ConversationManager
-from models.configs import ExperimentConfig
-from models.metrics import AnalysisResult
-from persistence.run_naming import enrich_run_meta
-from persistence.run_store import RunManifest, save_run
-from utils import load_yaml_config
+_SRC = Path(__file__).resolve().parents[1] / "src"
+if str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
+
+from conversation.factory import build_conversation_agents  # noqa: E402
+from conversation.manager import ConversationManager  # noqa: E402
+from models.configs import ExperimentConfig  # noqa: E402
+from models.metrics import AnalysisResult  # noqa: E402
+from persistence.run_naming import enrich_run_meta  # noqa: E402
+from persistence.run_store import RunManifest, save_run  # noqa: E402
+from utils import load_yaml_config  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
